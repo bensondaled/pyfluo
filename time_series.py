@@ -1,5 +1,6 @@
 import numpy as np
 import pylab as pl
+import copy
 	
 class TimeSeries(object):
 	def __init__(self, data, time=None, tunit='s'):
@@ -82,6 +83,8 @@ class TimeSeries(object):
 		self.tunit = unit
 	
 	# Public Methods
+	def copy(self):
+		return copy.deepcopy(self)
 	def append(self, item):
 		self.data.append(item)
 		self.time.append(self.time[-1]+self.Ts)
@@ -91,16 +94,27 @@ class TimeSeries(object):
 		idx = mode(time_step*self.fs)
 		return int(idx)
 	def resample(self, n):
-		return Trace(self.data[::n], time=self.time[::n])
+		new = self.copy()
+		new.data = self.data[::n]
+		new.time = self.time[::n]
+		return new
 	def normalize(self, minn=0., maxx=1.):
 		omin = np.min(self.data)
 		omax = np.max(self.data)
 		newdata = np.array([(i-omin)/(omax-omin) for i in self.data])
-		return Series1D(data=newdata, time=self.time)
-	def take(self, stim_times, *args, **kwargs):
-		if type(stim_times[0]) != list:
-			stim_times = [stim_times]
-		stims = [self._take(st, *args, **kwargs) for st in stim_times]
+		new = self.copy()
+		new.data = newdata
+		new.time = self.time
+		return new
+	def take(self, time_range, *args, **kwargs):
+		from time_series_collection import TimeSeriesCollection
+		
+		if type(time_range[0]) != list:
+			time_range = [time_range]
+		stims = [self._take(st, *args, **kwargs) for st in time_range]
+		stims = TimeSeriesCollection(stims)
+		if len(stims) == 1:
+			stims = stims[0]
 		return stims
 	def _take(self, time_range, pad=(0.,0.), reset_time=True):
 		t1 = time_range[0] - pad[0]
@@ -109,8 +123,8 @@ class TimeSeries(object):
 			t_temp = t1
 			t1 = t2
 			t2 = t_temp
-		idx1 = self.time_to_idx(t1, mode=np.floor)
-		idx2 = self.time_to_idx(t2, mode=np.ceil)
+		idx1 = self.time_to_idx(t1, mode=round)
+		idx2 = self.time_to_idx(t2, mode=round)
 		
 		t = np.take(self.time, range(idx1,idx2+1), mode='clip')
 		if idx1<0:	t[:-idx1] = [t[-idx1]-i*self.Ts for i in range(-idx1,0,-1)]

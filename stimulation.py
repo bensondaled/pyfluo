@@ -59,11 +59,15 @@ class StimSeries(TimeSeries):
 		self.stim_idxs = [idxs for idxs,times in zip(self.stim_idxs,self.stim_times) if times[1]-times[0] > min_duration]
 		self.stim_times = [times for times in self.stim_times if times[1]-times[0] > min_duration]
 	def uniformize(self, ndigits=2):
+		durations = []
 		u_stim_times = []
 		u_stim_idxs = []
 		for stimt,stimi in zip(self.stim_times, self.stim_idxs):
 			dur = round(stimt[1]-stimt[0], ndigits)
-			u_stim_times.append([stimt[0], stimt[0]+dur])
-			u_stim_idxs.append([self.time_to_idx(t) for t in u_stim_times[-1]])
+			durations.append(dur)
+		durations_idx = [self.fs*dur for dur in durations]
+		u_stim_idxs = [[i[0], i[0]+idx] for idx,i in zip(durations_idx,self.stim_idxs)]
+		u_stim_times = [[self.time[idx] for idx in pulse] for pulse in u_stim_idxs]
+
 		self.stim_times = u_stim_times
 		self.stim_idxs = u_stim_idxs

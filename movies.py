@@ -1,7 +1,7 @@
 from pyfluo.tiff import WangLabScanImageTiff
-from pyfluo.series.fluorescence import FluoSeries
-from pyfluo.series.stimulation import StimSeries
-from pyfluo.series.time_series import TimeSeries
+from pyfluo.stimulation import StimSeries
+from pyfluo.time_series import TimeSeries
+from pyfluo.time_series_collection import TimeSeriesCollection
 import matplotlib.animation as animation
 import numpy as np
 import pylab as pl
@@ -131,19 +131,36 @@ class Movie(object):
 				self.rois.append(mask)
 			pl.close()
 		return (pts, mask)
-	def extract_fluo_series(self, rois=None, method=np.ma.mean):
+	def extract_by_roi(self, rois=None, method=np.ma.mean):
 		series = []
 		if rois == None:
 			rois = self.rois
-		if type(rois) != list:
+		if type(rois) == int:
+			rois = [self.rois[rois]]
+		elif type(rois) != list:
 			rois = [rois]
 		for roi in rois:
+			if type(roi)==int:
+				roi = self.rois[roi]
 			roi = np.dstack([roi for i in self])
 			masked = np.ma.masked_array(self.data, mask=roi)
 			ser = method(method(masked,axis=0),axis=0)
-			ser = FluoSeries(ser, time=self.time)
+			ser = TimeSeries(ser, time=self.time)
 			series.append(ser)
-		return series
+		series = TimeSeriesCollection(series)
+		
+		if len(series) == 1:
+			return series[0]
+		else:
+			return series
+	def clear_roi(self, idxs=None):
+		if not idxs:
+			idxs=range(len(self.rois))
+		for roi in idxs:
+			self.rois[roi] = None
+			self.roi_pts[roi] = None
+		self.rois = [r for r in self.rois if r]
+		self.roi_pts = [r for r in self.roi_pts if r]
 	
 	# Visualizing data
 	def z_project(self, method=np.mean, show=False, rois=False):
