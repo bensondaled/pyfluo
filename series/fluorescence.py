@@ -1,13 +1,13 @@
 import numpy as np
-from series import Series1D, t2idx
+from time_series import TimeSeries
 
-class FluoSeries(Series1D):
+class FluoSeries(TimeSeries):
 	def __init__(self, *args, **kwargs):
 		super(FluoSeries, self).__init__(*args, **kwargs)
 		self.original_data = self.data
 		self.dff = self.to_dff()
 		
-		self.data = self.dff
+		self.set_data_dff()
 	def set_data_original(self):
 		self.data = self.original_data
 	def set_data_dff(self):
@@ -53,7 +53,7 @@ class FluoSeries(Series1D):
 			else:
 				dff[t] = np.divide(numerator, denominator)
 	
-		self.dff = dff
+		return dff
 
 if __name__ == "__main__":	
 	pass

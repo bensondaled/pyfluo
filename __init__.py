@@ -1,2 +1,2 @@
-from series import Series1D, FluoSeries, StimSeries
+from series import TimeSeries, FluoSeries, StimSeries
 from movies import Movie, MultiChannelMovie

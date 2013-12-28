@@ -1,3 +1,3 @@
-from series import Series1D
+from time_series import TimeSeries
 from fluorescence import FluoSeries
 from stimulation import StimSeries

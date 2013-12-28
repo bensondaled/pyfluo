@@ -1,8 +1,10 @@
-from series import Series1D
+from time_series import TimeSeries
 import numpy as np
 
-class StimSeries(Series1D):
+class StimSeries(TimeSeries):
 	def __init__(self, *args, **kwargs):
+		uniform = kwargs.pop('uniform', True)
+		
 		super(StimSeries, self).__init__(*args, **kwargs)
 		self.original_data = self.data
 	
@@ -11,6 +13,9 @@ class StimSeries(Series1D):
 		
 		self.convert_to_delta()
 		self.calc_stim_times()
+		
+		if uniform:
+			self.uniformize()
 	def convert_to_delta(self,min_sep_time=0.100,baseline_sample=50):
 		#assumes that signal begins at baseline
 		#min_sep_time argument is the minimum TIME between two different triggers in seconds
@@ -53,3 +58,12 @@ class StimSeries(Series1D):
 		#correct for min duration
 		self.stim_idxs = [idxs for idxs,times in zip(self.stim_idxs,self.stim_times) if times[1]-times[0] > min_duration]
 		self.stim_times = [times for times in self.stim_times if times[1]-times[0] > min_duration]
+	def uniformize(self, ndigits=2):
+		u_stim_times = []
+		u_stim_idxs = []
+		for stimt,stimi in zip(self.stim_times, self.stim_idxs):
+			dur = round(stimt[1]-stimt[0], ndigits)
+			u_stim_times.append([stimt[0], stimt[0]+dur])
+			u_stim_idxs.append([self.time_to_idx(t) for t in u_stim_times[-1]])
+		self.stim_times = u_stim_times
+		self.stim_idxs = u_stim_idxs
