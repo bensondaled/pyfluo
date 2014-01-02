@@ -1,7 +1,6 @@
 from pyfluo.tiff import WangLabScanImageTiff
 from pyfluo.stimulation import StimSeries
-from pyfluo.time_series import TimeSeries
-from pyfluo.time_series_collection import TimeSeriesCollection
+from pyfluo.time_series import TimeSeries, TimeSeriesCollection
 from pyfluo.roi import ROI, ROISet
 import matplotlib.animation as animation
 import numpy as np
@@ -9,11 +8,14 @@ import pylab as pl
 import matplotlib.cm as mpl_cm
 from matplotlib import path as mpl_path
 import os
+import time as pytime
 import json
 import pickle
 
 class MultiChannelMovie(object):
 	def __init__(self, raw, skip_beginning=0, skip_end=0):
+		self.name = pytime.strftime("MultiChannelMovie-%Y%m%d_%H%M%S")
+		
 		self.movies = []
 		
 		if type(raw) != list:
@@ -55,6 +57,7 @@ class MultiChannelMovie(object):
 
 class Movie(object):
 	def __init__(self, data, info, skip_beginning=0, skip_end=0):
+		self.name = pytime.strftime("Movie-%Y%m%d_%H%M%S")
 			
 		self.data = data
 		self.info = info
@@ -119,12 +122,12 @@ class Movie(object):
 	# ROI analysis
 	def select_roi(self, store=True):
 		zp = self.z_project(show=True, rois=True)
-		mask = None
+		roi = None
 		pts = pl.ginput(0)
 		if pts:
 			roi = ROI(np.shape(zp), pts)
 			if store:
-				self.rois.append(roi)
+				self.rois.add(roi)
 		pl.close()
 		return roi
 	def extract_by_roi(self, rois=None, method=np.ma.mean):
@@ -133,8 +136,8 @@ class Movie(object):
 			rois = self.rois
 		if type(rois) == int:
 			rois = [self.rois[rois]]
-		elif type(rois) != list:
-			rois = [rois]
+		elif type(rois) == ROI:
+			roiset = ROISet(rois)
 		for roi in rois:
 			if type(roi)==int:
 				roi = self.rois[roi]
@@ -156,10 +159,7 @@ class Movie(object):
 		if show:
 			pl.imshow(zp, cmap=mpl_cm.Greys_r)
 			if rois:
-				for roi in self.roi_pts:
-					pl.scatter(roi[:,0], roi[:,1])
-			pl.xlim([0, self.width])
-			pl.ylim([self.height, 0])
+				self.rois.show(mode='pts',labels=True)
 		return zp
 	def play(self, repeat=False, **kwargs):
 		flag = pl.isinteractive()
@@ -170,8 +170,3 @@ class Movie(object):
 		ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False, repeat=repeat, **kwargs)
 		pl.show()
 		if flag:	pl.ion()
-		
-	# Saving data
-	def save(self, file_name):
-		f = open(file_name+'.pfmov', 'wb')
-		pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)

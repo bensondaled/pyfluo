@@ -1,6 +1,7 @@
 import numpy as np
 import pylab as pl
 import copy
+import time as pytime
 import pickle
 	
 class TimeSeries(object):
@@ -17,6 +18,8 @@ class TimeSeries(object):
 		
 		tunit (str): the unit of measurement in which the object's time is stored.
 		
+		name (str): a unique name generated for the object when instantiated
+		
 	"""
 	def __init__(self, data, time=None, tunit='s'):
 		"""Initialize a TimeSeries object.
@@ -26,6 +29,7 @@ class TimeSeries(object):
 			time (list or np.ndarray): list of uniformly spaced numerical values, identical in length *data*. If *None*, defaults to range(len(*data*)).
 			tunit (str): the unit of measurement in which the object's time is stored.
 		"""
+		self.name = pytime.strftime("TimeSeries-%Y%m%d_%H%M%S")
 		self.tunit = tunit
 		self.fs = None
 		self.Ts = None
@@ -118,7 +122,6 @@ class TimeSeries(object):
 			or
 			TimeSeriesCollection of TimeSeries corresponding to each supplied time range , if *time_range* is a list of pairs
 		"""
-		from time_series_collection import TimeSeriesCollection
 		
 		if type(time_range[0]) != list:
 			time_range = [time_range]
@@ -127,15 +130,23 @@ class TimeSeries(object):
 		if len(stims) == 1:
 			stims = stims[0]
 		return stims
-	def _take(self, time_range, pad=(0.,0.), reset_time=True):
+	def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True):
 		t1 = time_range[0] - pad[0]
 		t2 = time_range[1] + pad[1]
 		if t1 > t2:
 			t_temp = t1
 			t1 = t2
 			t2 = t_temp
-		idx1 = self.time_to_idx(t1, mode=round)
-		idx2 = self.time_to_idx(t2, mode=round)
+		idx1 = self.time_to_idx(t1, mode=round) #np.floor if inclusion of time point is more important than proximity
+		idx2 = self.time_to_idx(t2, mode=round) #np.ceil if inclusion of time point is more important than proximity
+		
+		#Safe:
+		#purpose: to avoid getting different length results despite identical time ranges, because of rounding errors
+		if safe:
+			duration = t2-t1
+			duration_idx = int(self.fs * duration)
+			idx2 = idx1 + duration_idx
+		#End Safe
 		
 		t = np.take(self.time, range(idx1,idx2+1), mode='clip')
 		if idx1<0:	t[:-idx1] = [t[-idx1]-i*self.Ts for i in range(-idx1,0,-1)]
@@ -169,25 +180,16 @@ class TimeSeries(object):
 		pl.xlabel('Time (%s)'%self.tunit)
 		if show:
 			pl.show()
-	
-	# Saving data
-	def save(self, file_name):
-		"""Save the time series object using python pickling.
-		
-		Args:
-			file_name: file name.
-		"""
-		f = open(file_name+'.pfts', 'wb')
-		pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 		
 	# Special Methods
 	def _update(self):
-		if self.data.size > 1:
+		if self.data.size > 1:			
 			self.Ts = self.time[1] - self.time[0]
 			self.fs = 1/self.Ts
-
-			if not all(self.time[i+1]-self.time[i] == self.Ts for i in xrange(len(self.time)-1)):
-				raise Exception("Time vector does not have a consistent sampling period!")
+			
+			#The following should be implemented, however it was causing problems:
+			# if not all(round(self.time[i+1]-self.time[i],10) == round(self.Ts,10) for i in xrange(len(self.time)-1)):
+			# 	raise Exception("Time vector does not have a consistent sampling period to within 10 decimal places.")
 	def __len__(self):
 		return self.data.size
 	def __contains__(self, item):
@@ -245,3 +247,48 @@ class TimeSeries(object):
 		return "Time: %s\nData: %s\n"%(self.time.__repr__(),self.data.__repr__())
 	def set_time_unit(unit):
 		self.tunit = unit
+		
+class TimeSeriesCollection(object):
+	def __init__(self, series):
+		self.name = pytime.strftime("TimeSeriesCollection-%Y%m%d_%H%M%S")
+				
+		self.time = series[0].time
+		for s in series:
+			if len(s) != len(self.time):
+				raise Exception('Series provided to TimeSeriesCollection are different in length!')
+
+		self.series = series
+
+	# Special Methods
+	def __len__(self):
+		return len(self.series)
+	def __getitem__(self, idx):
+		return self.series[idx]
+
+	def take(self, time_range, pad=(0.0,0.0), merge_method=np.average):
+		series = [s.take(time_range, pad=pad) for s in self.series]
+		if type(time_range[0]) == list:
+			series = [s.merge(method=merge_method) for s in series]
+		return TimeSeriesCollection(series)
+	def merge(self, method=np.average):
+		series = TimeSeries(method(self.series, axis=0), time=self.time)
+		return series
+	def plot(self, stim_series=None, stacked=True, gap_fraction=0.5):
+		allmaxs = []
+		last_max = 0.
+		for idx,s in enumerate(self.series):
+			data = s.data
+			data = np.ma.masked_array(data,np.isnan(data))
+			smin = np.ma.min(data)
+			data = data-smin + stacked*last_max
+			pl.plot(s.time, data.filled(np.nan), color='blue')
+			if stim_series and stacked:
+				stim_data = stim_series.data*(np.max(data)-np.min(data)) + np.min(data)
+				pl.plot(stim_series.time, stim_data, color='black')
+			last_max = np.ma.max(data) + stacked*gap_fraction*(np.ma.max(data) - np.ma.min(data))
+			allmaxs.append(last_max)
+		if stim_series and not stacked:
+			stim_data = stim_series.data*max(allmaxs)
+			pl.plot(stim_series.time, stim_data)
+		pl.xlabel("Time (%s)"%s.tunit)
+		pl.show()

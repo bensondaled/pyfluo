@@ -1,6 +1,5 @@
 import numpy as np
-from time_series import TimeSeries
-from time_series_collection import TimeSeriesCollection
+from time_series import TimeSeries, TimeSeriesCollection
 
 def compute_dff(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 	# Adapted from Jia et al. 2010 Nature Protocols
