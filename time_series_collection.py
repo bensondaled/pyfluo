@@ -1,6 +1,7 @@
 import numpy as np
 import pylab as pl
 from time_series import TimeSeries
+import pickle
 
 class TimeSeriesCollection():
 	def __init__(self, series):
@@ -44,6 +45,11 @@ class TimeSeriesCollection():
 			pl.plot(stim_series.time, stim_data)
 		pl.xlabel("Time (%s)"%s.tunit)
 		pl.show()
+		
+	# Saving data
+	def save(self, file_name):
+		f = open(file_name+'.pftsc', 'wb')
+		pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":	
 	pass

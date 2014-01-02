@@ -2,6 +2,7 @@ from pyfluo.tiff import WangLabScanImageTiff
 from pyfluo.stimulation import StimSeries
 from pyfluo.time_series import TimeSeries
 from pyfluo.time_series_collection import TimeSeriesCollection
+from pyfluo.roi import ROI, ROISet
 import matplotlib.animation as animation
 import numpy as np
 import pylab as pl
@@ -9,6 +10,7 @@ import matplotlib.cm as mpl_cm
 from matplotlib import path as mpl_path
 import os
 import json
+import pickle
 
 class MultiChannelMovie(object):
 	def __init__(self, raw, skip_beginning=0, skip_end=0):
@@ -22,8 +24,9 @@ class MultiChannelMovie(object):
 			elif type(item) != WangLabScanImageTiff:
 				raise Exception('Invalid input for movie. Should be WangLabScanImageTiff or tiff filename.')
 		tiffs = raw
-		
+				
 		n_channels = tiffs[0].n_channels
+	
 		for ch in range(n_channels):	
 			data = None
 			info = []
@@ -41,7 +44,7 @@ class MultiChannelMovie(object):
 					if np.shape(dat)[:2] != np.shape(data)[:2]:
 						raise Exception('Movies are not of the same dimensions.')
 					data = np.append(data, dat, axis=2)
-		
+					
 			mov = Movie(data=data, info=info, skip_beginning=skip_beginning, skip_end=skip_end)
 			self.movies.append(mov)
 			
@@ -74,8 +77,7 @@ class Movie(object):
 		self.width = np.shape(self.data)[1]
 		self.height = np.shape(self.data)[0]
 				
-		self.rois = []
-		self.roi_pts = []
+		self.rois = ROISet()
 	
 	# Special Calls
 	def __getitem__(self, idx):
@@ -108,11 +110,11 @@ class Movie(object):
 	def as_series(self):
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
 		t = np.arange(len(flat_data))*self.pixel_duration
-		return Series1D(flat_data, time=t)		
+		return Series1D(data=flat_data, time=t)		
 	def as_stim_series(self):
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
 		t = np.arange(len(flat_data))*self.pixel_duration
-		return StimSeries(flat_data, time=t)
+		return StimSeries(data=flat_data, time=t)
 	
 	# ROI analysis
 	def select_roi(self, store=True):
@@ -120,17 +122,11 @@ class Movie(object):
 		mask = None
 		pts = pl.ginput(0)
 		if pts:
-			path = mpl_path.Path(pts)
-			mask = np.ones(np.shape(zp),dtype=bool)
-			for ridx,row in enumerate(mask):
-				for cidx,pt in enumerate(row):
-					if path.contains_point([ridx,cidx]):
-						mask[cidx,ridx] = False
+			roi = ROI(np.shape(zp), pts)
 			if store:
-				self.roi_pts.append(path.vertices)
-				self.rois.append(mask)
-			pl.close()
-		return (pts, mask)
+				self.rois.append(roi)
+		pl.close()
+		return roi
 	def extract_by_roi(self, rois=None, method=np.ma.mean):
 		series = []
 		if rois == None:
@@ -142,8 +138,8 @@ class Movie(object):
 		for roi in rois:
 			if type(roi)==int:
 				roi = self.rois[roi]
-			roi = np.dstack([roi for i in self])
-			masked = np.ma.masked_array(self.data, mask=roi)
+			roi_stack = np.dstack([roi.mask for i in self])
+			masked = np.ma.masked_array(self.data, mask=roi_stack)
 			ser = method(method(masked,axis=0),axis=0)
 			ser = TimeSeries(ser, time=self.time)
 			series.append(ser)
@@ -153,14 +149,6 @@ class Movie(object):
 			return series[0]
 		else:
 			return series
-	def clear_roi(self, idxs=None):
-		if not idxs:
-			idxs=range(len(self.rois))
-		for roi in idxs:
-			self.rois[roi] = None
-			self.roi_pts[roi] = None
-		self.rois = [r for r in self.rois if r]
-		self.roi_pts = [r for r in self.roi_pts if r]
 	
 	# Visualizing data
 	def z_project(self, method=np.mean, show=False, rois=False):
@@ -184,18 +172,6 @@ class Movie(object):
 		if flag:	pl.ion()
 		
 	# Saving data
-	def save(self, name):
-		os.system('mkdir %s'%name)
-		os.system('cd %s'%name)
-		
-		metadata_file = open('metadata.json','w')
-		metadata = {}
-		metadata['source_files'] = self.source_names
-		metadata['tif_data'] = self.ex_info
-		metadata = json.dumps(metadata)
-		metadata_file.write('%s'%metadata)
-		metadata_file.close()
-		
-		#TO BE COMPLETED
-		
-		os.system('cd ..')
+	def save(self, file_name):
+		f = open(file_name+'.pfmov', 'wb')
+		pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
