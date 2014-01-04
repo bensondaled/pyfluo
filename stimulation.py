@@ -26,7 +26,8 @@ class StimSeries(TimeSeries):
 
 		if uniform:
 			self.uniformize()
-
+	def take(self, *args, **kwargs):
+		return super(StimSeries, self).take(*args, output_class=TimeSeries, **kwargs)
 	def convert_to_delta(self,min_sep_time=0.100,baseline_time=0.1):
 		self.start_idxs = []
 		self.end_idxs = []

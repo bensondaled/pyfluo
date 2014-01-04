@@ -2,8 +2,8 @@ import numpy as np
 import copy
 
 class TSBase(object):
-	def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True):
-		take_axis = np.shape(self.data)[-1]
+	def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None):
+		take_axis = len(np.shape(self.data))-1
 		
 		t1 = time_range[0] - pad[0]
 		t2 = time_range[1] + pad[1]
@@ -21,7 +21,7 @@ class TSBase(object):
 			duration_idx = int(self.fs * duration)
 			idx2 = idx1 + duration_idx
 		#End Safe
-		
+				
 		t = np.take(self.time, range(idx1,idx2+1), mode='clip')
 		if idx1<0:	t[:-idx1] = [t[-idx1]-i*self.Ts for i in range(-idx1,0,-1)]
 		if idx2>len(self.time)-1:
@@ -42,8 +42,10 @@ class TSBase(object):
 			idx2=len(self.info)-1
 		info =  self.info[idx1:idx2+1]
 		info = [None for i in range(add_start)]+ info +[None for i in range(add_end)]
-		
-		return self.__class__(data=data, time=t, info=info)
+				
+		if output_class==None:
+			output_class = self.__class__
+		return output_class(data=data, time=t, info=info)
 	def time_to_idx(self, t, mode=round):
 		t = float(t)
 		time_step = t - self.time[0]

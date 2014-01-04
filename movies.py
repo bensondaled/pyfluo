@@ -82,7 +82,8 @@ class Movie(TSBase):
 		mspl = float(self.ex_info['state.acq.msPerLine'])
 		self.pixel_duration = mspl / ppl / 1000. #seconds
 		self.frame_duration = self.pixel_duration * ppl * lpf #seconds
-		self.fs = 1/self.frame_duration
+		self.Ts = self.frame_duration
+		self.fs = 1/self.Ts
 		
 		self.time = np.arange(len(self))*self.frame_duration
 		self.width = np.shape(self.data)[1]
@@ -118,9 +119,20 @@ class Movie(TSBase):
 		self.time = np.arange(len(self))*self.frame_duration
 			
 	# Extracting/Reshaping data	
-	def take(self, time_range, pad=(0.,0.), reset_time=True):
-		if type(time_range[0]) == list:
-			raise Exception('Movie.take() does not yet support the extraction of multiple ranges simultaneously.')
+	def take(self, *args, **kwargs):
+		try:
+			time_range = kwargs.pop('time_range')
+		except KeyError:
+			time_range = args.pop(0)
+				
+		if type(time_range[0]) != list:
+			time_range = [time_range]
+		movs = [self._take(st, *args, **kwargs) for st in time_range]
+		if len(movs)>1:
+			mov_data = np.mean([m.data for m in movs], axis=0)
+		elif len(movs)==1:
+			mov_data = movs[0].data
+		return Movie(data=mov_data, info=movs[0].info)
 		
 	def as_series(self):
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
@@ -178,12 +190,16 @@ class Movie(TSBase):
 			if rois:
 				self.rois.show(mode='pts',labels=True)
 		return zp
-	def play(self, repeat=False, **kwargs):
+	def play(self, repeat=False, fps=None, **kwargs):
+		if fps==None:
+			fps = self.fs
+		fpms = fps / 1000.
+		
 		flag = pl.isinteractive()
 		pl.ioff()
 		fig = pl.figure()
 		ims = [ [pl.imshow(i, cmap=mpl_cm.Greys_r)] for i in self ]
 		
-		ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False, repeat=repeat, **kwargs)
+		ani = animation.ArtistAnimation(fig, ims, interval=1./fpms, blit=False, repeat=repeat, **kwargs)
 		pl.show()
 		if flag:	pl.ion()

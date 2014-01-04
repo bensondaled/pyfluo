@@ -36,6 +36,8 @@ class TimeSeries(TSBase):
 		self.Ts = None
 		self.data = np.asarray(data,dtype=float)
 		self.info = info
+		if self.info == None:
+			self.info = [None for i in range(len(self))]
 		
 		if time != None:
 			self.time = np.asarray(time,dtype=float)
@@ -97,7 +99,7 @@ class TimeSeries(TSBase):
 			self.time = new.time
 			self._update()
 		return new
-	def take(self, time_range, pad=(0., 0.), reset_time=True):
+	def take(self, time_range, pad=(0., 0.), reset_time=True, **kwargs):
 		"""Extract a range of values from the time series.
 		
 		Args:
@@ -118,7 +120,7 @@ class TimeSeries(TSBase):
 		
 		if type(time_range[0]) != list:
 			time_range = [time_range]
-		stims = [self._take(st, pad=pad, reset_time=reset_time) for st in time_range]
+		stims = [self._take(st, pad=pad, reset_time=reset_time, **kwargs) for st in time_range]
 		stims = TimeSeriesCollection(stims)
 		if len(stims) == 1:
 			stims = stims[0]

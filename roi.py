@@ -51,6 +51,8 @@ class ROISet(object):
 			if labels:
 				for idx,roi in enumerate(self):
 					pl.text(roi.center[0], roi.center[1], str(idx), color='white', weight='bold')
+			# pl.gca().xaxis.set_ticks_position('none')
+			# pl.gca().yaxis.set_ticks_position('none')
 			pl.show()
 	
 	def __getitem__(self, idx):
