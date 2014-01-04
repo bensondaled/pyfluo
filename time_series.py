@@ -1,10 +1,11 @@
+from pyfluo.ts_base import TSBase
 import numpy as np
 import pylab as pl
 import copy
 import time as pytime
 import pickle
 	
-class TimeSeries(object):
+class TimeSeries(TSBase):
 	"""A data structure that holds a one-dimensional array of values each associated with a particular time index.
 	
 	Attributes:
@@ -21,7 +22,7 @@ class TimeSeries(object):
 		name (str): a unique name generated for the object when instantiated
 		
 	"""
-	def __init__(self, data, time=None, tunit='s'):
+	def __init__(self, data, time=None, info=None, tunit='s'):
 		"""Initialize a TimeSeries object.
 		
 		Args:
@@ -34,6 +35,7 @@ class TimeSeries(object):
 		self.fs = None
 		self.Ts = None
 		self.data = np.asarray(data,dtype=float)
+		self.info = info
 		
 		if time != None:
 			self.time = np.asarray(time,dtype=float)
@@ -47,10 +49,6 @@ class TimeSeries(object):
 		self._update()
 	
 	# Public Methods
-	def copy(self):
-		"""Return a deep copy of this object.
-		"""
-		return copy.deepcopy(self)
 	def append(self, item):
 		"""Append a sample to the time series.
 		
@@ -59,11 +57,6 @@ class TimeSeries(object):
 		"""
 		self.data.append(item)
 		self.time.append(self.time[-1]+self.Ts)
-	def time_to_idx(self, t, mode=round):
-		t = float(t)
-		time_step = t - self.time[0]
-		idx = mode(time_step*self.fs)
-		return int(idx)
 	def resample(self, n, in_place=False):
 		"""Resample the time series object.
 		
@@ -130,35 +123,6 @@ class TimeSeries(object):
 		if len(stims) == 1:
 			stims = stims[0]
 		return stims
-	def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True):
-		t1 = time_range[0] - pad[0]
-		t2 = time_range[1] + pad[1]
-		if t1 > t2:
-			t_temp = t1
-			t1 = t2
-			t2 = t_temp
-		idx1 = self.time_to_idx(t1, mode=round) #np.floor if inclusion of time point is more important than proximity
-		idx2 = self.time_to_idx(t2, mode=round) #np.ceil if inclusion of time point is more important than proximity
-		
-		#Safe:
-		#purpose: to avoid getting different length results despite identical time ranges, because of rounding errors
-		if safe:
-			duration = t2-t1
-			duration_idx = int(self.fs * duration)
-			idx2 = idx1 + duration_idx
-		#End Safe
-		
-		t = np.take(self.time, range(idx1,idx2+1), mode='clip')
-		if idx1<0:	t[:-idx1] = [t[-idx1]-i*self.Ts for i in range(-idx1,0,-1)]
-		if idx2>len(self.time)-1:
-			t[-(idx2-(len(self.time)-1)):] = [t[-1]+i*self.Ts for i in range(1, idx2-(len(self.time)-1)+1)]
-		if reset_time:	t = t - time_range[0]
-		
-		data = np.take(self.data, range(idx1,idx2+1), mode='clip')
-		if idx1<0:	data[:-idx1] = None
-		if idx2>len(self.time)-1:	data[-(idx2-(len(self.time)-1)):] = None
-		
-		return TimeSeries(data, time=t)
 	def plot(self,use_idxs=False,normalize=False,show=True,**kwargs):
 		"""Plot the time series.
 		

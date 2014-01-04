@@ -1,3 +1,4 @@
+from pyfluo.ts_base import TSBase
 from pyfluo.tiff import WangLabScanImageTiff
 from pyfluo.stimulation import StimSeries
 from pyfluo.time_series import TimeSeries, TimeSeriesCollection
@@ -13,6 +14,8 @@ import json
 import pickle
 
 class MultiChannelMovie(object):
+	"""Currently exclusively for creation from WangLabScanImageTiff's, this class holds multiple Movie objects as channels. Its main goal is to circumvent the need to load a multi-channel tiff file more than once in order to attain movies from its multiple channels.
+	"""
 	def __init__(self, raw, skip_beginning=0, skip_end=0):
 		self.name = pytime.strftime("MultiChannelMovie-%Y%m%d_%H%M%S")
 		
@@ -52,15 +55,19 @@ class MultiChannelMovie(object):
 			
 	def get_channel(self, i):
 		return self.movies[i]
+	def __getitem__(self, i):
+		return self.get_channel(i)
 	def __len__(self):
 		return len(self.movies)
 
-class Movie(object):
-	def __init__(self, data, info, skip_beginning=0, skip_end=0):
+class Movie(TSBase):
+	def __init__(self, data, time=None, info=None, skip_beginning=0, skip_end=0):
 		self.name = pytime.strftime("Movie-%Y%m%d_%H%M%S")
 			
 		self.data = data
 		self.info = info
+		if self.info==None:
+			self.info = [None for i in range(len(self))]
 			
 		if skip_beginning:
 			self.data = self.data[:,:,skip_beginning:]
@@ -75,6 +82,7 @@ class Movie(object):
 		mspl = float(self.ex_info['state.acq.msPerLine'])
 		self.pixel_duration = mspl / ppl / 1000. #seconds
 		self.frame_duration = self.pixel_duration * ppl * lpf #seconds
+		self.fs = 1/self.frame_duration
 		
 		self.time = np.arange(len(self))*self.frame_duration
 		self.width = np.shape(self.data)[1]
@@ -108,8 +116,12 @@ class Movie(object):
 				raise Exception('Frame rates of movies to be appended do not match.')
 			self.data = np.append(self.data, m.data, axis=2)
 		self.time = np.arange(len(self))*self.frame_duration
-	
-	# Reshaping data	
+			
+	# Extracting/Reshaping data	
+	def take(self, time_range, pad=(0.,0.), reset_time=True):
+		if type(time_range[0]) == list:
+			raise Exception('Movie.take() does not yet support the extraction of multiple ranges simultaneously.')
+		
 	def as_series(self):
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
 		t = np.arange(len(flat_data))*self.pixel_duration
@@ -120,16 +132,21 @@ class Movie(object):
 		return StimSeries(data=flat_data, time=t)
 	
 	# ROI analysis
-	def select_roi(self, store=True):
-		zp = self.z_project(show=True, rois=True)
-		roi = None
-		pts = pl.ginput(0)
-		if pts:
-			roi = ROI(np.shape(zp), pts)
-			if store:
-				self.rois.add(roi)
+	def select_roi(self, n=1, store=True):
+		rois = []
+		for q in range(n):
+			zp = self.z_project(show=True, rois=True)
+			roi = None
+			pts = pl.ginput(0)
+			if pts:
+				roi = ROI(np.shape(zp), pts)
+				if store:
+					self.rois.add(roi)
+			rois.append(roi)
 		pl.close()
-		return roi
+		if len(rois)==1:
+			rois = rois[0]
+		return rois
 	def extract_by_roi(self, rois=None, method=np.ma.mean):
 		series = []
 		if rois == None:

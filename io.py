@@ -8,25 +8,40 @@ def pickle_save(obj, file_name):
 	pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 	f.close()
 
-def save(items=None, dir_name=None):
+def save(items=None, dir_name=None, glob=None):
 	"""Save any number of objects in the current workspace, one file per object.
 	
 	Args:
-		items (list/dict): the current workspace variables to be saved, as {'var_name': var} (Note that this accepts locals() or globals() as well, to save the entire workspace.) If type list, it is converted to a dictionary where the variables names are the name attribute of the object.
+		items (list/dict): the current workspace variables to be saved If type list, it is converted to a dictionary where the variables names are the name attribute of the object.
 		dir_name (str): name of directory in which to save object files, defaults to a time string.
+		glob (dict): the built-in globals() dictionary in the scope from which save() is called.
+		
+	Notes:
+		If the *items* argument is a dict, it should be in the form {'var_name': var}
+		If it is a list, the name of each item is first cross-referenced with *glob*, and if not present, the object's *name* attribute is attempted.
 	"""	
 	if dir_name == None:
-		 dir_name = time.strftime("%Y%m%d_%H%M%S")
+		 dir_name = time.strftime("saved-%Y%m%d_%H%M%S")
+
+	if type(items) not in [dict, list]:
+		raise Exception('Items input not understood.')
 
 	if type(items) == list:
-		try:
-			items = {item.name:item for item in items}
-		except AttributeError:
-			print "One or more objects given has no name attribute and name not supplied."
-			return
-	elif type(items)!=dict:
-		raise Exception('Items input not understood.')
+		new_items = {}
+		for item in items:
+			if glob:
+				new_entry = {g:glob[g] for g in glob if glob[g]==item}
+				if len(new_entry):
+					new_items.update(new_entry)
+					continue
+			try:
+				new_entry = {item.name:item for item in items}
+				new_items.update(new_entry)
+			except AttributeError:
+				print "Cannot determine a name for one of the given objects, so it will not be saved."
 		
+		items = new_items
+			
 	if dir_name not in os.listdir('.') or not isdir(dir_name):
 		os.system('mkdir %s'%dir_name)
 	os.chdir(dir_name)

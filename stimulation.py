@@ -7,6 +7,7 @@ class StimSeries(TimeSeries):
 	def __init__(self, *args, **kwargs):
 		self.name = pytime.strftime("StimSeries-%Y%m%d_%H%M%S")
 		
+		uniform = kwargs.pop('uniform', True)
 		down_sample = kwargs.pop('down_sample', 64) #if not None, give n for resample
 				
 		super(StimSeries, self).__init__(*args, **kwargs)
@@ -22,6 +23,9 @@ class StimSeries(TimeSeries):
 				
 		self.convert_to_delta()
 		self.process_stim_times()
+
+		if uniform:
+			self.uniformize()
 
 	def convert_to_delta(self,min_sep_time=0.100,baseline_time=0.1):
 		self.start_idxs = []
@@ -66,7 +70,16 @@ class StimSeries(TimeSeries):
 		#correct for min duration
 		self.stim_idxs = [idxs for idxs,times in zip(self.stim_idxs,self.stim_times) if times[1]-times[0] >= min_duration]
 		self.stim_times = [times for times in self.stim_times if times[1]-times[0] >= min_duration]
+
+	def uniformize(self, ndigits=2):
+		durations = []
+		u_stim_times = []
+		u_stim_idxs = []
 		
-		self.avg_duration = np.average([t[1]-t[0] for t in self.stim_times])
-		self.ustim_idxs = [[s[0], s[0] + round(self.avg_duration*self.fs)] for s in self.stim_idxs]
-		self.ustim_times = [[self.time[i] for i in pulse] for pulse in self.ustim_idxs] 
+		durations = [round(s[1]-s[0],ndigits) for s in self.stim_times]
+		durations_idx = [self.fs*dur for dur in durations]
+		u_stim_idxs = [[i[0], i[0]+idx] for idx,i in zip(durations_idx,self.stim_idxs)]
+		u_stim_times = [[self.time[idx] for idx in pulse] for pulse in u_stim_idxs]
+
+		self.stim_times = u_stim_times
+		self.stim_idxs = u_stim_idxs
