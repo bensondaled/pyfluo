@@ -12,11 +12,12 @@ Contents:
    :maxdepth: 2
 
 .. automodule:: time_series
+	:members:
 
-.. autoclass:: TimeSeries
+.. automodule:: fluorescence
 	:members:
 	
-.. automodule:: io
+.. automodule:: pyfluo.io
 	:members:
 
 Indices and tables

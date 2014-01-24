@@ -12,7 +12,7 @@ def save(items=None, dir_name=None, glob=None):
 	"""Save any number of objects in the current workspace, one file per object.
 	
 	Args:
-		items (list/dict): the current workspace variables to be saved If type list, it is converted to a dictionary where the variables names are the name attribute of the object.
+		items (list/dict): the current workspace variables to be saved. If type list, it is converted to a dictionary where the variables names are the name attribute of the object.
 		dir_name (str): name of directory in which to save object files, defaults to a time string.
 		glob (dict): the built-in globals() dictionary in the scope from which save() is called.
 		
@@ -24,13 +24,13 @@ def save(items=None, dir_name=None, glob=None):
 		 dir_name = time.strftime("saved-%Y%m%d_%H%M%S")
 
 	if type(items) not in [dict, list]:
-		raise Exception('Items input not understood.')
+		items = [items]
 
 	if type(items) == list:
 		new_items = {}
 		for item in items:
 			if glob:
-				new_entry = {g:glob[g] for g in glob if glob[g]==item}
+				new_entry = {g:glob[g] for g in glob if glob[g]==item and item not in new_items.items()}
 				if len(new_entry):
 					new_items.update(new_entry)
 					continue

@@ -3,6 +3,9 @@ import copy
 
 class TSBase(object):
 	def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None):
+		"""Takes time range *inclusively* on both ends.
+		
+		"""
 		take_axis = len(np.shape(self.data))-1
 		
 		t1 = time_range[0] - pad[0]

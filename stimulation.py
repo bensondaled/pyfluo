@@ -6,7 +6,6 @@ import time as pytime
 class StimSeries(TimeSeries):
 	def __init__(self, *args, **kwargs):
 		self.name = pytime.strftime("StimSeries-%Y%m%d_%H%M%S")
-		
 		uniform = kwargs.pop('uniform', True)
 		down_sample = kwargs.pop('down_sample', 64) #if not None, give n for resample
 				
@@ -20,12 +19,13 @@ class StimSeries(TimeSeries):
 	
 		self.stim_idxs = None
 		self.stim_times = None
-				
+
 		self.convert_to_delta()
 		self.process_stim_times()
 
 		if uniform:
 			self.uniformize()
+			
 	def take(self, *args, **kwargs):
 		return super(StimSeries, self).take(*args, output_class=TimeSeries, **kwargs)
 	def convert_to_delta(self,min_sep_time=0.100,baseline_time=0.1):
@@ -72,7 +72,8 @@ class StimSeries(TimeSeries):
 		self.stim_idxs = [idxs for idxs,times in zip(self.stim_idxs,self.stim_times) if times[1]-times[0] >= min_duration]
 		self.stim_times = [times for times in self.stim_times if times[1]-times[0] >= min_duration]
 
-	def uniformize(self, ndigits=2):
+	def uniformize(self, ndigits=1):
+		#Important: with ndigits=1, any stimulation duration that's not a multiple of 100ms is rounded to one that is
 		durations = []
 		u_stim_times = []
 		u_stim_idxs = []

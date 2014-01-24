@@ -1649,9 +1649,9 @@ class TiffTag(object):
 
 		if not code in CUSTOM_TAGS:
 			if len(value) == 1:
-				if name!='image_description': #default mode of action (BD Nov2013)				
+				if name!='image_description': #default mode of action (modified by Ben Deverett Nov2013)				
 					value = value[0]
-				else: #special parsing required (BD Nov2013)
+				else: #special parsing required (modified by Ben Deverett Nov2013)
 					value = parse_scanimage(value)
 					
 		if dtype.endswith('s') and isinstance(value, bytes):
@@ -2149,7 +2149,7 @@ def read_micromanager_metadata(fh):
 
 	return results
 
-def parse_scanimage(image_description):
+def parse_scanimage(image_description): #add by Ben Deverett Nov2013
 	des = image_description[0]
 	fixed_string = ''
 	for ch in des:
