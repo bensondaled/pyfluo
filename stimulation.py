@@ -34,21 +34,21 @@ class StimSeries(TimeSeries):
 		
 		#assumes that signal begins at baseline
 		#min_sep_time argument is the minimum TIME between two different triggers in seconds
-		baseline_sample = baseline_time * self.fs
-		base = np.average(self.data[:baseline_sample])
-		base_std = np.average(self.data[:baseline_sample])
+		baseline_sample = int(baseline_time * self.fs)
+		base = np.average(self[:baseline_sample])
+		base_std = np.average(self[:baseline_sample])
 		thresh = base+3.*base_std
 		min_sep = min_sep_time * self.fs
 		up = False
 		idxs_down = 0
-		delta_sig = np.zeros(self.data.size)
-		for idx,d in enumerate(self.data):
+		delta_sig = np.zeros(len(self))
+		for idx,d in enumerate(self):
 			if not up and d>thresh:
 				up = True
 				delta_sig[idx] = 1.
 				self.start_idxs.append(idx)
 			elif up and d<thresh:
-				if idxs_down > min_sep or idx==len(self.data)-1:
+				if idxs_down > min_sep or idx==len(self)-1:
 					delta_sig[idx-idxs_down:idx+1] = 0.
 					self.end_idxs.append(idx-idxs_down)
 					up = False
@@ -59,7 +59,7 @@ class StimSeries(TimeSeries):
 			elif up:
 				delta_sig[idx] = 1.
 				idxs_down = 0
-		self.data = delta_sig
+		self.data = np.atleast_2d(delta_sig).astype(np.float64)
 		#self.data = map(lambda d: d>thresh,self.data)
 	def process_stim_times(self, min_duration = 0.1, roundd=True):
 		try:

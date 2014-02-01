@@ -1,7 +1,7 @@
 from pyfluo.ts_base import TSBase
 from pyfluo.tiff import WangLabScanImageTiff
+from pyfluo.time_series import TimeSeries
 from pyfluo.stimulation import StimSeries
-from pyfluo.time_series import TimeSeries, TimeSeriesCollection
 from pyfluo.roi import ROI, ROISet
 import matplotlib.animation as animation
 import numpy as np
@@ -200,7 +200,7 @@ class Movie(TSBase):
 			mov_data = movs[0].data
 		return Movie(data=mov_data, info=movs[0].info)
 		
-	def as_series(self):
+	def flatten(self, destination_class=StimSeries):
 		"""Flatten the values in *data* to a linear series.
 		
 		To be used when the movie-capturing apparatus was used to capture a signal whose natural shape is linear.
@@ -210,18 +210,7 @@ class Movie(TSBase):
 		"""
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
 		t = np.arange(len(flat_data))*self.pixel_duration
-		return Series1D(data=flat_data, time=t)		
-	def as_stim_series(self):
-		"""Flatten the values in *data* and convert to a StimSeries.
-		
-		To be used when the movie-capturing apparatus was used to capture the stimulation signal.
-
-		Returns:
-			A StimSeries object created from the flattened movie.
-		"""
-		flat_data = np.transpose(self.data,[2,0,1]).flatten()
-		t = np.arange(len(flat_data))*self.pixel_duration
-		return StimSeries(data=flat_data, time=t)
+		return destination_class(data=flat_data, time=t)		
 	
 	# ROI analysis
 	def select_roi(self, n=1, store=True):
@@ -262,27 +251,22 @@ class Movie(TSBase):
 			or
 			TimeSeriesCollection object (if multiple ROIs supplied).
 		"""
-		series = []
+		series = None
 		if rois == None:
 			rois = self.rois
-		if type(rois) == int:
-			rois = [self.rois[rois]]
-		elif type(rois) == ROI:
-			roiset = ROISet(rois)
+		if type(rois) not in (list, tuple, ROISet):
+			rois = [rois]
 		for roi in rois:
 			if type(roi)==int:
 				roi = self.rois[roi]
 			roi_stack = np.dstack([roi.mask for i in self])
 			masked = np.ma.masked_array(self.data, mask=roi_stack)
 			ser = method(method(masked,axis=0),axis=0)
-			ser = TimeSeries(ser, time=self.time)
-			series.append(ser)
-		series = TimeSeriesCollection(series)
-		
-		if len(series) == 1:
-			return series[0]
-		else:
-			return series
+			if series == None:
+				series = TimeSeries(data=ser, time=self.time)
+			else:
+				series.append_series(ser)
+		return series
 	
 	# Visualizing data
 	def z_project(self, method=np.mean, show=False, rois=False):

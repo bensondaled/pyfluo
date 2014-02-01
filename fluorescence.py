@@ -1,5 +1,5 @@
 import numpy as np
-from time_series import TimeSeries, TimeSeriesCollection
+from time_series import TimeSeries
 
 def compute_dff(series, mode='window', *args, **kwargs):
 	"""Compute the "delta-F over F" of a time series signal by calling one of multiple functions for this calculation.

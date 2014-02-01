@@ -14,8 +14,8 @@ class TSBase(object):
 			t_temp = t1
 			t1 = t2
 			t2 = t_temp
-		idx1 = self.time_to_idx(t1, mode=round) #np.floor if inclusion of time point is more important than proximity
-		idx2 = self.time_to_idx(t2, mode=round) #np.ceil if inclusion of time point is more important than proximity
+		idx1 = self.time_to_idx(t1, method=round) #np.floor if inclusion of time point is more important than proximity
+		idx2 = self.time_to_idx(t2, method=round) #np.ceil if inclusion of time point is more important than proximity
 		
 		#Safe:
 		#purpose: to avoid getting different length results despite identical time ranges, because of rounding errors
@@ -32,8 +32,8 @@ class TSBase(object):
 		if reset_time:	t = t - time_range[0]
 		
 		data = np.take(self.data, range(idx1,idx2+1), axis=take_axis, mode='clip')
-		if idx1<0:	data[:-idx1] = None
-		if idx2>len(self.time)-1:	data[-(idx2-(len(self.time)-1)):] = None
+		if idx1<0:	data[...,:-idx1] = None
+		if idx2>len(self.time)-1:	data[...,-(idx2-(len(self.time)-1)):] = None
 		
 		add_start=0
 		add_end=0
@@ -49,12 +49,85 @@ class TSBase(object):
 		if output_class==None:
 			output_class = self.__class__
 		return output_class(data=data, time=t, info=info)
-	def time_to_idx(self, t, mode=round):
+	def time_to_idx(self, t, method=round):
 		t = float(t)
 		time_step = t - self.time[0]
-		idx = mode(time_step*self.fs)
+		idx = method(time_step*self.fs)
 		return int(idx)
 	def copy(self):
 		"""Return a deep copy of this object.
 		"""
 		return copy.deepcopy(self)
+		
+	def resample(self, n, in_place=False):
+		"""Resample the time series object.
+
+		Args:
+			n (int): resampling interval
+			in_place: apply the resampling to *this* instance of the object
+
+		Returns:
+			A new time series object, resampled.
+		"""
+		new = self.copy()
+		new.data = self.data[...,::n]
+		new.time = self.time[::n]
+		if in_place:
+			self.data = new.data
+			self.time = new.time
+			self._update()
+		return new
+		
+	def _update(self):
+		if len(self) > 1:			
+			self.Ts = self.time[1] - self.time[0]
+			self.fs = 1/self.Ts
+
+			#The following should be implemented, however it was causing problems:
+			# if not all(round(self.time[i+1]-self.time[i],10) == round(self.Ts,10) for i in xrange(len(self.time)-1)):
+			# 	raise Exception("Time vector does not have a consistent sampling period to within 10 decimal places.")
+			
+			
+	# Special methods
+	
+	def __setitem__(self, idx, val):
+		self.data[...,idx] = val
+	def __add__(self, other):
+		self.data = self.data + other
+		return self
+	def __radd__(self, other):
+		self.data = self.data + other
+		return self
+	def __sub__(self, other):
+		self.data = self.data - other
+		return self
+	def __rsub__(self, other):
+		self.data = self.data - other
+		return self
+	def __mul__(self, other):
+		self.data = self.data * other
+		return self
+	def __rmul__(self, other):
+		self.data = self.data * other
+		return self
+	def __div__(self, other):
+		self.data = self.data / other
+		return self
+	def __rdiv__(self, other):
+		self.data = self.data / other
+		return self
+	def __pow__(self, other):
+		self.data = self.data ** other
+		return self
+	def __neg__(self):
+		self.data = -self.data
+		return self
+	def __abs__(self):
+		self.data = np.abs(self.data)
+		return self
+	def __int__(self):
+		self.data = self.data.astype(int)
+		return self
+	def __float__(self):
+		self.data = self.data.astype(float)
+		return self
