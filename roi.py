@@ -6,7 +6,22 @@ import pickle
 import time as pytime
 
 class ROISet(object):
+	"""An object that holds multiple *ROI* (region of interest) objects as a set.
+	
+	Attributes:
+		shape (tuple): pixel dimensions (y,x) of the ROI objects in this set.
+		
+		rois (list): list of ROI objects.
+		
+		name (str): a unique name generated for the object when instantiated
+		
+	"""
 	def __init__(self, rois=None):
+		"""Initialize a ROISet object.
+		
+		Args:
+			rois (list): list of ROI objects.
+		"""
 		self.name = pytime.strftime("ROISet-%Y%m%d_%H%M%S")
 		self.shape = None
 		
@@ -21,6 +36,11 @@ class ROISet(object):
 				raise Exception('Provided ROIs have inconsistent shapes.')
 				
 	def add(self, roi):
+		"""Add a ROI to the ROISet.
+		
+		Args:
+			roi (pyfluo.ROI): ROI to be added.
+		"""
 		if not self.shape:
 			self.rois.append(roi)
 			self.shape = roi.shape
@@ -29,6 +49,11 @@ class ROISet(object):
 		elif roi.shape != self.shape:
 			print "ROI not added: shape is inconsistent with ROISet."
 	def remove(self, idxs=None):
+		"""Remove one or multiple ROIs from the ROISet.
+		
+		Args:
+			idxs (int / list): ROI index, or list thereof, to be removed. If None, clears all ROIs.
+		"""
 		if idxs==None:
 			idxs=range(len(self))
 		for roi in idxs:
@@ -36,6 +61,12 @@ class ROISet(object):
 		self.rois = [r for r in self.rois if r]
 		
 	def show(self, mode='mask', labels=True):
+		"""Display all the ROIs of the ROISet.
+		
+		Args:
+			mode ('mask' / 'pts'): specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points (those originally selected).
+			labels (bool): display labels over ROIs.
+		"""
 		if len(self):
 			if mode == 'mask':
 				data = np.sum(np.dstack([r.mask for r in self]),axis=2)
@@ -61,6 +92,20 @@ class ROISet(object):
 		return len(self.rois)
 
 class ROI(object):
+	"""An object that represents a region of interest (ROI) within a 2D matrix.
+	
+	Attributes:
+		shape (tuple): pixel dimensions (y,x) of the ROI.
+		
+		mask (np.ndarray): 2D boolean matrix where True signifies a pixel within the ROI.
+		
+		pts (np.ndarray): a list storing pairs of values, each corresponding to a point (y,x) selected by the user defining this ROI.
+		
+		center (2-item tuple): the pixel coordinates (y,x) of the geometrical center of the ROI.
+		
+		name (str): a unique name generated for the object when instantiated
+		
+	"""
 	def __init__(self, shape, pts):
 		self.name = pytime.strftime("ROI-%Y%m%d_%H%M%S")
 		self.shape = shape

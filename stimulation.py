@@ -4,7 +4,34 @@ import pickle
 import time as pytime
 
 class StimSeries(TimeSeries):
+	"""A time series specialized for storing binary stimulation data.
+	
+	Essentially, this class takes a high-density stimulation signal and simplifies it by downsampling, binarizing, and uniformizing stimulation events.
+	
+	Importantly, this class assumes that all stimulations within the provided data were intended to be of equal duration.
+	
+	Attributes:
+		original_data (np.ndarray): the original, non-resampled, unprocessed stimulation data.
+		
+		raw_data (np.ndarray): the (possibly down-sampled) data in its raw form, before conversion to a binary signal.
+		
+		stim_idxs (list): a list of value pairs (start, end) indicating the indices of the time series data at which a stimulation started and ended.
+		
+		stim_times (list): a list of value pairs (start, end) indicating the time points at which a stimulation started and ended.
+		
+		name (str): a unique name generated for the object when instantiated
+		
+	"""
 	def __init__(self, *args, **kwargs):
+		"""Initialize a StimSeries object.
+		
+		Args:
+			down_sample (int): factor by which to down sample signal before processing. Defaults to 64, meaning that upon resampling, every 64th sample is taken. If None, does not down sample.
+			uniform (bool / int): makes stimulation durations uniform by rounding them to the nearest *uniform* digits. Start times of stimulation events are completely perserved, while end times are adjusted slightly to allow for easier behaviour during analysis. Defaults to True=1. Note that if *tunit*=='s', this corresponds to rounding to the nearest 100ms.
+		
+		(see TimeSeries.__init__ for complete signature)
+		
+		"""
 		self.name = pytime.strftime("StimSeries-%Y%m%d_%H%M%S")
 		uniform = kwargs.pop('uniform', True)
 		down_sample = kwargs.pop('down_sample', 64) #if not None, give n for resample
@@ -24,7 +51,7 @@ class StimSeries(TimeSeries):
 		self.process_stim_times()
 
 		if uniform:
-			self.uniformize()
+			self.uniformize(ndigits=uniform)
 			
 	def take(self, *args, **kwargs):
 		return super(StimSeries, self).take(*args, output_class=TimeSeries, **kwargs)

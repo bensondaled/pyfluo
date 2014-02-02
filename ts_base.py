@@ -77,16 +77,6 @@ class TSBase(object):
 			self.time = new.time
 			self._update()
 		return new
-		
-	def _update(self):
-		if len(self) > 1:			
-			self.Ts = self.time[1] - self.time[0]
-			self.fs = 1/self.Ts
-
-			#The following should be implemented, however it was causing problems:
-			# if not all(round(self.time[i+1]-self.time[i],10) == round(self.Ts,10) for i in xrange(len(self.time)-1)):
-			# 	raise Exception("Time vector does not have a consistent sampling period to within 10 decimal places.")
-			
 			
 	# Special methods
 	

@@ -29,7 +29,7 @@ class MultiChannelMovie(object):
 		"""Initialize a MultiChannelMovie object.
 		
 		Args:
-			raw (str or WangLabScanImageTiff or list thereof): list of movies.
+			raw (str / WangLabScanImageTiff / list thereof): list of movies.
 			skip (list): a two-item list specifying how many frames to skip from the start (first item) and end (second item) of each movie.
 		"""
 		self.name = pytime.strftime("MultiChannelMovie-%Y%m%d_%H%M%S")
@@ -50,26 +50,18 @@ class MultiChannelMovie(object):
 		pbar.finish()
 				
 		n_channels = tiffs[0].n_channels
-	
-		for ch in range(n_channels):	
-			data = None
-			info = []
+		if not all([i.n_channels==n_channels for i in tiffs]):
+			raise Exception('Channel number inconsistent among provided tiffs.')
 		
-			for item in tiffs:
-				if item.n_channels != n_channels:
-					raise Exception('Channel number inconsistent among provided tiffs.')
-				
+		for ch in range(n_channels):	
+			movie = None
+			for item in tiffs:				
 				chan = item[ch]
-				dat = chan['data']
-				info += (chan['info'])
-				if data == None:
-					data = dat
-				else:
-					if np.shape(dat)[:2] != np.shape(data)[:2]:
-						raise Exception('Movies are not of the same dimensions.')
-					data = np.append(data, dat, axis=2)	
-			mov = Movie(data=data, info=info, skip=skip)
-			self.movies.append(mov)
+				mov = Movie(data=chan['data'], info=chan['info'], skip=skip)
+				
+				if movie == None:	movie = mov
+				else:	movie.append(mov)
+			self.movies.append(movie)
 			
 	def get_channel(self, i):
 		return self.movies[i]
@@ -161,7 +153,9 @@ class Movie(TSBase):
 	# Public Methods
 	
 	# Modifying data
-	def append_movie(self, movies):
+	def append(self, movies):
+		"""Append another Movie object to this Movie.
+		"""
 		if type(movies) == Movie:
 			movies = [movies]
 		if type(movies) != list:
@@ -176,12 +170,14 @@ class Movie(TSBase):
 	def take(self, *args, **kwargs):
 		"""Extract a range of frames from the movie.
 		
+		BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
+		
 		Args:
 			time_range (list): the start and end times of the range desired.
 			pad (list): a list of 2 values specifying the padding to be inserted around specified time range. The first value is subtracted from the start time, and the second value is added to the end time.
 			reset_time (bool): set the first element of the resultant time series to time 0.
 			
-			If values in *time_range* lie outside the bounds of the time series, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as None. 
+			If values in *time_range* lie outside the bounds of the movie time, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as None. 
 			
 		Returns:
 			Movie between supplied time range
@@ -189,7 +185,7 @@ class Movie(TSBase):
 		try:
 			time_range = kwargs.pop('time_range')
 		except KeyError:
-			time_range = args.pop(0)
+			raise Exception('Time range not supplied for take().')
 				
 		if type(time_range[0]) != list:
 			time_range = [time_range]
@@ -204,9 +200,12 @@ class Movie(TSBase):
 		"""Flatten the values in *data* to a linear series.
 		
 		To be used when the movie-capturing apparatus was used to capture a signal whose natural shape is linear.
+		
+		Args:
+			destination_class (type): the class in which to store and return the flattened data. Ideal options are TimeSeries or StimSeries.
 
 		Returns:
-			A TimeSeries object, the flattened movie.
+			An object of type *destination_class*, the flattened movie.
 		"""
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
 		t = np.arange(len(flat_data))*self.pixel_duration
@@ -247,9 +246,7 @@ class Movie(TSBase):
 			method (def): the function by which to convert the data within an ROI to a single value.
 			
 		Returns:
-			TimeSeries object (if single ROI supplied)
-			or
-			TimeSeriesCollection object (if multiple ROIs supplied).
+			TimeSeries object, with multiple rows corresponding to multiple ROIs.
 		"""
 		series = None
 		if rois == None:
@@ -263,7 +260,7 @@ class Movie(TSBase):
 			masked = np.ma.masked_array(self.data, mask=roi_stack)
 			ser = method(method(masked,axis=0),axis=0)
 			if series == None:
-				series = TimeSeries(data=ser, time=self.time)
+				series = TimeSeries(data=ser.filled(np.nan), time=self.time)
 			else:
 				series.append_series(ser)
 		return series
@@ -291,7 +288,7 @@ class Movie(TSBase):
 		
 		Args:
 			loop (bool): repeat playback upon finishing.
-			fps (float): playback frames per second.
+			fps (float): playback rate in frames per second.
 			
 		"""
 		if fps==None:

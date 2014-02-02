@@ -18,6 +18,8 @@ def compute_dff(series, mode='window', *args, **kwargs):
 def dff_stim(seriess, stim=None, base_time=0.3):
 	"""Calculates delta-F over F using pre-stimulation baseline as F0.
 	
+	FUNCTION OUT OF DATE, LIKELY CONTAINS BUGS.
+	
 	Args:
 		seriess (pyfluo.TimeSeries): should be passed from *compute_dff*
 		stim (pyfluo.StimSeries): if mode is "stim," this argument represents the stimulation associated with *series*
@@ -29,10 +31,9 @@ def dff_stim(seriess, stim=None, base_time=0.3):
 	if stim==None:
 		raise Exception('DFF cannot be calculated using desired mode without stim_series.')
 		
-	if type(seriess) == TimeSeries:
-		seriess = [seriess]
 	dffs = []
-	for series in seriess:
+	for sidx in range(seriess.n_series):
+		series = seriess.get_series(sidx)
 		traces_aligned = series.take(stim.stim_times, pad=(base_time,base_time))
 		baselines = [np.mean(tr.take([-base_time,0.])) for tr in traces_aligned]
 		for tr,bl in zip(traces_aligned, baselines):
@@ -47,6 +48,8 @@ def dff_stim(seriess, stim=None, base_time=0.3):
 def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 	"""Calculates delta-F over F using a sliding window method.
 	
+	THIS SHOULD EVENTUALLY BE MODIFIED TO MORE EFFICIENTLY MAKE USE OF THE TIME SERIES MATRIX DATA, COMPUTING DFF IN A SINGLE PASS.
+	
 	Args:
 		seriess (pyfluo.TimeSeries): should be passed from *compute_dff*
 		tao0 (float): see Jia et al. 2010
@@ -55,7 +58,7 @@ def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 		noise_filter (bool): include the final noise filtering step of the algorithm
 		
 	Returns:
-		a TimeSeries containing the DFF signal (if *seriess* is a single TimeSeries), or a TimeSeriesCollection thereof (if *seriess* is a list of TimeSeries).
+		a TimeSeries containing the DFF signal.
 		
 	Notes:
 		Adapted from Jia et al. 2010 Nature Protocols
@@ -67,12 +70,11 @@ def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 	tao1t = tao1
 	tao2t = tao2
 	
-	if type(seriess) == TimeSeries:
-		seriess = [seriess]
-	dffs = []
+	dffs = None
 	
-	for sidx,series in enumerate(seriess):
-			
+	for sidx in range(seriess.n_series):
+		series = seriess.get_series(sidx)	
+		
 		tao0 = tao0t * series.fs
 		tao1 = tao1t * series.fs
 		tao2 = tao2t * series.fs
@@ -129,12 +131,11 @@ def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 		else:
 			dff = r
 		
-		dffs.append(TimeSeries(data=dff, time=series.time))
+		if dffs == None:
+			dffs = TimeSeries(data=dff, time=series.time)
+		else:
+			dffs.append_series(dff)
 		
-	dffs = TimeSeriesCollection(dffs)
-		
-	if len(dffs) == 1:
-		dffs = dffs[0]
 	return dffs
 
 if __name__ == "__main__":	
