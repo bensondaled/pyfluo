@@ -3,13 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pyfluo's documentation!
-==================================
-
-Contents:
+Welcome to the documentation for **pyfluo**.
+=============================================
 
 .. toctree::
    :maxdepth: 2
+
+   introduction
 
 .. automodule:: time_series
 	:members:
