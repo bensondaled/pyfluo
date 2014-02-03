@@ -5,6 +5,6 @@ bendeverett@gmail.com
 ===========================
 A python library for analyzing Ca fluorescence imaging.
 ===========================
-To install: navigate to PyFluo root directory and type:
+For all info, visit:
 
-python setup.py install
+http://bensondaled.github.io/pyfluo

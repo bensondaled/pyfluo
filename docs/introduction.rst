@@ -2,6 +2,12 @@ About this library
 =====================
 The pyfluo library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions. 
 
+Getting started with pyfluo
+------------------------
+#. Download the package archive `here`_.
+.. _here: https://github.com/bensondaled/pyfluo/archive/master.zip
+#. Extract the archive and navigate to it using terminal.
+
 A quick example
 -----------------
 Here is a quick-start example to get you moving with pyfluo.
