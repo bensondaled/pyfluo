@@ -45,7 +45,7 @@ def dff_stim(seriess, stim=None, base_time=0.3):
 		dffs = dffs[0]
 		
 	return dffs
-def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
+def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
 	"""Calculates delta-F over F using a sliding window method.
 	
 	THIS SHOULD EVENTUALLY BE MODIFIED TO MORE EFFICIENTLY MAKE USE OF THE TIME SERIES MATRIX DATA, COMPUTING DFF IN A SINGLE PASS.
@@ -63,7 +63,7 @@ def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 	Notes:
 		Adapted from Jia et al. 2010 Nature Protocols
 		
-		The main adjustment not specified in the algorithm is how I deal with the beginning and end of the signal. When we're too close to the borders of the signal that averages/baselines subject to noise, I allow the function to look in the other direction (forward if at beginning, backward if at end) to make the signal more robust. This is reflected by the variables "forward" and "backward" in the calculation of f_bar and f_not.
+		The main adjustment not specified in the algorithm is how I deal with the beginning and end of the signal. When we're too close to the borders of the signal such that averages/baselines are subject to noise, I allow the function to look in the other direction (forward if at beginning, backward if at end) to make the signal more robust. This is reflected by the variables "forward" and "backward" in the calculation of f_bar and f_not.
 	"""
 	
 	tao0t = tao0
@@ -71,7 +71,7 @@ def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 	tao2t = tao2
 	
 	dffs = None
-	
+		
 	for sidx in range(seriess.n_series):
 		series = seriess.get_series(sidx)	
 		
@@ -88,12 +88,12 @@ def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=True):
 				i1=0
 			i2 = int(idx+round(tao1/2.)) + forward
 			backward=0
-			if i2>=len(series.data):
-				backward=i2-len(series.data)
+			if i2>=len(series):
+				backward=i2-len(series)
 				i2=len(series.data)-1
-			integ = np.take( series.data, range(i1-backward,i2+1))	
-			integ = np.sum(integ)
-			f_bar[idx] = ( 1/tao1 * integ )
+			integ = np.take( series.data, range(i1-backward,i2+1))
+			integ = np.mean(integ)
+			f_bar[idx] = ( integ )
 		
 		f_not = np.zeros(len(series))
 		for idx in range(len(f_not)):

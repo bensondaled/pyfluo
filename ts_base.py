@@ -83,41 +83,54 @@ class TSBase(object):
 	def __setitem__(self, idx, val):
 		self.data[...,idx] = val
 	def __add__(self, other):
-		self.data = self.data + other
-		return self
+		new = self.copy()
+		new.data = new.data + other
+		return new
 	def __radd__(self, other):
-		self.data = self.data + other
-		return self
+		new = self.copy()
+		new.data = new.data + other
+		return new
 	def __sub__(self, other):
-		self.data = self.data - other
-		return self
+		new = self.copy()
+		new.data = new.data - other
+		return new
 	def __rsub__(self, other):
-		self.data = self.data - other
-		return self
+		new = self.copy()
+		new.data = new.data - other
+		return new
 	def __mul__(self, other):
-		self.data = self.data * other
-		return self
+		new = self.copy()
+		new.data = new.data * other
+		return new
 	def __rmul__(self, other):
-		self.data = self.data * other
-		return self
+		new = self.copy()
+		new.data = new.data * other
+		return new
 	def __div__(self, other):
-		self.data = self.data / other
-		return self
+		new = self.copy()
+		new.data = new.data / other
+		return new
 	def __rdiv__(self, other):
-		self.data = self.data / other
-		return self
+		new = self.copy()
+		new.data = new.data / other
+		return new
 	def __pow__(self, other):
-		self.data = self.data ** other
-		return self
+		new = self.copy()
+		new.data = new.data ** other
+		return new
 	def __neg__(self):
-		self.data = -self.data
-		return self
+		new = self.copy()
+		new.data = -new.data
+		return new
 	def __abs__(self):
-		self.data = np.abs(self.data)
-		return self
+		new = self.copy()
+		new.data = np.abs(new.data)
+		return new
 	def __int__(self):
-		self.data = self.data.astype(int)
-		return self
+		new = self.copy()
+		new.data = new.data.astype(int)
+		return new
 	def __float__(self):
-		self.data = self.data.astype(float)
-		return self
+		new = self.copy()
+		new.data = new.data.astype(float)
+		return new

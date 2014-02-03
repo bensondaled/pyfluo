@@ -178,12 +178,11 @@ class TimeSeries(TSBase):
 		
 		self.data = np.insert(self.data,np.shape(self.data)[0],item,axis=0)
 		self._update()
-	def normalize(self, minn=0., maxx=1., in_place=False):
+	def normalize(self, minmax=(0., 1.), in_place=False):
 		"""Normalize the time series object.
 		
 		Args:
-			minn (float): desired post-normalizaton data minimum
-			maxx (float): desired post-normalizaton data maximum
+			minmax (2-item list): (desired post-normalizaton data minimum, maximum)
 			in_place: apply the normalization to *this* instance of the object
 			
 		Returns:
@@ -201,9 +200,11 @@ class TimeSeries(TSBase):
 					[0, 0.5, 1],
 					[0, 0.5, 1],	]
 		"""
+		newmin = minmax[0]
+		newmax = minmax[1]
 		omin = np.min(self.data, axis=1)
 		omax = np.max(self.data, axis=1)
-		newdata = np.array([(i-omin[idx])/(omax[idx]-omin[idx]) for idx,i in enumerate(self.data)])
+		newdata = (self.data-omin)/(omax-omin) * (newmax-newmin) + newmin
 		new = self.copy()
 		new.data = newdata
 		new.time = self.time
@@ -263,11 +264,11 @@ class TimeSeries(TSBase):
 			time_range = [time_range]
 		stims = TimeSeries(data=[self._take(st, pad=pad, reset_time=reset_time, **kwargs) for st in time_range], merge_method_time=merge_method_time, merge_method_data=merge_method_data)
 		return stims
-	def plot(self, stim_series=None, stacked=True, gap_fraction=0.15, use_idxs=False, normalize=False, show=True, **kwargs):
+	def plot(self, stim=None, stacked=True, gap_fraction=0.15, use_idxs=False, normalize=False, show=True, color=None, **kwargs):
 		"""Plot the time series.
 		
 		Args:
-			stim_series (pyfluo.StimSeries): stimulation to be plotted over the data.
+			stim (pyfluo.StimSeries): stimulation to be plotted over the data.
 			stacked (bool): for multiple rows of data, stack instead of overlaying.
 			gap_fraction (float): if stacked==True, specifies the spacing between curves as a fraction of the range of the lower curve.
 			use_idxs (bool): ignore time and instead use vector indices as x coordinate.
@@ -278,39 +279,44 @@ class TimeSeries(TSBase):
 		if use_idxs:	t = range(len(self.data))
 		else:	t = self.time
 			
-		if normalize:	d = self.normalize().data
+		if normalize:	d = self.normalize(normalize).data
 		else:	d = self.data
 		
 		ax = pl.gca()
 		series_ticks = []
-		colors = mpl_cm.jet(np.linspace(0, 1, self.n_series))
-				
-		last_max = 0.
-		for idx,series in enumerate(d):
-			data = np.ma.masked_array(series,np.isnan(series))
-			smin = np.ma.min(data)
-			data = data-smin + stacked*last_max
-			if stacked:	series_ticks.append(np.average(data))
-			else:	series_ticks.append(data[-1])
-			
-			ax.plot(t, data.filled(np.nan), color=colors[idx], **kwargs)
-			
-			if stim_series and stacked:
-				stim_data = stim_series.data*(np.max(data)-np.min(data)) + np.min(data)
-				ax.plot(stim_series.time, stim_data, color='black', ls='dashed')
-				
-			last_max = np.ma.max(data) + stacked*gap_fraction*(np.ma.max(data) - np.ma.min(data))
-			
-		if stim_series and not stacked:
-			stim_data = stim_series.data*np.max(data)
-			ax.plot(stim_series.time, stim_data, color='black', ls='dashed')
+		if color==None:	colors = mpl_cm.jet(np.linspace(0, 1, self.n_series))
+		else: colors = [color for i in range(self.n_series)]
 		
-		pl.xlabel('Time (%s)'%self.tunit)
-		if self.n_series>1:
+		if self.n_series==1:
+			data = d[0]
+			ax.plot(t, data, color=colors[0], **kwargs)
+			if stim:
+				stim.plot(normalize=(np.min(data), np.max(data)), color='black', ls='dotted')
+		elif self.n_series>1:		
+			last_max = 0.
+			for idx,series in enumerate(d):
+				data = np.ma.masked_array(series,np.isnan(series))
+				smin = np.ma.min(data)
+				data = data-smin + stacked*last_max
+				if stacked:	series_ticks.append(np.average(data))
+				else:	series_ticks.append(data[-1])
+			
+				ax.plot(t, data.filled(np.nan), color=colors[idx], **kwargs)
+			
+				if stim and stacked:
+					stim.plot(normalize=(np.min(data), np.max(data)), color='black', ls='dotted')
+				
+				last_max = np.ma.max(data) + stacked*gap_fraction*(np.ma.max(data) - np.ma.min(data))
+			
+			if stim and not stacked:
+				stim.plot(normalize=(0., np.max(data)), color='black', ls='dashed')
+		
 			ax2 = ax.twinx()
 			pl.yticks(series_ticks, [str(i) for i in range(len(series_ticks))], weight='bold')
 			[l.set_color(col) for col,l in zip(colors,ax2.get_yticklabels())]
 			pl.ylim(ax.get_ylim())
+			
+		pl.xlabel('Time (%s)'%self.tunit)	
 		if show:	pl.show()
 		
 	# Special Methods

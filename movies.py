@@ -196,7 +196,7 @@ class Movie(TSBase):
 			mov_data = movs[0].data
 		return Movie(data=mov_data, info=movs[0].info)
 		
-	def flatten(self, destination_class=StimSeries):
+	def flatten(self, destination_class=StimSeries, **kwargs):
 		"""Flatten the values in *data* to a linear series.
 		
 		To be used when the movie-capturing apparatus was used to capture a signal whose natural shape is linear.
@@ -209,7 +209,7 @@ class Movie(TSBase):
 		"""
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
 		t = np.arange(len(flat_data))*self.pixel_duration
-		return destination_class(data=flat_data, time=t)		
+		return destination_class(data=flat_data, time=t, **kwargs)		
 	
 	# ROI analysis
 	def select_roi(self, n=1, store=True):

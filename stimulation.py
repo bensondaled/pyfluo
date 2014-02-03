@@ -19,6 +19,10 @@ class StimSeries(TimeSeries):
 		
 		stim_times (list): a list of value pairs (start, end) indicating the time points at which a stimulation started and ended.
 		
+		stim_durations (list): of list of values indicating the duration of each stimulus.
+		
+		example (TimeSeries): an example stimulation created by taking the mean of all stimulations.
+		
 		name (str): a unique name generated for the object when instantiated
 		
 	"""
@@ -38,7 +42,7 @@ class StimSeries(TimeSeries):
 				
 		super(StimSeries, self).__init__(*args, **kwargs)
 
-		self.original_data = self.data
+		#self.original_data = self.data #takes a lot of memory
 
 		if down_sample:
 			self.resample(down_sample, in_place=True)
@@ -52,6 +56,9 @@ class StimSeries(TimeSeries):
 
 		if uniform:
 			self.uniformize(ndigits=uniform)
+		
+		self.stim_durations =	[i[1]-i[0] for i in self.stim_times]
+		self.example = self.take(self.stim_times, pad=(0.1,0.1)).merge()
 			
 	def take(self, *args, **kwargs):
 		return super(StimSeries, self).take(*args, output_class=TimeSeries, **kwargs)
@@ -99,8 +106,8 @@ class StimSeries(TimeSeries):
 		self.stim_idxs = [idxs for idxs,times in zip(self.stim_idxs,self.stim_times) if times[1]-times[0] >= min_duration]
 		self.stim_times = [times for times in self.stim_times if times[1]-times[0] >= min_duration]
 
-	def uniformize(self, ndigits=1):
-		#Important: with ndigits=1, any stimulation duration that's not a multiple of 100ms is rounded to one that is
+	def uniformize(self, ndigits=2):
+		#Important: with, for example, ndigits=1, any stimulation duration that's not a multiple of 100ms is rounded to one that is
 		durations = []
 		u_stim_times = []
 		u_stim_idxs = []
