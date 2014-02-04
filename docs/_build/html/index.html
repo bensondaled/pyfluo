@@ -1,0 +1,393 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to the documentation for pyfluo. &mdash; pyfluo 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pyfluo 1.0 documentation" href="#" />
+    <link rel="next" title="About this library" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="About this library"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">pyfluo 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-the-documentation-for-pyfluo">
+<h1>Welcome to the documentation for <strong>pyfluo</strong>.<a class="headerlink" href="#welcome-to-the-documentation-for-pyfluo" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">About this library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html#a-quick-example">A quick example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#import-the-basics">Import the basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#load-a-tiff">Load a tiff</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<span class="target" id="module-time_series"></span><dl class="class">
+<dt id="time_series.TimeSeries">
+<em class="property">class </em><tt class="descclassname">time_series.</tt><tt class="descname">TimeSeries</tt><big>(</big><em>data</em>, <em>time=None</em>, <em>info=None</em>, <em>tunit='s'</em>, <em>merge_method_data=&lt;function mean at 0x102f7b488&gt;</em>, <em>merge_method_time=&lt;function mean at 0x102f7b488&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>A data structure that holds a one or more one-dimensional arrays of values, associated with a single time vector.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd><p class="first">data (np.ndarray): the data array of the time series.</p>
+<p>time (np.ndarray): the time array of the time series.</p>
+<p>info (np.ndarray): an array of meta-information associated with time points.</p>
+<p>n_series (int): the number of time series stored in the object (i.e. the number of rows in <em>data</em>).</p>
+<p>Ts (float): the sampling period of the time series.</p>
+<p>fs (float): the sampling frequency of the time series.</p>
+<p>tunit (str): the unit of measurement in which the object&#8217;s time is stored.</p>
+<p class="last">name (str): a unique name generated for the object when instantiated</p>
+</dd>
+</dl>
+<p>Because this object can store multiple data arrays as separate <a href="#id1"><span class="problematic" id="id2">``</span></a>series&#8217;&#8216;, most of its methods perform operations in a parallel manner on each series. Unless otherwise noted, this is the default action of the class methods.</p>
+<dl class="method">
+<dt id="time_series.TimeSeries.append">
+<tt class="descname">append</tt><big>(</big><em>item</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append data to the series.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>item (int / float / long / np.ndarray / list):
+If a single value is supplied, the value is added to the end of the data. In the case of multiple data rows, it is added to the end of each series.
+If a list or array is supplied, it must be the same length as the number of series (i.e. rows of data) in the object&#8217;s data. In this case, the first item in the list is added to the end of the first series, the second to the second, and so on.</dd>
+</dl>
+<p>Examples:</p>
+<p>(1)
+data =  [       [1, 2, 3],</p>
+<blockquote>
+<div>[4, 5, 6],
+[7, 8, 9]       ]</div></blockquote>
+<p>following .append(42) :</p>
+<dl class="docutils">
+<dt>data =  [       [1, 2, 3, 42],</dt>
+<dd>[4, 5, 6, 42],
+[7, 8, 9, 42]   ]</dd>
+</dl>
+<p>(2)
+data =  [       [1, 2],</p>
+<blockquote>
+<div>[3, 4],
+[5, 6]  ]</div></blockquote>
+<p>following .append([66, 77, 88]) :</p>
+<dl class="docutils">
+<dt>data =  [       [1, 2, 66],</dt>
+<dd>[3, 4, 77],
+[5, 6, 88]      ]</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.append_series">
+<tt class="descname">append_series</tt><big>(</big><em>item</em>, <em>merge_method_time=&lt;function mean at 0x102f7b488&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.append_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append a series, or row of data, to the object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>item (np.ndarray / list / TimeSeries): array of data to be added as a new row, or series. This must be the same length as the number of time points (i.e. columns) in the object&#8217;s data.
+merge_method_time (def): function to be used to merge time vectors.</dd>
+</dl>
+<p>Note: if a TimeSeries object is supplied, the time vectors of the current and added series will be averaged.</p>
+<p>Example:</p>
+<dl class="docutils">
+<dt>data =  [       [1, 2, 3],</dt>
+<dd>[4, 5, 6],
+[7, 8, 9]       ]</dd>
+</dl>
+<p>following .append([10, 11, 12]) :</p>
+<dl class="docutils">
+<dt>data =  [       [1, 2, 3],</dt>
+<dd>[4, 5, 6],
+[7, 8, 9],      
+[10, 11, 12]    ]</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.get_series">
+<tt class="descname">get_series</tt><big>(</big><em>idx</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.get_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get one row of data (one series).</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>idx (int): the index of the desired series (i.e. row of data).</dd>
+</dl>
+<p>Note that this is equivalent to the simpler string-based indexing.
+For example, the following two commands are equivalent:
+ts.get_series(1)
+ts[&#8216;1&#8217;]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.merge">
+<tt class="descname">merge</tt><big>(</big><em>method=&lt;function mean at 0x102f7b488&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the series (data rows) of the object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>method (def): the function with which to perform the merge.</dd>
+<dt>Returns:</dt>
+<dd>A new time series object with just one row of data, the merged result.</dd>
+</dl>
+<p>Example:</p>
+<dl class="docutils">
+<dt>data =  [       [1, 3, 5],</dt>
+<dd>[2, 4, 6],
+[9, 2, 7]       ]</dd>
+</dl>
+<p>following .merge(method=np.mean):</p>
+<p>data =  [ [4, 3, 6]     ]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.normalize">
+<tt class="descname">normalize</tt><big>(</big><em>minmax=(0.0</em>, <em>1.0)</em>, <em>in_place=False</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize the time series object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>minmax (2-item list): (desired post-normalizaton data minimum, maximum)
+in_place: apply the normalization to <em>this</em> instance of the object</dd>
+<dt>Returns:</dt>
+<dd>A new time series object, normalized.</dd>
+</dl>
+<p>Example:</p>
+<dl class="docutils">
+<dt>data =  [       [1, 2, 3],</dt>
+<dd>[4, 5, 6],
+[7, 8, 9]       ]</dd>
+</dl>
+<p>following .normalize():</p>
+<dl class="docutils">
+<dt>data =  [       [0, 0.5, 1],</dt>
+<dd>[0, 0.5, 1],
+[0, 0.5, 1],    ]</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.plot">
+<tt class="descname">plot</tt><big>(</big><em>stim=None</em>, <em>stacked=True</em>, <em>gap_fraction=0.15</em>, <em>use_idxs=False</em>, <em>normalize=False</em>, <em>show=True</em>, <em>color=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the time series.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>stim (pyfluo.StimSeries): stimulation to be plotted over the data.
+stacked (bool): for multiple rows of data, stack instead of overlaying.
+gap_fraction (float): if stacked==True, specifies the spacing between curves as a fraction of the range of the lower curve.
+use_idxs (bool): ignore time and instead use vector indices as x coordinate.
+normalize (bool): normalize the data before plotting.
+show (bool): show the plot immediately.
+<a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs: any arguments accepted by <em>matplotlib.plot</em></dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.take">
+<tt class="descname">take</tt><big>(</big><em>time_range</em>, <em>pad=(0.0</em>, <em>0.0)</em>, <em>reset_time=True</em>, <em>merge_method_time=&lt;function mean at 0x102f7b488&gt;</em>, <em>merge_method_data=&lt;function mean at 0x102f7b488&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.take" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract a range of data values using time indices.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>time_range (2-item list): the start and end times of the range desired.
+pad (2-item list): an optional extra amount of time with which to expand the specified time range on either end. The first value is subtracted from the start time, and the second value is added to the end time.
+reset_time (bool): shift the time vector of the resultant time series, such that time zero corresponds to the data originally located at time_range[0].
+merge_method_time (def): specifies how to merge time when multiple time ranges are extracted from multiple data series. See note below for details.
+merge_method_data (def): specifies how to merge data when multiple time ranges are extracted from multiple data series. See note below for details.</dd>
+<dt>Returns:</dt>
+<dd>TimeSeries between supplied time range.</dd>
+<dt>Notes:</dt>
+<dd><p class="first">The <em>time_range</em> argument can be either a pair of values (start_time, end_time), or a list of such pairs. In the latter case, this method is applied to each pair of times, and the result is returned in a collection.</p>
+<p>If values in <em>time_range</em> lie outside the bounds of the time series, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as None.</p>
+<p class="last">Concerning merging of data: this method first extracts the desired time range/s from each row individually. If the original object contains multiple rows of data, there are two different results that should be expected: 
+(1)  If only one time range is supplied, the resulting TimeSeries then contains multiple rows, each corresponding to the rows of the original object, as would be expected.
+(2) If multiple time ranges are supplied, this method extracts a set of time ranges from each of the objects&#8217; series. Since TimeSeries objects are only capable of holding two-dimensional data, creation of the resulting TimeSeries will, by action of the constructor, merge this data. Because the multiple rows of the original series likely had individual significance, the default behaviour for this merge is to preserve the separation of the series. 
+For example, consider a TimeSeries with 3 rows of data corresponding to the fluorescence traces of three regions of interest. One may use this <em>take</em> method to align multiple points of stimulation (say, 5) in each of these traces all at once. In the resulting TimeSeries, there will then be just 3 rows of data, corresponding to the 3 regions of interest. These will consist of the merged data from the 5 stimulations. 
+The merge is performed by the function supplied in the <em>merge_method</em> argument. Importantly, this merge can be over-riden, as described in the class constructor, by supplying merge_method=None. In that case, all time segments from all data series are concatenated into rows and set as the data of the resulting TimeSeries.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-fluorescence"></span><dl class="function">
+<dt id="fluorescence.compute_dff">
+<tt class="descclassname">fluorescence.</tt><tt class="descname">compute_dff</tt><big>(</big><em>series</em>, <em>mode='window'</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#fluorescence.compute_dff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the &#8220;delta-F over F&#8221; of a time series signal by calling one of multiple functions for this calculation.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>series (pyfluo.TimeSeries or list thereof): signal/s
+mode (str): &#8220;stim&#8221; / &#8220;window&#8221;</dd>
+<dt>Returns:</dt>
+<dd>The return value of the function called.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="fluorescence.dff_stim">
+<tt class="descclassname">fluorescence.</tt><tt class="descname">dff_stim</tt><big>(</big><em>seriess</em>, <em>stim=None</em>, <em>base_time=0.3</em><big>)</big><a class="headerlink" href="#fluorescence.dff_stim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates delta-F over F using pre-stimulation baseline as F0.</p>
+<p>FUNCTION OUT OF DATE, LIKELY CONTAINS BUGS.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>seriess (pyfluo.TimeSeries): should be passed from <em>compute_dff</em>
+stim (pyfluo.StimSeries): if mode is &#8220;stim,&#8221; this argument represents the stimulation associated with <em>series</em>
+base_time (float): if mode is &#8220;stim,&#8221; this argument represents the time before stimulation to be averaged as a base line F0.</dd>
+<dt>Returns:</dt>
+<dd>a TimeSeriesCollection of DFF signals, one per stimulation in <em>stim</em> (if <em>series</em> is a single TimeSeries), or a list thereof (if <em>series</em> is a list of TimeSeries).</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="fluorescence.dff_window">
+<tt class="descclassname">fluorescence.</tt><tt class="descname">dff_window</tt><big>(</big><em>seriess</em>, <em>tao0=0.2</em>, <em>tao1=0.75</em>, <em>tao2=3.0</em>, <em>noise_filter=False</em><big>)</big><a class="headerlink" href="#fluorescence.dff_window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates delta-F over F using a sliding window method.</p>
+<p>THIS SHOULD EVENTUALLY BE MODIFIED TO MORE EFFICIENTLY MAKE USE OF THE TIME SERIES MATRIX DATA, COMPUTING DFF IN A SINGLE PASS.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>seriess (pyfluo.TimeSeries): should be passed from <em>compute_dff</em>
+tao0 (float): see Jia et al. 2010
+tao1 (float): see Jia et al. 2010
+tao2 (float): see Jia et al. 2010
+noise_filter (bool): include the final noise filtering step of the algorithm</dd>
+<dt>Returns:</dt>
+<dd>a TimeSeries containing the DFF signal.</dd>
+<dt>Notes:</dt>
+<dd><p class="first">Adapted from Jia et al. 2010 Nature Protocols</p>
+<p class="last">The main adjustment not specified in the algorithm is how I deal with the beginning and end of the signal. When we&#8217;re too close to the borders of the signal such that averages/baselines are subject to noise, I allow the function to look in the other direction (forward if at beginning, backward if at end) to make the signal more robust. This is reflected by the variables &#8220;forward&#8221; and &#8220;backward&#8221; in the calculation of f_bar and f_not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-pyfluo.io"></span><dl class="function">
+<dt id="pyfluo.io.load">
+<tt class="descclassname">pyfluo.io.</tt><tt class="descname">load</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#pyfluo.io.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load previously saved object/s.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>path (str): path to a file or directory.</dd>
+<dt>Notes:</dt>
+<dd><p class="first">If path is to a file, loads the object saved in that file.
+If path is to a directory, loads all objects saved in that directory.</p>
+<p class="last">When used from a script, this function is best used as follows::
+globals().update(load(path))</p>
+</dd>
+<dt>Returns:</dt>
+<dd>Dictionary of loaded objects, as {name: obj ...}</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyfluo.io.save">
+<tt class="descclassname">pyfluo.io.</tt><tt class="descname">save</tt><big>(</big><em>items=None</em>, <em>dir_name=None</em>, <em>glob=None</em><big>)</big><a class="headerlink" href="#pyfluo.io.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save any number of objects in the current workspace, one file per object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>items (list/dict): the current workspace variables to be saved. If type list, it is converted to a dictionary where the variables names are the name attribute of the object.
+dir_name (str): name of directory in which to save object files, defaults to a time string.
+glob (dict): the built-in globals() dictionary in the scope from which save() is called.</dd>
+<dt>Notes:</dt>
+<dd>If the <em>items</em> argument is a dict, it should be in the form {&#8216;var_name&#8217;: var}
+If it is a list, the name of each item is first cross-referenced with <em>glob</em>, and if not present, the object&#8217;s <em>name</em> attribute is attempted.</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to the documentation for <strong>pyfluo</strong>.</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="next chapter">About this library</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="About this library"
+             >next</a> |</li>
+        <li><a href="#">pyfluo 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Ben Deverett.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>
