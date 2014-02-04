@@ -2,6 +2,12 @@ About this library
 =====================
 The pyfluo library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions. 
 
+Installation
+-------------
+#. Download the project.
+#. Navigate to the root directory.
+#. Run ``python setup.py install``
+
 A quick example
 -----------------
 Here is a quick-start example to get you moving with pyfluo.
@@ -50,24 +56,3 @@ Here is a quick-start example to get you moving with pyfluo.
 	pl.savefig('dff_aligned.png')
 	# and the data
 	save([dff, stim], 'my_new_data', globals())
-
-
-Import the basics
--------------------
-At the start of each project, you will want to import a number of features.
-
-``from pyfluo.movies import MultiChannelMovie``
-
-Load a tiff
-----------------
-
-
-Lists can be unnumbered like:
-
- * Item Foo
- * Item Bar
-
-Or automatically numbered:
-
- #. Item 1
- #. Item 2

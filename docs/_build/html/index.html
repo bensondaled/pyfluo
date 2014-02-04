@@ -52,8 +52,8 @@
 <h1>Welcome to the documentation for <strong>pyfluo</strong>.<a class="headerlink" href="#welcome-to-the-documentation-for-pyfluo" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="introduction.html">About this library</a></li>
-<li class="toctree-l1"><a class="reference internal" href="introduction.html#a-quick-example">A quick example</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">About this library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#a-quick-example">A quick example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#import-the-basics">Import the basics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#load-a-tiff">Load a tiff</a></li>
 </ul>
@@ -62,7 +62,7 @@
 </div>
 <span class="target" id="module-time_series"></span><dl class="class">
 <dt id="time_series.TimeSeries">
-<em class="property">class </em><tt class="descclassname">time_series.</tt><tt class="descname">TimeSeries</tt><big>(</big><em>data</em>, <em>time=None</em>, <em>info=None</em>, <em>tunit='s'</em>, <em>merge_method_data=&lt;function mean at 0x102f7b488&gt;</em>, <em>merge_method_time=&lt;function mean at 0x102f7b488&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">time_series.</tt><tt class="descname">TimeSeries</tt><big>(</big><em>data</em>, <em>time=None</em>, <em>info=None</em>, <em>tunit='s'</em>, <em>merge_method_data=&lt;function mean at 0x102e15500&gt;</em>, <em>merge_method_time=&lt;function mean at 0x102e15500&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries" title="Permalink to this definition">¶</a></dt>
 <dd><p>A data structure that holds a one or more one-dimensional arrays of values, associated with a single time vector.</p>
 <dl class="docutils">
 <dt>Attributes:</dt>
@@ -114,7 +114,7 @@ data =  [       [1, 2],</p>
 
 <dl class="method">
 <dt id="time_series.TimeSeries.append_series">
-<tt class="descname">append_series</tt><big>(</big><em>item</em>, <em>merge_method_time=&lt;function mean at 0x102f7b488&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.append_series" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">append_series</tt><big>(</big><em>item</em>, <em>merge_method_time=&lt;function mean at 0x102e15500&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.append_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Append a series, or row of data, to the object.</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -153,7 +153,7 @@ ts[&#8216;1&#8217;]</p>
 
 <dl class="method">
 <dt id="time_series.TimeSeries.merge">
-<tt class="descname">merge</tt><big>(</big><em>method=&lt;function mean at 0x102f7b488&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.merge" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">merge</tt><big>(</big><em>method=&lt;function mean at 0x102e15500&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.merge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Merge the series (data rows) of the object.</p>
 <dl class="docutils">
 <dt>Args:</dt>
@@ -214,7 +214,7 @@ show (bool): show the plot immediately.
 
 <dl class="method">
 <dt id="time_series.TimeSeries.take">
-<tt class="descname">take</tt><big>(</big><em>time_range</em>, <em>pad=(0.0</em>, <em>0.0)</em>, <em>reset_time=True</em>, <em>merge_method_time=&lt;function mean at 0x102f7b488&gt;</em>, <em>merge_method_data=&lt;function mean at 0x102f7b488&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.take" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">take</tt><big>(</big><em>time_range</em>, <em>pad=(0.0</em>, <em>0.0)</em>, <em>reset_time=True</em>, <em>merge_method_time=&lt;function mean at 0x102e15500&gt;</em>, <em>merge_method_data=&lt;function mean at 0x102e15500&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.take" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract a range of data values using time indices.</p>
 <dl class="docutils">
 <dt>Args:</dt>
