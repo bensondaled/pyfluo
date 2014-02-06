@@ -1,24 +1,19 @@
-.. pyfluo documentation master file, created by
-   sphinx-quickstart on Wed Jan  1 21:09:02 2014.
+.. . documentation master file, created by
+   sphinx-quickstart on Thu Feb  6 15:59:24 2014.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the documentation for **pyfluo**.
-=============================================
+Welcome to .'s documentation!
+=============================
+
+Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
-   introduction
+   pyfluo
+   setup
 
-.. automodule:: time_series
-	:members:
-
-.. automodule:: fluorescence
-	:members:
-	
-.. automodule:: pyfluo.io
-	:members:
 
 Indices and tables
 ==================
