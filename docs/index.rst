@@ -5,7 +5,7 @@ Welcome to the documentation for **pyfluo**.
 .. toctree::
    :maxdepth: 4
 	
-	introduction
+   introduction
 	
    pyfluo
    setup
