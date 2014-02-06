@@ -228,7 +228,7 @@ class Movie(TSBase):
 		for q in range(n):
 			zp = self.z_project(show=True, rois=True)
 			roi = None
-			pts = pl.ginput(0)
+			pts = pl.ginput(0, timeout=0)
 			if pts:
 				roi = ROI(np.shape(zp), pts)
 				if store:
