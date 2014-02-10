@@ -1,10 +1,12 @@
+.. _github_link link: https://github.com/bensondaled/pyfluo/releases
+
 About this library
 =====================
 The pyfluo library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions. 
 
 Installation
 -------------
-#. Download the project.
+#. Download the project `here`_github_link.
 #. Navigate to the root directory.
 #. Run ``python setup.py install``
 
