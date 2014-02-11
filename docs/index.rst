@@ -6,9 +6,8 @@ Welcome to the documentation for **pyfluo**.
    :maxdepth: 4
 	
    introduction
-	
-   pyfluo
-   setup
+
+   data_structures
 
 
 Indices and tables

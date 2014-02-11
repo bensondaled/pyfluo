@@ -20,6 +20,12 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../pyfluo/'))
 
+##### ADDED BY BEN
+
+#autoclass_content = 'both'
+
+#### END ADDED BY BEN
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -30,6 +36,7 @@ sys.path.insert(0, os.path.abspath('../pyfluo/'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+'sphinx.ext.autosummary',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -45,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'.'
+project = u'pyfluo'
 copyright = u'2014, Ben Deverett'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -198,7 +205,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'sphinx.tex', u'. Documentation',
+  ('index', 'sphinx.tex', u'pyfluo Documentation',
    u'Author', 'manual'),
 ]
 
@@ -228,7 +235,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'sphinx', u'. Documentation',
+    ('index', 'sphinx', u'pyfluo Documentation',
      [u'Author'], 1)
 ]
 
@@ -263,7 +270,7 @@ texinfo_documents = [
 # -- Options for Epub output ----------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'.'
+epub_title = u'pyfluo'
 epub_author = u'Author'
 epub_publisher = u'Author'
 epub_copyright = u'2014, Author'

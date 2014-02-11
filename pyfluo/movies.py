@@ -73,38 +73,38 @@ class MultiChannelMovie(object):
 class Movie(TSBase):
 	"""An object that holds a movie: a series of images each with a timestamp. Specficially designed for two-photon microscopy data stored in tiffs.
 	
-	Attributes:
-		data (np.array): a 3D matrix storing the movie data as a series of frames.
+	**Attributes:**
+		* **data** (*np.array*): a 3D matrix storing the movie data as a series of frames.
 		
-		info (list): a list storing any relevant data associated with each frame in the movie.
+		* **info** (*list*): a list storing any relevant data associated with each frame in the movie.
 		
-		time (np.array): a one-dimensional array storing the timestamp of each frame.
+		* **time** (*np.array*): a one-dimensional array storing the timestamp of each frame.
 		
-		width (int): width of the movie in pixels.
+		* **width** (*int*): width of the movie in pixels.
 		
-		height (int): height of the movie in pixels.
+		* **height** (*int*): height of the movie in pixels.
 		
-		pixel_duration (float): the duration of time (in seconds) associated with one pixel.
+		* **pixel_duration** (*float*): the duration of time (in seconds) associated with one pixel.
 		
-		frame_duration (float): the duration of time (in seconds) associated with one frame.
+		* **frame_duration** (*float*): the duration of time (in seconds) associated with one frame.
 		
-		Ts (float): sampling period (in seconds) with regard to frames. Equivalent to 1/fs.
+		* **Ts** (*float*): sampling period (in seconds) with regard to frames. Equivalent to 1/*fs*.
 		
-		fs (float): sampling frequency (in Hz) with regard to frames. Equivalent to 1/Ts.
+		* **fs** (*float*): sampling frequency (in Hz) with regard to frames. Equivalent to 1/*Ts*.
 		
-		rois (ROISet): contains any selected regions of interest that were stored in association with the Movie object.
+		* **rois** (*ROISet*): contains any selected regions of interest that were stored in association with the Movie object.
 
-		name (str): a unique name generated for the object when instantiated
+		* **name** (*str*): a unique name generated for the object when instantiated
 
 	"""
 	def __init__(self, data, time=None, info=None, skip=(0,0)):
 		"""Initialize a Movie object.
 		
-		Args:
-			data (np.array): a 3D matrix storing the movie data as a series of frames. Dimensions are (n,height,width) where n is the number frames in the movie.
-			time (np.array): a one-dimensional array storing the timestamps of each frame in *data*. If None, uses *info* to extract a sampling rate, and builds time based on that.
-			info (list): a list storing any relevant data associated with each frame in the movie. Defaults to a list of None.
-			skip (list): a two-item list specifying how many frames to skip from the start (first item) and end (second item) of *data*.
+		**Parameters:**
+			* **data** (*np.array*): a 3D matrix storing the movie data as a series of frames. Dimensions are (n,height,width) where n is the number frames in the movie.
+			* **time** (*np.array*): the timestamps of each frame in *data*. If ``None``, uses *info* to extract a sampling rate and builds time based on that.
+			* **info** (*list*): a list storing any relevant data associated with each frame in the movie. Defaults to a list of ``None``.
+			* **skip** (*list*): ``[number_of_frames_to_ignore_at_beginning, end]``
 		"""
 		self.name = pytime.strftime("Movie-%Y%m%d_%H%M%S")
 			
@@ -170,17 +170,18 @@ class Movie(TSBase):
 	def take(self, *args, **kwargs):
 		"""Extract a range of frames from the movie.
 		
-		BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
+		.. warning:: BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
 		
-		Args:
-			time_range (list): the start and end times of the range desired.
-			pad (list): a list of 2 values specifying the padding to be inserted around specified time range. The first value is subtracted from the start time, and the second value is added to the end time.
-			reset_time (bool): set the first element of the resultant time series to time 0.
+		**Parameters:**
+			* **time_range** (*list*): the start and end times of the range desired.
+			* **pad** (*list*): a list of 2 values specifying the padding to be inserted around specified time range. The first value is subtracted from the start time, and the second value is added to the end time.
+			* **reset_time** (*bool*): set the first element of the resultant time series to time 0.
 			
-			If values in *time_range* lie outside the bounds of the movie time, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as None. 
-			
-		Returns:
+		**Returns:**
 			Movie between supplied time range
+			
+		**Notes:**	
+			If values in *time_range* lie outside the bounds of the movie time, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as ``None``.
 		"""
 		try:
 			time_range = kwargs.pop('time_range')
@@ -199,12 +200,12 @@ class Movie(TSBase):
 	def flatten(self, destination_class=StimSeries, **kwargs):
 		"""Flatten the values in *data* to a linear series.
 		
-		To be used when the movie-capturing apparatus was used to capture a signal whose natural shape is linear.
+		To be used when the movie-capturing apparatus was used to capture a signal whose natural shape is linear. For example, capturing trigger data in a tiff file.
 		
-		Args:
-			destination_class (type): the class in which to store and return the flattened data. Ideal options are TimeSeries or StimSeries.
+		**Parameters:**
+			* **destination_class** (*type*): the class in which to store and return the flattened data. Ideal options are *TimeSeries* or *StimSeries*.
 
-		Returns:
+		**Returns:**
 			An object of type *destination_class*, the flattened movie.
 		"""
 		flat_data = np.transpose(self.data,[2,0,1]).flatten()
@@ -215,14 +216,14 @@ class Movie(TSBase):
 	def select_roi(self, n=1, store=True):
 		"""Select any number of regions of interest (ROI) in the movie.
 		
-		Args:
-			n (int): number of ROIs to select.
-			store (bool): store the selected ROI(s) as attributes of this movie instance.
+		**Parameters:**
+			* **n** (*int*): number of ROIs to select.
+			* **store** (*bool*): store the selected ROI(s) as attributes of this movie instance.
 			
-		Returns:
-			ROISet object sotring the selected ROIs (if >1 ROIs selected)
+		***Returns:***
+			*ROISet* object sotring the selected ROIs (if >1 ROIs selected)
 			or
-			ROI object of selected ROI (if 1 ROI selected).
+			*ROI* object of selected ROI (if 1 ROI selected).
 		"""
 		rois = []
 		for q in range(n):
@@ -241,12 +242,12 @@ class Movie(TSBase):
 	def extract_by_roi(self, rois=None, method=np.ma.mean):
 		"""Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
 		
-		Args:
-			rois (ROISet or list): the ROI(s) over which to extract data. If None, uses the object attribute *rois*.
-			method (def): the function by which to convert the data within an ROI to a single value.
+		**Parameters:**
+			* **rois** (*ROISet* / *list*): the ROI(s) over which to extract data. If None, uses the object attribute *rois*.
+			* **method** (*def*): the function by which to convert the data within an ROI to a single value.
 			
-		Returns:
-			TimeSeries object, with multiple rows corresponding to multiple ROIs.
+		***Returns:***
+			*TimeSeries* object, with multiple rows corresponding to multiple ROIs.
 		"""
 		series = None
 		if rois == None:
@@ -269,12 +270,12 @@ class Movie(TSBase):
 	def z_project(self, method=np.mean, show=False, rois=False):
 		"""Flatten/project the movie data across all frames (z-axis).
 		
-		Args:
-			method (def): function to apply across the z-axis of the data.
-			show (bool): display the result.
-			rois (bool): display this object's stored regions of interest, as dictated by the class attribute *rois*.
+		**Parameters:**
+			* **method** (*def*): function to apply across the z-axis of the data.
+			* **show** (*bool*): display the result.
+			* **rois** (*bool*): display this object's stored regions of interest, as dictated by the class attribute *rois*.
 			
-		Returns:
+		**Returns:**
 			The z-projected image (same width and height as any movie frame).
 		"""
 		zp = method(self.data,2)
@@ -286,9 +287,9 @@ class Movie(TSBase):
 	def play(self, loop=False, fps=None, **kwargs):
 		"""Play the movie.
 		
-		Args:
-			loop (bool): repeat playback upon finishing.
-			fps (float): playback rate in frames per second.
+		**Parameters:**
+			* **loop** (*bool*): repeat playback upon finishing.
+			* **fps** (*float*): playback rate in frames per second.
 			
 		"""
 		if fps==None:
