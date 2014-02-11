@@ -33,7 +33,7 @@ Here is a quick-start example to get you moving with pyfluo.
 	
 	# specify tif files to be loaded
 	dir_name = './lab-data/experiment-june25/'
-	names = ["os.path.join(dir_name,file_name) for file_name in os.listdir(dir_name) if '500Hz' in file_name]
+	names = [os.path.join(dir_name,file_name) for file_name in os.listdir(dir_name) if '500Hz' in file_name]
 	
 	# load tif files
 	mcm = MultiChannelMovie(names, skip=(10,0))
