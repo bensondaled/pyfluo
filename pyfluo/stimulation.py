@@ -6,6 +6,8 @@ import time as pytime
 class StimSeries(TimeSeries):
 	"""A time series specialized for storing binary stimulation data.
 	
+	**TODO**: modify this class to hold *only* the stimulation start & end indices/times, and the fs. No data vector whatsoever. Then, when __getitem__ is called, it should perform the (simple) logic necessary to determine whether the result is a 1 or a 0. This should reduce the memory load of these objects drastically.
+	
 	Essentially, this class takes a high-density stimulation signal and simplifies it by downsampling, binarizing, and uniformizing stimulation events.
 	
 	Importantly, this class assumes that all stimulations within the provided data were intended to be of equal duration.
