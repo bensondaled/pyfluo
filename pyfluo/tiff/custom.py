@@ -25,7 +25,7 @@ class WangLabScanImageTiff(object):
 		channels = []
 		for ch in range(self.n_channels):
 			channel = {}
-			channel['data'] = np.dstack(data[ch::self.n_channels])
+			channel['data'] = np.concatenate([[i] for i in data[ch::self.n_channels]])
 			channel['info'] = page_info[ch::self.n_channels]
 			channels.append(channel)
 		return channels

@@ -48,6 +48,8 @@ def dff_stim(seriess, stim=None, base_time=0.3):
 def dff_window(seriess, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
 	"""Calculates delta-F over F using a sliding window method.
 	
+	NOTE: THE CALCULATION OF INTEGRALS HERE NEEDS TO BE CHECKED. I SUSPECT I DIDN'T PROPERLY DIVIDE BY dt THOUGH IT MAY NOT MAKE A DIFFERENCE
+	
 	THIS SHOULD EVENTUALLY BE MODIFIED TO MORE EFFICIENTLY MAKE USE OF THE TIME SERIES MATRIX DATA, COMPUTING DFF IN A SINGLE PASS.
 	
 	Args:
