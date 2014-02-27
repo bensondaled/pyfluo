@@ -83,7 +83,7 @@ class ROISet(object):
                 pl.ylim([self.shape[0], 0])
             if labels:
                 for idx,roi in enumerate(self):
-                    pl.text(roi.center[0], roi.center[1], str(idx), color=colors[idx], weight='bold')
+                    pl.text(roi.center[0], roi.center[1], str(idx), color='white', weight='bold')
             # pl.gca().xaxis.set_ticks_position('none')
             # pl.gca().yaxis.set_ticks_position('none')
             pl.show()

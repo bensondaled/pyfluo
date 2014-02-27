@@ -181,7 +181,7 @@ class TimeSeries(TSBase):
         **Parameters:**
             * **item** (*int* / *float* / *np.ndarray* / *list*): the data to be appended to the series.
             
-            If a single value is supplied, the value is added to the end of the data. In the case of multiple data rows, it is added to the end of each series.
+            If a single value is supplied, the value is added to the end of the data. In the case that multiple data rows already exist in the data, the new entry is added to the end of each series.
             If a list or array is supplied, it must be the same length as the number of series (i.e. rows of data) in the object's data. In this case, the first item in the list is added to the end of the first series, the second to the second, and so on.
             
         Examples::
@@ -233,7 +233,7 @@ class TimeSeries(TSBase):
                             [4, 5, 6],
                             [7, 8, 9] ]
                     
-            >>> ts.append([10, 11, 12])
+            >>> ts.append_series([10, 11, 12])
 
             >>> ts.data 
             
