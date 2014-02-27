@@ -42,6 +42,10 @@ Here is a quick-start example to get you moving with pyfluo.
 	
 	# play the movie
 	mov.play(fps=15)
+
+    # extract and align stimulation events from movie, then play result
+    mov_stims = mov.take(stim.stim_times, pad=(.5, .5), merge_method=np.mean)
+    mov_stims.play(loop=True)
 	
 	# select some regions of interest & extract their signals
 	mov.select_roi(3)
@@ -52,11 +56,17 @@ Here is a quick-start example to get you moving with pyfluo.
 	
 	# extract and align stimulation events from signals
 	dff_stims = dff.take(stim.stim_times, pad=(.5,.5))
-	
+
 	# plot the result
 	dff_aligned.plot(stim=stim.example)
+    
+    # show the regions corresponding to plot
+    pl.figure()
+    mov.z_project(show=True, rois=True)
 	
-	# save the figure
+	# save the figures
+    pl.savefig('rois.png')
+    pl.figure(1)
 	pl.savefig('dff_aligned.png')
 	# and the data
 	save([dff, stim], 'my_new_data', globals())

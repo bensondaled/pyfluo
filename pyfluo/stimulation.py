@@ -43,11 +43,11 @@ class StimSeries(TimeSeries):
         down_sample = kwargs.pop('down_sample', 64) #if not None, give n for resample
                 
         super(StimSeries, self).__init__(*args, **kwargs)
-        #self.original_data = self.data #takes a lot of memory
+        #self.original_data = self.data #if you wanted the original data
 
         if down_sample:
             self.resample(down_sample, in_place=True)
-        self.raw_data = np.copy(self.data)
+        self.raw_data = np.copy(self.data) #if you want to store the downsampled original data
     
         self.stim_idxs = None
         self.stim_times = None
@@ -57,7 +57,7 @@ class StimSeries(TimeSeries):
 
         if uniform:
             self.uniformize(ndigits=uniform)
-        
+       
         self.stim_durations =   [i[1]-i[0] for i in self.stim_times]
         self.example = self.take(self.stim_times, pad=(0.1,0.1)).merge()
             

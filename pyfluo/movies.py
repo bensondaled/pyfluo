@@ -164,6 +164,7 @@ class Movie(TSBase):
             if m.frame_duration != self.frame_duration:
                 raise Exception('Frame rates of movies to be appended do not match.')
             self.data = np.append(self.data, m.data, axis=0)
+            self.info += m.info
         self.time = np.arange(len(self))*self.frame_duration
             
     # Extracting/Reshaping data 
@@ -171,10 +172,11 @@ class Movie(TSBase):
         """Extract a range of frames from the movie.
         
         .. warning:: BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
+        UPDATE: I believe it's fixed. Keeping an eye out for it.
         
         **Parameters:**
             * **time_range** (*list*): the start and end times of the range desired.
-            * **merge_method** (*def*): the method used to merge results if more than one time range is supplied.
+            * **merge_method** (*def*): the method used to merge results if more than one time range is supplied. If ``None``, returns a list of movies.
             * **pad** (*list*): a list of 2 values specifying the padding to be inserted around specified time range. The first value is subtracted from the start time, and the second value is added to the end time.
             * **reset_time** (*bool*): set the first element of the resultant time series to time 0.
             
@@ -187,17 +189,21 @@ class Movie(TSBase):
         try:
             time_range = kwargs.pop('time_range')
         except KeyError:
-            raise Exception('Time range not supplied for take().')
+            time_range = list(args).pop(0)
+            if type(time_range) != list:
+                raise Exception('Improper time range supplied for take().')
         try:
             merge_method = kwargs.pop('merge_method')
         except KeyError:
-            merge_method = np.mean
+            merge_method = None
         if type(time_range[0]) != list:
             time_range = [time_range]
 
-        movs = [self._take(st, take_axis=0, *args, **kwargs) for st in time_range]
-        if len(movs)>1:
-            mov_data = np.mean([m.data for m in movs], axis=0)
+        movs = [self._take(st, take_axis=0, **kwargs) for st in time_range]
+        if len(movs)>1 and merge_method != None:
+            mov_data = merge_method([m.data for m in movs], axis=0)
+        elif len(movs)>1 and merge_method == None:
+            return movs
         elif len(movs)==1:
             mov_data = movs[0].data
         return Movie(data=mov_data, info=movs[0].info)
@@ -264,7 +270,7 @@ class Movie(TSBase):
                 roi = self.rois[roi]
             roi_stack = np.concatenate([[roi.mask] for i in self])
             masked = np.ma.masked_array(self.data, mask=roi_stack)
-            ser = method(method(masked,axis=0),axis=0)
+            ser = method(method(masked,axis=1),axis=1)
             if series == None:
                 series = TimeSeries(data=ser.filled(np.nan), time=self.time)
             else:
