@@ -172,7 +172,7 @@ class Movie(TSBase):
         """Extract a range of frames from the movie.
         
         .. warning:: BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
-        UPDATE: I believe it's fixed. Keeping an eye out for it.
+                         UPDATE: I believe it's fixed. Keeping an eye out for it.
         
         **Parameters:**
             * **time_range** (*list*): the start and end times of the range desired.
@@ -231,8 +231,8 @@ class Movie(TSBase):
             * **n** (*int*): number of ROIs to select.
             * **store** (*bool*): store the selected ROI(s) as attributes of this movie instance.
             
-        ***Returns:***
-            *ROISet* object sotring the selected ROIs (if >1 ROIs selected)
+        **Returns:**
+            *ROISet* object storing the selected ROIs (if >1 ROIs selected)
             or
             *ROI* object of selected ROI (if 1 ROI selected).
         """

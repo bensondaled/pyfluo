@@ -58,7 +58,7 @@ Here is a quick-start example to get you moving with pyfluo.
     dff_stims = dff.take(stim.stim_times, pad=(.5,.5))
 
     # plot the result
-    dff_aligned.plot(stim=stim.example)
+    dff_stims.plot(stim=stim.example)
     
     # show the regions corresponding to plot
     pl.figure()
