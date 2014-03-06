@@ -19,7 +19,7 @@ Here is a quick-start example to get you moving with pyfluo.
 .. code-block:: python
     :linenos:
 
-    from pyfluo import MultiChannelMovie
+    from pyfluo import MultiChannelTiff, Movie, LineScan
     from pyfluo.fluorescence import compute_dff
     from pyfluo.tiff import CHANNEL_IMG, CHANNEL_STIM
     from pyfluo.io import save, load
@@ -36,9 +36,10 @@ Here is a quick-start example to get you moving with pyfluo.
     names = [os.path.join(dir_name,file_name) for file_name in os.listdir(dir_name) if '500Hz' in file_name]
     
     # load tif files
-    mcm = MultiChannelMovie(names, skip=(10,0))
-    mov = mcm.get_channel(CHANNEL_IMG)
-    stim = mcm.get_channel(CHANNEL_STIM).flatten()
+    mct = MultiChannelTiff(names, skip=(10,0,0), klass=Movie) # this skipped the first ten frames of each tiff file
+    # mct = MultiChannelTiff(names, skip=(0,0,32), klass=LineScan) # this skipped every 32 lines in every tiff file
+    mov = mct[CHANNEL_IMG]
+    stim = mct[CHANNEL_STIM].flatten()
     
     # play the movie
     mov.play(fps=15)

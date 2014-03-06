@@ -106,7 +106,7 @@ class TimeSeries(TSBase):
             
     """
     def __init__(self, data, time=None, info=None, tunit='s', merge_method_data=np.mean, merge_method_time=np.mean):
-        self.name = pytime.strftime("TimeSeries-%Y%m%d_%H%M%S")
+        super(TimeSeries, self).__init__()
         self.tunit = tunit
         self.fs = None
         self.Ts = None
@@ -374,7 +374,7 @@ class TimeSeries(TSBase):
                 data = np.ma.masked_array(series,np.isnan(series))
                 smin = np.ma.min(data)
                 data = data-smin + stacked*last_max
-                if stacked: series_ticks.append(np.average(data))
+                if stacked: series_ticks.append(np.ma.mean(data))
                 else:   series_ticks.append(data[-1])
             
                 ax.plot(t, data.filled(np.nan), color=colors[idx], **kwargs)

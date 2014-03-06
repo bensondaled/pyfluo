@@ -38,7 +38,6 @@ class StimSeries(TimeSeries):
         (see TimeSeries.__init__ for complete signature)
         
         """
-        self.name = pytime.strftime("StimSeries-%Y%m%d_%H%M%S")
         uniform = kwargs.pop('uniform', True)
         down_sample = kwargs.pop('down_sample', 64) #if not None, give n for resample
                 

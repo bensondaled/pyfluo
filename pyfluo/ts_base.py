@@ -1,7 +1,11 @@
 import numpy as np
 import copy
+import time as pytime
+from pyfluo.pf_base import pfBase
 
-class TSBase(object):
+class TSBase(pfBase):
+    def __init__(self):
+        super(TSBase, self).__init__()
     def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None, take_axis=0):
         """Takes time range *inclusively* on both ends.
         
@@ -20,7 +24,7 @@ class TSBase(object):
         #purpose: to avoid getting different length results despite identical time ranges, because of rounding errors
         if safe:
             duration = t2-t1
-            duration_idx = int(self.fs * duration)
+            duration_idx = int(round(self.fs * duration))
             idx2 = idx1 + duration_idx
         #End Safe
                 
@@ -79,8 +83,6 @@ class TSBase(object):
             
     # Special methods
     
-    def __setitem__(self, idx, val):
-        self.data[...,idx] = val
     def __add__(self, other):
         new = self.copy()
         new.data = new.data + other

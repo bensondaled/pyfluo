@@ -1,1 +1,1 @@
-from custom import WangLabScanImageTiff, CHANNEL_IMG, CHANNEL_STIM
+from wanglab import WangLabScanImageTiff, MultiChannelTiff, CHANNEL_IMG, CHANNEL_STIM

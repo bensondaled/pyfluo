@@ -1,5 +1,5 @@
 from pyfluo.ts_base import TSBase
-from pyfluo.tiff import WangLabScanImageTiff
+from pyfluo.pf_base import pfBase
 from pyfluo.time_series import TimeSeries
 from pyfluo.stimulation import StimSeries
 from pyfluo.roi import ROI, ROISet
@@ -9,66 +9,9 @@ import pylab as pl
 import matplotlib.cm as mpl_cm
 from matplotlib import path as mpl_path
 import os
-import time as pytime
 import json
 import pickle
-from pyfluo.util import *
 
-class MultiChannelMovie(object):
-    """An object that holds multiple *Movie* objects as channels.
-    
-    This class is currently exclusively for creation from WangLabScanImageTiff's. Its main goal is to circumvent the need to load a multi-channel tiff file more than once in order to attain movies from its multiple channels.
-    
-    Attributes:
-        movies (list): list of Movie objects.
-        
-        name (str): a unique name generated for the object when instantiated
-        
-    """
-    def __init__(self, raw, skip=(0,0)):
-        """Initialize a MultiChannelMovie object.
-        
-        Args:
-            raw (str / WangLabScanImageTiff / list thereof): list of movies.
-            skip (list): a two-item list specifying how many frames to skip from the start (first item) and end (second item) of each movie.
-        """
-        self.name = pytime.strftime("MultiChannelMovie-%Y%m%d_%H%M%S")
-        
-        self.movies = []
-        
-        if type(raw) != list:
-            raw = [raw]
-        widgets=[' Loading tiffs:', Percentage(), Bar()]
-        pbar = ProgressBar(widgets=widgets, maxval=len(raw)).start()
-        for idx,item in enumerate(raw):
-            if type(item) == str:
-                raw[idx] = WangLabScanImageTiff(item)
-                pbar.update(idx+1)
-            elif type(item) != WangLabScanImageTiff:
-                raise Exception('Invalid input for movie. Should be WangLabScanImageTiff or tiff filename.')
-        tiffs = raw
-        pbar.finish()
-                
-        n_channels = tiffs[0].n_channels
-        if not all([i.n_channels==n_channels for i in tiffs]):
-            raise Exception('Channel number inconsistent among provided tiffs.')
-        
-        for ch in range(n_channels):    
-            movie = None
-            for item in tiffs:              
-                chan = item[ch]
-                mov = Movie(data=chan['data'], info=chan['info'], skip=skip)
-                
-                if movie == None:   movie = mov
-                else:   movie.append(mov)
-            self.movies.append(movie)
-            
-    def get_channel(self, i):
-        return self.movies[i]
-    def __getitem__(self, i):
-        return self.get_channel(i)
-    def __len__(self):
-        return len(self.movies)
 
 class Movie(TSBase):
     """An object that holds a movie: a series of images each with a timestamp. Specficially designed for two-photon microscopy data stored in tiffs.
@@ -97,16 +40,16 @@ class Movie(TSBase):
         * **name** (*str*): a unique name generated for the object when instantiated
 
     """
-    def __init__(self, data, time=None, info=None, skip=(0,0)):
+    def __init__(self, data, time=None, info=None, skip=(0,0,0)):
         """Initialize a Movie object.
         
         **Parameters:**
             * **data** (*np.array*): a 3D matrix storing the movie data as a series of frames. Dimensions are (n,height,width) where n is the number frames in the movie.
             * **time** (*np.array*): the timestamps of each frame in *data*. If ``None``, uses *info* to extract a sampling rate and builds time based on that.
             * **info** (*list*): a list storing any relevant data associated with each frame in the movie. Defaults to a list of ``None``.
-            * **skip** (*list*): ``[number_of_frames_to_ignore_at_beginning, end]``
+            * **skip** (*list*): ``[number_of_frames_to_ignore_at_beginning, end, interval_on_which_to_ignore]``
         """
-        self.name = pytime.strftime("Movie-%Y%m%d_%H%M%S")
+        super(Movie, self).__init__()
             
         self.data = data
         self.info = info
@@ -115,12 +58,15 @@ class Movie(TSBase):
             
         skip_beginning = skip[0]
         skip_end = skip[1]
+        skip_interval = skip[2]
         if skip_beginning:
             self.data = self.data[skip_beginning:]
             self.info = self.info[skip_beginning:]
         if skip_end:
             self.data = self.data[:-skip_end]
             self.info = self.info[:-skip_end]
+        if skip_interval:
+            self.data = self.data[[i for i in range(len(self.data)) if (i+1)%skip_interval],...]
         
         self.ex_info = self.info[0]
         lpf = float(self.ex_info['state.acq.linesPerFrame'])
@@ -146,7 +92,7 @@ class Movie(TSBase):
         return '\n'.join([
         'Movie object.',
         "Length: %i frames."%len(self),
-        "Frame Dimensions: %i x %i"%(self.width, self.height),
+        "Frame Dimensions: %i x %i"%(np.shape(self.data)[0], np.shape(self.data)[1]),
         "Duration: %f seconds."%(self.time[-1]-self.time[0]+self.frame_duration),
         ])
     
@@ -172,6 +118,7 @@ class Movie(TSBase):
         """Extract a range of frames from the movie.
         
         .. warning:: BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
+                         
                          UPDATE: I believe it's fixed. Keeping an eye out for it.
         
         **Parameters:**
@@ -206,7 +153,7 @@ class Movie(TSBase):
             return movs
         elif len(movs)==1:
             mov_data = movs[0].data
-        return Movie(data=mov_data, info=movs[0].info)
+        return self.__class__(data=mov_data, info=movs[0].info)
         
     def flatten(self, destination_class=StimSeries, **kwargs):
         """Flatten the values in *data* to a linear series.
@@ -247,8 +194,6 @@ class Movie(TSBase):
                     self.rois.add(roi)
             rois.append(roi)
         pl.close()
-        if len(rois)==1:
-            rois = rois[0]
         return ROISet(rois)
     def extract_by_roi(self, rois=None, method=np.ma.mean):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
@@ -270,15 +215,16 @@ class Movie(TSBase):
                 roi = self.rois[roi]
             roi_stack = np.concatenate([[roi.mask] for i in self])
             masked = np.ma.masked_array(self.data, mask=roi_stack)
-            ser = method(method(masked,axis=1),axis=1)
+            axes = range(len(np.shape(masked)))[::-1][:-1]
+            ser = np.squeeze(np.ma.apply_over_axes(method, masked, axes=axes))
             if series == None:
-                series = TimeSeries(data=ser.filled(np.nan), time=self.time)
+                series = TimeSeries(data=ser, time=self.time)
             else:
                 series.append_series(ser)
         return series
     
     # Visualizing data
-    def z_project(self, method=np.mean, show=False, rois=False):
+    def z_project(self, method=np.mean, show=False, rois=False, data=None):
         """Flatten/project the movie data across all frames (z-axis).
         
         **Parameters:**
@@ -289,9 +235,12 @@ class Movie(TSBase):
         **Returns:**
             The z-projected image (same width and height as any movie frame).
         """
-        zp = method(self.data,axis=0)
+        if data==None:
+            data = self.data
+        zp = method(data,axis=0)
         if show:
-            pl.imshow(zp, cmap=mpl_cm.Greys_r)
+            show_zp = np.atleast_2d(method(data,axis=0))
+            pl.imshow(show_zp, cmap=mpl_cm.Greys_r)
             if rois:
                 self.rois.show(mode='pts',labels=True)
         return zp
@@ -310,8 +259,69 @@ class Movie(TSBase):
         flag = pl.isinteractive()
         pl.ioff()
         fig = pl.figure()
-        ims = [ [pl.imshow(i, cmap=mpl_cm.Greys_r)] for i in self ]
+        ims = [ [pl.imshow(np.atleast_2d(i), cmap=mpl_cm.Greys_r)] for i in self ]
         
         ani = animation.ArtistAnimation(fig, ims, interval=1./fpms, blit=False, repeat=loop, **kwargs)
         pl.show()
         if flag:    pl.ion()
+
+
+class LineScan(Movie):
+    """
+    skip works completely analogously to skip in Movie - i.e. it only skips beginning and end within a movie - so beginning and end lines in this line scan
+    skip_inframe allows you to skip a certain number of lines in each frame, since the camera captures these linescans as frames so this could be useful
+
+    TODO: allow for skipping along an interval, i.e. skip=(0,0,0) beginning,end,step, where step will skip every step'th elements
+    """
+    def __init__(self, *args, **kwargs):
+        try:
+            skip = kwargs.pop('skip')
+        except:
+            skip = (0,0)
+        super(LineScan, self).__init__(*args, **kwargs)
+
+        self.info = np.repeat(self.info, np.shape(self.data)[1])
+        self.data = self.data.reshape((np.shape(self.data)[0]*np.shape(self.data)[1], np.shape(self.data)[2]))
+        
+        skip_beginning = skip[0]
+        skip_end = skip[1]
+        skip_interval = skip[2]
+        if skip_beginning:
+            self.data = self.data[skip_beginning:]
+            self.info = self.info[skip_beginning:]
+        if skip_end:
+            self.data = self.data[:-skip_end]
+            self.info = self.info[:-skip_end]
+        if skip_interval:
+            self.data = self.data[[i for i in range(len(self.data)) if (i+1)%skip_interval],...]
+
+        line_duration = self.pixel_duration * np.shape(self.data)[1]
+        self.time = np.arange(len(self))*line_duration
+
+        self.Ts = line_duration
+        self.fs = 1./self.Ts
+    def z_project(self, *args, **kwargs):
+        n = 10
+        data = np.repeat(self.data, n, axis=0).reshape((len(self), n, np.shape(self.data)[1]))
+        return super(LineScan, self).z_project(*args, data=data, **kwargs)
+     
+    def select_roi(self, n=1, store=True):
+        rois = []
+        for q in range(n):
+            zp = self.z_project(show=True, rois=True)
+            roi = None
+            pts = pl.ginput(0, timeout=0)
+            if pts:
+                pts = np.array(pts)[:,0]
+                pts.sort()
+                pts = pts[[0,-1]]
+                roi = ROI(shape=[np.shape(self.data)[1]], pts=pts, display_shape=np.shape(zp))
+                if store:
+                    self.rois.add(roi)
+            rois.append(roi)
+        pl.close()
+        return ROISet(rois)
+    def __getitem__(self, idx):
+        return self.data[idx]
+    def __len__(self):
+        return np.shape(self.data)[0]
