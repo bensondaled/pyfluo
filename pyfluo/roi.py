@@ -30,11 +30,9 @@ class ROISet(pfBase):
         if type(rois) == ROI:
             self.rois.append(rois)
             self.shape = rois.shape
-            self.display_shape = rois.display_shape
         elif type(rois) == list:
             self.rois = rois
             self.shape = rois[0].shape
-            self.display_shape = rois[0].display_shape
             if not all([roi.shape == self.shape for roi in self.rois]):
                 raise Exception('Provided ROIs have inconsistent shapes.')
                 
@@ -47,7 +45,6 @@ class ROISet(pfBase):
         if not self.shape:
             self.rois.append(roi)
             self.shape = roi.shape
-            self.display_shape = roi.display_shape
         elif self.shape and roi.shape == self.shape:
             self.rois.append(roi)
         elif roi.shape != self.shape:
@@ -64,7 +61,7 @@ class ROISet(pfBase):
             self.rois[roi] = None
         self.rois = [r for r in self.rois if r]
         
-    def show(self, mode='mask', labels=True):
+    def show(self, mode='pts', labels=True):
         """Display all the ROIs of the ROISet.
         
         Args:
@@ -73,25 +70,37 @@ class ROISet(pfBase):
         """
         
         colors = mpl_cm.jet(np.linspace(0, 1, len(self)))
-        if len(self):
+        if len(self) == 0:
+            return
+
+       
+        ax = pl.gca()
+        xlim = pl.xlim()
+        ylim = pl.ylim()
+        if len(self.shape)==2:
             if mode == 'mask':
-                data = np.sum(np.dstack([r.display_mask for r in self]),axis=2)
+                data = np.sum(np.dstack([r.mask for r in self]),axis=2)
                 data = np.ma.masked_where(data == 1, data)
-                ax = pl.gca()
                 ax.imshow(data)
             elif mode == 'pts':
                 for idx,roi in enumerate(self):
-                    roi = roi.display_pts
+                    roi = roi.pts
                     pl.scatter(roi[:,0], roi[:,1], color=colors[idx])
-                pl.xlim([0, self.display_shape[1]])
-                pl.ylim([self.display_shape[0], 0])
-            # pl.gca().xaxis.set_ticks_position('none')
-            # pl.gca().yaxis.set_ticks_position('none')
+                #pl.xlim([0, self.shape[1]])
+                #pl.ylim([self.shape[0], 0])
             
             if labels:
                 for idx,roi in enumerate(self):
-                    pl.text(roi.display_center[0], roi.display_center[1], str(idx), color='white', weight='bold')
-            pl.show()
+                    pl.text(roi.center[0], roi.center[1], str(idx), color='white', weight='bold')
+        elif len(self.shape)==1:
+           for idx,roi in enumerate(self):
+               pts = roi.pts
+               pl.scatter(pts, [0. for i in pts], color=colors[idx], marker='|', linewidth=3)
+               if labels:
+                   pl.text(roi.center, 0., str(idx), color='white', weight='bold')
+        ax.set_xlim( [min([xlim[0], 0]), max([xlim[1], self.shape[-1]])] )
+        ax.set_ylim( [min([ylim[0], pl.ylim()[0]]), max([ylim[1], pl.ylim()[1]])] )
+        pl.show()
     
     def __getitem__(self, idx):
         return self.rois[idx]
@@ -113,35 +122,28 @@ class ROI(pfBase):
         name (str): a unique name generated for the object when instantiated
         
     """
-    def __init__(self, shape, pts, display_shape=None):
+    def __init__(self, shape, pts):
         super(ROI, self).__init__()
         self.shape = shape
-        self.display_shape = display_shape
-        if display_shape == None:
-            self.display_shape = self.shape
         mask = np.ones(self.shape,dtype=bool)
-        display_mask = np.ones(self.display_shape, dtype=bool)
-        self.pts = np.array(pts)
-        self.center = self._center()
-        self.display_center = self.center
 
-        if len(self.shape)==1 and len(pts)==2:
-           mask[pts[0]:pts[1]+1] = False
-           display_mask = np.tile(mask, self.display_shape[0]).reshape(self.display_shape)
-           display_pts = np.array([np.repeat(pts,self.display_shape[0]), np.tile(np.arange(self.display_shape[0]),2)]).T
-           self.display_center = [self.display_center, self.display_shape[0]/2.]
-        else:
+        if len(self.shape)==1:
+            pts = np.array(pts)[:,0]
+            pts.sort()
+            pts = pts[[0,-1]]
+            mask[pts[0]:pts[1]+1] = False
+        elif len(self.shape)==2:
             path = mpl_path.Path(pts)
             for ridx,row in enumerate(mask):
                 for cidx,pt in enumerate(row):
                     if path.contains_point([cidx,ridx]):
                         mask[ridx,cidx] = False
-            display_mask = mask
-            display_pts = np.array(pts)
+        else:
+            raise Exception('ROI class does not support ROIs in >2 dimensions.')
         
+        self.pts = np.array(pts)
         self.mask = mask
-        self.display_mask = display_mask
-        self.display_pts = display_pts
+        self.center = self._center()
 
     def _center(self):
         return np.mean(self.pts, axis=0)

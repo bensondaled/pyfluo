@@ -211,7 +211,7 @@ class Movie(TSBase):
                 roi = self.rois[roi]
             roi_stack = np.concatenate([[roi.mask] for i in self])
             masked = np.ma.masked_array(self.data, mask=roi_stack)
-            axes = range(len(np.shape(masked)))[::-1][:-1]
+            axes = range(1,len(np.shape(self.data)))
             ser = np.squeeze(np.ma.apply_over_axes(method, masked, axes=axes))
             if series == None:
                 series = TimeSeries(data=ser, time=self.time)
@@ -220,7 +220,7 @@ class Movie(TSBase):
         return series
     
     # Visualizing data
-    def z_project(self, method=np.mean, show=False, rois=False, data=None):
+    def z_project(self, method=np.mean, show=False, rois=False, aspect='equal'):
         """Flatten/project the movie data across all frames (z-axis).
         
         **Parameters:**
@@ -231,12 +231,11 @@ class Movie(TSBase):
         **Returns:**
             The z-projected image (same width and height as any movie frame).
         """
-        if data==None:
-            data = self.data
-        zp = method(data,axis=0)
+        zp = method(self.data,axis=0)
         if show:
-            show_zp = np.atleast_2d(method(data,axis=0))
-            pl.imshow(show_zp, cmap=mpl_cm.Greys_r)
+            ax = pl.gca()
+            ax.margins(0.)
+            pl.imshow(np.atleast_2d(zp), cmap=mpl_cm.Greys_r, aspect=aspect)
             if rois:
                 self.rois.show(mode='pts',labels=True)
         return zp
@@ -294,27 +293,14 @@ class LineScan(Movie):
 
         self.Ts = line_duration
         self.fs = 1./self.Ts
+
+        self.visual_aspect = 20
     def z_project(self, *args, **kwargs):
-        n = 10
-        data = np.repeat(self.data, n, axis=0).reshape((len(self), n, np.shape(self.data)[1]))
-        return super(LineScan, self).z_project(*args, data=data, **kwargs)
-     
-    def select_roi(self, n=1, store=True):
-        rois = []
-        for q in range(n):
-            zp = self.z_project(show=True, rois=True)
-            roi = None
-            pts = pl.ginput(0, timeout=0)
-            if pts:
-                pts = np.array(pts)[:,0]
-                pts.sort()
-                pts = pts[[0,-1]]
-                roi = ROI(shape=[np.shape(self.data)[1]], pts=pts, display_shape=np.shape(zp))
-                if store:
-                    self.rois.add(roi)
-            rois.append(roi)
-        pl.close()
-        return ROISet(rois)
+        try:
+            aspect = kwargs.pop('aspect')
+        except KeyError:
+            aspect = self.visual_aspect
+        return super(LineScan, self).z_project(*args, aspect=aspect, **kwargs)
     def __getitem__(self, idx):
         return self.data[idx]
     def __len__(self):
