@@ -82,6 +82,8 @@ class Movie(TSBase):
         self.height = np.shape(self.data)[1]
                 
         self.rois = ROISet()
+
+        self.visual_aspect = 1.0
     
     # Special Calls
     def __getitem__(self, idx):
@@ -116,7 +118,9 @@ class Movie(TSBase):
     # Extracting/Reshaping data 
     def take(self, *args, **kwargs):
         """Extract a range of frames from the movie.
-        
+      
+        .. warning: There is currently a bug with LineScans, and potentially movies in this method. Working on it.
+
         **Parameters:**
             * **time_range** (*list*): the start and end times of the range desired.
             * **merge_method** (*def*): the method used to merge results if more than one time range is supplied. If ``None``, returns a list of movies.
@@ -255,7 +259,7 @@ class Movie(TSBase):
         flag = pl.isinteractive()
         pl.ioff()
         fig = pl.figure()
-        ims = [ [pl.imshow(np.atleast_2d(i), cmap=mpl_cm.Greys_r)] for i in self ]
+        ims = [ [pl.imshow(np.atleast_2d(i), cmap=mpl_cm.Greys_r, aspect=self.visual_aspect)] for i in self ]
         
         ani = animation.ArtistAnimation(fig, ims, interval=1./fpms, blit=False, repeat=loop, **kwargs)
         pl.show()
