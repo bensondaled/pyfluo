@@ -271,7 +271,7 @@ class LineScan(Movie):
         try:
             skip = kwargs.pop('skip')
         except:
-            skip = (0,0)
+            skip = (0,0,0)
         super(LineScan, self).__init__(*args, **kwargs)
 
         self.info = np.repeat(self.info, np.shape(self.data)[1])
