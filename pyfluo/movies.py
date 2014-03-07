@@ -181,6 +181,7 @@ class Movie(TSBase):
         """
         rois = []
         for q in range(n):
+            pl.clf()
             zp = self.z_project(show=True, rois=True)
             roi = None
             pts = pl.ginput(0, timeout=0)

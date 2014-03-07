@@ -93,11 +93,21 @@ class ROISet(pfBase):
                 for idx,roi in enumerate(self):
                     pl.text(roi.center[0], roi.center[1], str(idx), color='white', weight='bold')
         elif len(self.shape)==1:
-           for idx,roi in enumerate(self):
-               pts = roi.pts
-               pl.scatter(pts, [0. for i in pts], color=colors[idx], marker='|', linewidth=3)
-               if labels:
-                   pl.text(roi.center, 0., str(idx), color='white', weight='bold')
+            if len(self)==1:
+                start = 0
+                div = 0
+            else:
+                rang = abs(ylim[1]-ylim[0])
+                pad = 0.15 * rang
+                rang = rang - 2*pad
+                div = rang/(len(self)-1)
+                start = min(ylim) + pad
+            for idx,roi in enumerate(self):
+                y = start + idx*div
+                pts = roi.pts
+                pl.scatter(pts, [y for i in pts], color=colors[idx], marker='|', linewidth=3)
+                if labels:
+                    pl.text(roi.center, y, str(idx), color=colors[idx], weight='bold')
         ax.set_xlim( [min([xlim[0], 0]), max([xlim[1], self.shape[-1]])] )
         ax.set_ylim( [min([ylim[0], pl.ylim()[0]]), max([ylim[1], pl.ylim()[1]])] )
         pl.show()
