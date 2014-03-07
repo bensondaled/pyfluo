@@ -4,8 +4,9 @@ Core Data Structures
 .. autosummary::
 	
 	time_series.TimeSeries
-	movies.MultiChannelMovie
+	tiff.wanglab.MultiChannelTiff
 	movies.Movie
+    movies.LineScan
 
 TimeSeries
 ---------------
@@ -16,12 +17,12 @@ TimeSeries
    :members: __init__, get_series, append, append_series, normalize, merge, take, plot
 
 
-MultiChannelMovie
+MultiChannelTiff
 ------------
 
-.. currentmodule:: movies
+.. currentmodule:: tiff.wanglab
 
-.. autoclass:: MultiChannelMovie
+.. autoclass:: MultiChannelTiff
    :members: __init__
 
 Movie
@@ -29,3 +30,9 @@ Movie
 
 .. autoclass:: Movie
    :members: __init__, append, take, flatten, select_roi, extract_by_roi, z_project, play
+
+
+LineScan
+------------
+
+.. autoclass:: LineScan

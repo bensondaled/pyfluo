@@ -1,20 +1,6 @@
 import numpy as np
 from time_series import TimeSeries
 
-def compute_dff(series, mode='window', *args, **kwargs):
-    """Compute the "delta-F over F" of a time series signal by calling one of multiple functions for this calculation.
-    
-    Args:
-        series (pyfluo.TimeSeries or list thereof): signal/s
-        mode (str): "stim" / "window"
-    Returns:
-        The return value of the function called.
-    """
-    if mode == 'window':
-        return dff_window(series, *args, **kwargs)
-    elif mode == 'stim':
-        return dff_stim(series, *args, **kwargs)
-
 def dff_stim(seriess, stim=None, base_time=0.3):
     """Calculates delta-F over F using pre-stimulation baseline as F0.
     
@@ -45,20 +31,20 @@ def dff_stim(seriess, stim=None, base_time=0.3):
         dffs = dffs[0]
         
     return dffs
-def dff_window(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
+def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
     """Calculates delta-F over F using a sliding window method.
-    
-    Args:
-        series (pyfluo.TimeSeries): should be passed from *compute_dff*
-        tao0 (float): see Jia et al. 2010
-        tao1 (float): see Jia et al. 2010
-        tao2 (float): see Jia et al. 2010
-        noise_filter (bool): include the final noise filtering step of the algorithm
+   
+   **Parameters:** 
+        * **series** (*pyfluo.TimeSeries*): series of which to compute delta F over F
+        * **tao0** (*float*): see Jia et al. 2010
+        * **tao1** (*float*): see Jia et al. 2010
+        * **tao2** (*float*): see Jia et al. 2010
+        * **noise_filter** (*bool*): include the final noise filtering step of the algorithm
         
-    Returns:
-        a TimeSeries containing the DFF signal.
+    **Returns:**
+        TimeSeries containing the DFF signal.
         
-    Notes:
+    **Notes:**
         Adapted from Jia et al. 2010 Nature Protocols
         
         The main adjustment not specified in the algorithm is how I deal with the beginning and end of the signal. When we're too close to the borders of the signal such that averages/baselines are subject to noise, I allow the function to look in the other direction (forward if at beginning, backward if at end) to make the signal more robust. This is reflected by the variables "forward" and "backward" in the calculation of f_bar and f_not.

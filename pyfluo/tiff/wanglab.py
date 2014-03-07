@@ -9,7 +9,7 @@ CHANNEL_STIM = 1
 
 
 class MultiChannelTiff(pfBase):
-    """An object that holds multiple *Movie* objects as channels.
+    """An object that holds multiple movie-like (from movies module) objects as channels.
     
     This class is currently exclusively for creation from WangLabScanImageTiff's. Its main goal is to circumvent the need to load a multi-channel tiff file more than once in order to attain movies from its multiple channels.
     
@@ -20,7 +20,7 @@ class MultiChannelTiff(pfBase):
         
     """
     def __init__(self, raw, klass=Movie, **kwargs):
-        """Initialize a MultiChannelMovie object.
+        """Initialize a MultiChannelTiff object.
         
         Args:
             raw (str / WangLabScanImageTiff / list thereof): list of movies.

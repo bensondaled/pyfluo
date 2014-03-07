@@ -9,6 +9,8 @@ Welcome to the documentation for **pyfluo**.
 
    data_structures
 
+   functions
+
 
 Indices and tables
 ==================

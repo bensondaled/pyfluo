@@ -117,10 +117,6 @@ class Movie(TSBase):
     def take(self, *args, **kwargs):
         """Extract a range of frames from the movie.
         
-        .. warning:: BUG DISCOVERED: sometimes takes a range of double the intended duration (but not always). To be investigated.
-                         
-                         UPDATE: I believe it's fixed. Keeping an eye out for it.
-        
         **Parameters:**
             * **time_range** (*list*): the start and end times of the range desired.
             * **merge_method** (*def*): the method used to merge results if more than one time range is supplied. If ``None``, returns a list of movies.
@@ -267,11 +263,9 @@ class Movie(TSBase):
 
 
 class LineScan(Movie):
-    """
-    skip works completely analogously to skip in Movie - i.e. it only skips beginning and end within a movie - so beginning and end lines in this line scan
-    skip_inframe allows you to skip a certain number of lines in each frame, since the camera captures these linescans as frames so this could be useful
-
-    TODO: allow for skipping along an interval, i.e. skip=(0,0,0) beginning,end,step, where step will skip every step'th elements
+    """An object that holds a line scan:  a series of 1-dimensional images each with a timestamp. Specficially designed for two-photon microscopy data stored in tiffs.
+   
+    This object is effectively identical to the *Movie* class (it is a subclass of it), but some its methods are adjusted to work with line scan data.
     """
     def __init__(self, *args, **kwargs):
         try:

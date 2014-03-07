@@ -12,11 +12,13 @@ def pca(data):
     """
     data = data.transpose([1,2,0]) # change images axis from 0 to 2
     shape = np.shape(data)
-    data = data.reshape( (np.shape(data)[0]*np.shape(data)[1], np.shape(data)[2] ) )
+    data = data.reshape( (shape[0]*shape[1], shape[2] ) )
     data = np.matrix(data)
     data -= np.mean(data, axis=1)
     y = data.T / np.sqrt(np.shape(data)[1]-1)
     u,s,PC = np.linalg.svd(y)
+    print PC
+    print np.shape(PC)
     newdata = PC.T.dot(data)
     newdata = np.squeeze(np.asarray(newdata))
     newdata = newdata.reshape(shape)
