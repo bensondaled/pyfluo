@@ -73,7 +73,10 @@ Here is a quick-start example to get you moving with pyfluo.
     save([dff, stim], 'my_new_data', globals())
 
 Shown below are exampels of the two png files that may be saved in the script above.
+
 .. figure:: imgs/dff_aligned.png
    :align: center
+   dff_aligned.png
 .. figure:: imgs/rois.png
    :align: center
+   rois.png
