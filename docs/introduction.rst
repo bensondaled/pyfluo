@@ -1,3 +1,8 @@
+
+.. figure:: imgs/dff_aligned.png
+    :align: center
+    dff_aligned.png
+
 About this library
 --------------------
 The **pyfluo** library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions.
