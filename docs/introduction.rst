@@ -1,4 +1,4 @@
-
+Hello world
 .. figure:: imgs/dff_aligned.png
     :align: center
     dff_aligned.png
