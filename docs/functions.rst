@@ -11,3 +11,4 @@ compute_dff
 .. currentmodule:: fluorescence
 
 .. autofunction:: compute_dff
+
