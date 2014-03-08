@@ -1,0 +1,11 @@
+cd docs
+make html
+cd ..
+cd gh-pages/html
+git add .
+git commit -m "updated docs"
+git push
+cd ../..
+git add gh-pages/html
+git commit -m "updated gh-pages"
+git push
