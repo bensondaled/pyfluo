@@ -192,7 +192,7 @@ class Movie(TSBase):
             rois.append(roi)
         pl.close()
         return ROISet(rois)
-    def extract_by_roi(self, rois=None, method=np.ma.mean):
+    def extract_by_roi(self, rois=None, method=np.mean):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
         
         **Parameters:**
@@ -213,7 +213,12 @@ class Movie(TSBase):
             roi_stack = np.concatenate([[roi.mask] for i in self])
             masked = np.ma.masked_array(self.data, mask=roi_stack)
             axes = range(1,len(np.shape(self.data)))
-            ser = np.squeeze(np.ma.apply_over_axes(method, masked, axes=axes))
+            def apply_over_axes(method, array, axes):
+                # Writing this function because numpy's is broken. Submitted a github ticket March 8 2014.
+                for ax in sorted(axes)[::-1]:
+                    array = method(array, axis=ax)
+                return array
+            ser = np.squeeze(apply_over_axes(method, masked, axes=axes))
             if series == None:
                 series = TimeSeries(data=ser, time=self.time)
             else:

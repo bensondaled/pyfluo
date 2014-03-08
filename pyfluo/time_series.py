@@ -340,13 +340,13 @@ class TimeSeries(TSBase):
             time_range = [time_range]
         stims = TimeSeries(data=[self._take(st, pad=pad, reset_time=reset_time, take_axis=1, **kwargs) for st in time_range], merge_method_time=merge_method_time, merge_method_data=merge_method_data)
         return stims
-    def plot(self, stim=None, stacked=True, gap_fraction=0.15, use_idxs=False, normalize=False, show=True, color=None, **kwargs):
+    def plot(self, stim=None, stacked=True, gap_fraction=0.08, use_idxs=False, normalize=False, show=True, color=None, **kwargs):
         """Plot the time series.
         
         **Parameters:**
             * **stim** (*pyfluo.StimSeries*): stimulation to be plotted over the data.
             * **stacked** (*bool*): for multiple rows of data, stack instead of overlaying.
-            * **gap_fraction** (*float*): if ``stacked==True``, specifies the spacing between curves as a fraction of the range of the lower curve.
+            * **gap_fraction** (*float*): if ``stacked==True``, specifies the spacing between curves as a fraction of the average range of the curves.
             * **use_idxs** (*bool*): ignore time and instead use vector indices as x coordinate.
             * **normalize** (*bool*): normalize the data before plotting.
             * **show** (*bool*): show the plot immediately.
@@ -357,7 +357,9 @@ class TimeSeries(TSBase):
             
         if normalize:   d = self.normalize(normalize).data
         else:   d = self.data
-        
+       
+        gap = gap_fraction * np.mean(np.ptp(d, axis=1))
+
         ax = pl.gca()
         series_ticks = []
         if color==None: colors = mpl_cm.jet(np.linspace(0, 1, self.n_series))
@@ -378,15 +380,13 @@ class TimeSeries(TSBase):
                 else:   series_ticks.append(data[-1])
             
                 ax.plot(t, data.filled(np.nan), color=colors[idx], **kwargs)
-            
-                if stim and stacked:
-                    stim.plot(normalize=(np.min(data), np.max(data)), color='black', ls='dotted')
-                
-                last_max = np.ma.max(data) + stacked*gap_fraction*(np.ma.max(data) - np.ma.min(data))
+                last_max = np.ma.max(data) + stacked*gap
             
             if stim and not stacked:
                 stim.plot(normalize=(0., np.max(data)), color='black', ls='dashed')
-        
+            elif stim and stacked:
+                stim.plot(normalize=(0., last_max), color='black', ls='dotted')
+            
             ax2 = ax.twinx()
             pl.yticks(series_ticks, [str(i) for i in range(len(series_ticks))], weight='bold')
             [l.set_color(col) for col,l in zip(colors,ax2.get_yticklabels())]
