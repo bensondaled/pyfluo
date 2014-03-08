@@ -29,7 +29,7 @@ class MultiChannelTiff(pfBase):
         """
         super(MultiChannelTiff, self).__init__() 
         
-        self.movies = []
+        self.channels = []
         
         if type(raw) != list:
             raw = [raw]
@@ -43,7 +43,8 @@ class MultiChannelTiff(pfBase):
                 raise Exception('Invalid input for movie. Should be WangLabScanImageTiff or tiff filename.')
         tiffs = raw
         pbar.finish()
-                
+        
+        self.n_tiffs = len(tiffs)
         n_channels = tiffs[0].n_channels
         if not all([i.n_channels==n_channels for i in tiffs]):
             raise Exception('Channel number inconsistent among provided tiffs.')
@@ -56,15 +57,20 @@ class MultiChannelTiff(pfBase):
                 
                 if movie == None:   movie = mov
                 else:   movie.append(mov)
-            self.movies.append(movie)
+            self.channels.append(movie)
             
     def get_channel(self, i):
-        return self.movies[i]
+        return self.channels[i]
     def __getitem__(self, i):
         return self.get_channel(i)
     def __len__(self):
-        return len(self.movies)
-
+        return len(self.channels)
+    def __str__(self):
+        return '\n'.join([
+        'MultiChannelTiff object.',
+        "Contains %i channels."%len(self),
+        "Acquired from %i tiff files."%self.n_tiffs,
+        ])
 class WangLabScanImageTiff(object):
 
 	def __init__(self, filename):

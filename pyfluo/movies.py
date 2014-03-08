@@ -78,8 +78,6 @@ class Movie(TSBase):
         self.fs = 1/self.Ts
         
         self.time = np.arange(len(self))*self.frame_duration
-        self.width = np.shape(self.data)[2]
-        self.height = np.shape(self.data)[1]
                 
         self.rois = ROISet()
 
@@ -95,7 +93,7 @@ class Movie(TSBase):
         'Movie object.',
         "Length: %i frames."%len(self),
         "Frame Dimensions: %i x %i"%(np.shape(self.data)[0], np.shape(self.data)[1]),
-        "Duration: %f seconds."%(self.time[-1]-self.time[0]+self.frame_duration),
+        "Duration: %f seconds."%(self.time[-1]-self.time[0]+self.Ts),
         ])
     
     # Public Methods
@@ -119,8 +117,6 @@ class Movie(TSBase):
     def take(self, *args, **kwargs):
         """Extract a range of frames from the movie.
       
-        .. warning: There is currently a bug with LineScans, and potentially movies in this method. Working on it.
-
         **Parameters:**
             * **time_range** (*list*): the start and end times of the range desired.
             * **merge_method** (*def*): the method used to merge results if more than one time range is supplied. If ``None``, returns a list of movies.
@@ -278,8 +274,11 @@ class LineScan(Movie):
             skip = (0,0,0)
         super(LineScan, self).__init__(*args, **kwargs)
 
-        self.info = np.repeat(self.info, np.shape(self.data)[1])
-        self.data = self.data.reshape((np.shape(self.data)[0]*np.shape(self.data)[1], np.shape(self.data)[2]))
+        if len(np.shape(self.data))==3:
+            self.info = list(np.repeat(self.info, np.shape(self.data)[1]))
+            self.data = self.data.reshape((np.shape(self.data)[0]*np.shape(self.data)[1], np.shape(self.data)[2]))
+        if len(np.shape(self.data))!=2:
+            raise Exception('Data given to LineScan was not of a parseable shape.')
         
         skip_beginning = skip[0]
         skip_end = skip[1]
@@ -310,3 +309,10 @@ class LineScan(Movie):
         return self.data[idx]
     def __len__(self):
         return np.shape(self.data)[0]
+    def __str__(self):
+        return '\n'.join([
+        'LineScan object.',
+        "Length: %i lines."%len(self),
+        "Pixels per line: %i"%(np.shape(self.data)[1]),
+        "Duration: %f seconds."%(self.time[-1]-self.time[0]+self.Ts),
+        ])
