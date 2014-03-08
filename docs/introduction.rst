@@ -1,8 +1,3 @@
-Hello world
-.. figure:: imgs/dff_aligned.png
-    :align: center
-    dff_aligned.png
-
 About this library
 --------------------
 The **pyfluo** library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions.
@@ -77,12 +72,9 @@ Here is a quick-start example to get you moving with pyfluo.
     # and the data
     save([dff, stim], 'my_new_data', globals())
 
-Shown below are exampels of the two png files that may be saved in the script above.
+Shown below are examples of rois.png (left) and dff_aligned.png (right).
 
-.. figure:: imgs/dff_aligned.png
-    :align: center
-    dff_aligned.png
-
-.. figure:: imgs/rois.png
-    :align: center
-    rois.png
+.. image:: imgs/rois.png
+    :width: 40% 
+.. image:: imgs/dff_aligned.png
+    :width: 40%
