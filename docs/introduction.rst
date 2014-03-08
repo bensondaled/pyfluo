@@ -77,6 +77,7 @@ Shown below are exampels of the two png files that may be saved in the script ab
 .. figure:: imgs/dff_aligned.png
    :align: center
    dff_aligned.png
+
 .. figure:: imgs/rois.png
    :align: center
    rois.png
