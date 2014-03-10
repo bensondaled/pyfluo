@@ -62,6 +62,8 @@ class MultiChannelTiff(pfBase):
     def get_channel(self, i):
         """Retrieve the movie corresponding to a specified channel.
 
+        .. note:: Note that this method is equivalent to the use of indexing. For example: ``mct.get_channel(1)`` is equivalent to ``mct[1]``.
+
         **Parameters:**
             * **i** (*int*): index of channel to return.
 

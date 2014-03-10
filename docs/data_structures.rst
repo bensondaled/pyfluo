@@ -31,7 +31,7 @@ MultiChannelTiff
 .. currentmodule:: tiff.wanglab
 
 .. autoclass:: MultiChannelTiff
-   :members: __init__
+   :members: __init__, get_channel
 
 Movie
 ------------
