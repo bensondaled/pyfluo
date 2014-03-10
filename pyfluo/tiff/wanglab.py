@@ -13,19 +13,19 @@ class MultiChannelTiff(pfBase):
     
     This class is currently exclusively for creation from WangLabScanImageTiff's. Its main goal is to circumvent the need to load a multi-channel tiff file more than once in order to attain movies from its multiple channels.
     
-    Attributes:
-        movies (list): list of Movie objects.
+    **Attributes:**
+        * **movies** (*list*): list of Movie objects.
         
-        name (str): a unique name generated for the object when instantiated
+        * **name** (*str*): a unique name generated for the object when instantiated
         
     """
     def __init__(self, raw, klass=Movie, **kwargs):
         """Initialize a MultiChannelTiff object.
         
-        Args:
-            raw (str / WangLabScanImageTiff / list thereof): list of movies.
-            skip (list): a two-item list specifying how many frames to skip from the start (first item) and end (second item) of each movie.
-            klass (class): the type of class in which the movies should be stored (currently supports pyfluo.Movie or pyfluo.LineScan)
+        **Parameters:**
+            * **raw** (*str* / *WangLabScanImageTiff* / *list* thereof): list of movies.
+            * **skip** (*list*): a two-item list specifying how many frames to skip from the start (first item) and end (second item) of each movie.
+            * **klass** (*class*): the type of class in which the movies should be stored (currently supports pyfluo.Movie or pyfluo.LineScan)
         """
         super(MultiChannelTiff, self).__init__() 
         

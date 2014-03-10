@@ -129,16 +129,10 @@ class Movie(TSBase):
         **Notes:**  
             If values in *time_range* lie outside the bounds of the movie time, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as ``None``.
         """
-        try:
-            time_range = kwargs.pop('time_range')
-        except KeyError:
-            time_range = list(args).pop(0)
-            if type(time_range) != list:
-                raise Exception('Improper time range supplied for take().')
-        try:
-            merge_method = kwargs.pop('merge_method')
-        except KeyError:
-            merge_method = None
+        time_range = kwargs.pop('time_range', list(args).pop(0))
+        if type(time_range) != list:
+            raise Exception('Improper time range supplied for take().')
+        merge_method = kwargs.pop('merge_method', None)
         if type(time_range[0]) != list:
             time_range = [time_range]
 
@@ -273,10 +267,7 @@ class LineScan(Movie):
     This object is effectively identical to the *Movie* class (it is a subclass of it), but some its methods are adjusted to work with line scan data.
     """
     def __init__(self, *args, **kwargs):
-        try:
-            skip = kwargs.pop('skip')
-        except:
-            skip = (0,0,0)
+        skip = kwargs.pop('skip', (0,0,0))
         super(LineScan, self).__init__(*args, **kwargs)
 
         if len(np.shape(self.data))==3:
@@ -305,10 +296,7 @@ class LineScan(Movie):
 
         self.visual_aspect = 20
     def z_project(self, *args, **kwargs):
-        try:
-            aspect = kwargs.pop('aspect')
-        except KeyError:
-            aspect = self.visual_aspect
+        aspect = kwargs.pop('aspect', self.visual_aspect)
         return super(LineScan, self).z_project(*args, aspect=aspect, **kwargs)
     def __getitem__(self, idx):
         return self.data[idx]

@@ -4,36 +4,30 @@ import pickle
 import time as pytime
 
 class StimSeries(TimeSeries):
-    """A time series specialized for storing binary stimulation data.
+    """A time series specialized for storing stimulation data.
     
-    **TODO**: modify this class to hold *only* the stimulation start & end indices/times, and the fs. No data vector whatsoever. Then, when __getitem__ is called, it should perform the (simple) logic necessary to determine whether the result is a 1 or a 0. This should reduce the memory load of these objects drastically.
+    Essentially, this class takes a high-density stimulation signal and simplifies it by downsampling, binarizing, and optionally uniformizing stimulation events.
     
-    Essentially, this class takes a high-density stimulation signal and simplifies it by downsampling, binarizing, and uniformizing stimulation events.
-    
-    Importantly, this class assumes that all stimulations within the provided data were intended to be of equal duration.
-    
-    Attributes:
-        original_data (np.ndarray): the original, non-resampled, unprocessed stimulation data.
+    **Attributes:**
+        * **raw_data** (*np.ndarray*): the (possibly down-sampled) data in its raw form, before conversion to a binary signal.
         
-        raw_data (np.ndarray): the (possibly down-sampled) data in its raw form, before conversion to a binary signal.
+        * **stim_idxs** (*list*): a list of value pairs ``(start, end)`` indicating the indices of the time series data at which a stimulus started and ended.
         
-        stim_idxs (list): a list of value pairs (start, end) indicating the indices of the time series data at which a stimulation started and ended.
+        * **stim_times** (*list*): a list of value pairs ``(start, end)`` indicating the time points at which a stimulus started and ended.
         
-        stim_times (list): a list of value pairs (start, end) indicating the time points at which a stimulation started and ended.
+        * **stim_durations** (*list*): of list of values indicating the duration of each stimulus.
         
-        stim_durations (list): of list of values indicating the duration of each stimulus.
+        * **example** (*TimeSeries*): an example stimulation created by taking the mean of all stimuli.
         
-        example (TimeSeries): an example stimulation created by taking the mean of all stimulations.
-        
-        name (str): a unique name generated for the object when instantiated
+        * **name** (*str*): a unique name generated for the object when instantiated
         
     """
     def __init__(self, *args, **kwargs):
         """Initialize a StimSeries object.
         
-        Args:
-            down_sample (int): factor by which to down sample signal before processing. Defaults to 64, meaning that upon resampling, every 64th sample is taken. If None, does not down sample.
-            uniform (bool / int): makes stimulation durations uniform by rounding them to the nearest *uniform* digits. Start times of stimulation events are completely perserved, while end times are adjusted slightly to allow for easier behaviour during analysis. Defaults to True=1. Note that if *tunit*=='s', this corresponds to rounding to the nearest 100ms.
+        **Parameters:**
+            * **down_sample** (*int*): factor by which to down sample signal before processing. Defaults to 64, meaning that upon resampling, every 64th sample is taken. If ``None``, does not down sample.
+            * **uniform** (*bool* / *int*): enforces that stimulation durations be equal by rounding them to the nearest *uniform* digits. Start times of stimulation events are completely perserved, while end times are adjusted slightly to allow for easier behaviour during analysis. Defaults to ``1``. Note that if ``tunit=='s'``, this corresponds to rounding to the nearest 100ms.
         
         (see TimeSeries.__init__ for complete signature)
         
@@ -46,7 +40,7 @@ class StimSeries(TimeSeries):
 
         if down_sample:
             self.resample(down_sample, in_place=True)
-        self.raw_data = np.copy(self.data) #if you want to store the downsampled original data
+        #self.raw_data = np.copy(self.data) #if you want to store the downsampled original data
     
         self.stim_idxs = None
         self.stim_times = None
@@ -59,7 +53,7 @@ class StimSeries(TimeSeries):
        
         self.stim_durations =   [i[1]-i[0] for i in self.stim_times]
         self.example = self.take(self.stim_times, pad=(0.1,0.1)).merge()
-            
+
     def take(self, *args, **kwargs):
         return super(StimSeries, self).take(*args, output_class=TimeSeries, **kwargs)
     def convert_to_delta(self,min_sep_time=0.100,baseline_time=0.1):
@@ -93,7 +87,7 @@ class StimSeries(TimeSeries):
             elif up:
                 delta_sig[idx] = 1.
                 idxs_down = 0
-        self.data = np.atleast_2d(delta_sig).astype(np.float64)
+        self.data = delta_sig
     def process_stim_times(self, min_duration = 0.1, roundd=True):
         try:
             self.stim_idxs = [[self.start_idxs[i], self.end_idxs[i]] for i in range(len(self.start_idxs))]
