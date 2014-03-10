@@ -60,6 +60,14 @@ class MultiChannelTiff(pfBase):
             self.channels.append(movie)
             
     def get_channel(self, i):
+    """Retrieve the movie corresponding to a specified channel.
+
+    **Parameters:**
+        * **i** (*int*): index of channel to return.
+
+    **Returns:**
+        Object of type *klass*, described in constructor, corresponding to channel ``i``.
+    """
         return self.channels[i]
     def __getitem__(self, i):
         return self.get_channel(i)
