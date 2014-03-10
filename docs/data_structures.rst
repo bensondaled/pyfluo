@@ -4,6 +4,7 @@ Core Data Structures
 .. autosummary::
 	
 	time_series.TimeSeries
+    stimulation.StimSeries
 	tiff.wanglab.MultiChannelTiff
 	movies.Movie
     movies.LineScan
@@ -16,9 +17,16 @@ TimeSeries
 .. autoclass:: TimeSeries
    :members: __init__, get_series, append, append_series, normalize, merge, take, plot
 
+StimSeries
+------------
+
+.. currentmodule:: stimulation
+
+.. autoclass:: StimSeries
+   :members: __init__
 
 MultiChannelTiff
-------------
+------------------
 
 .. currentmodule:: tiff.wanglab
 
