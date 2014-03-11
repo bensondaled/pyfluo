@@ -195,7 +195,7 @@ class Movie(TSBase):
             * **method** (*def*): the function by which to convert the data within an ROI to a single value.
             * **subtract_background** (*bool*): subtract the background and noise using *pyfluo.fluorescence.remove_background*
             
-        ***Returns:***
+        **Returns:**
             *TimeSeries* object, with multiple rows corresponding to multiple ROIs.
         """
         series = None
