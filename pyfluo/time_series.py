@@ -191,9 +191,9 @@ class TimeSeries(TSBase):
             >>> ts.data = [ [1, 2, 3],
                             [4, 5, 6],
                             [7, 8, 9] ]
-                    
+             
             >>> ts.append(42)
-        
+             
             >>> ts.data
             
             [ [1, 2, 3, 42],
@@ -300,7 +300,7 @@ class TimeSeries(TSBase):
                             [2, 4, 6],
                             [9, 2, 7] ]
             
-            >>> ts.merge(method=np.mean)
+            >>> ts = ts.merge(method=np.mean)
             
             >>> ts.data
             
