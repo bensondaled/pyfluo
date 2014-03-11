@@ -248,11 +248,12 @@ class TimeSeries(TSBase):
         
         self.data = np.insert(self.data,np.shape(self.data)[0],item,axis=0)
         self._update()
-    def normalize(self, minmax=(0., 1.), in_place=False):
+    def normalize(self, minmax=(0., 1.), by_series=True, in_place=False):
         """Normalize the time series object.
         
         **Parameters:**
             * **minmax** (*list*): ``[post_normalizaton_data_min, max]``
+            * **by_series** (*bool*): normalize each data row individually
             * **in_place**: apply the normalization to *this* instance of the object.
             
         **Returns:**
@@ -274,8 +275,11 @@ class TimeSeries(TSBase):
         """
         newmin = minmax[0]
         newmax = minmax[1]
-        omin = np.min(self.data, axis=1)
-        omax = np.max(self.data, axis=1)
+        if by_series:
+            omin = np.min(self.data, axis=1)[:,None]
+            omax = np.max(self.data, axis=1)[:,None]
+        else:
+            omin,omax = [np.min(self.data), np.max(self.data)]
         newdata = (self.data-omin)/(omax-omin) * (newmax-newmin) + newmin
         new = self.copy()
         new.data = newdata
