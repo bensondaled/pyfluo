@@ -1,3 +1,4 @@
+from scipy import stats
 import numpy as np
 from time_series import TimeSeries
 
@@ -106,5 +107,36 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
     
     return TimeSeries(data=dff, time=series.time)
 
+def subtract_background(data):
+    """
+    Given a set of pixels each with a time value (rows are time points, columns are pixels), calculate and subtract background using the algorithm described in Chen et al 2006 Biophysical Journal.
+    """
+    
+    y = data 
+    y_bar = np.mean(y, axis=0)
+    y_tilde = y - y_bar
+
+    R = []
+    for i in range(np.shape(y_tilde)[1]):
+        yi = y_tilde[:,i][:,None]
+        yy = np.dot(yi,yi.T)
+        R.append(yy)
+    R = np.sum(np.dstack(R), axis=2)
+    
+    eigvals, eigvecs = np.linalg.eig(R)
+    f_tilde = np.real(eigvecs[:,np.argmax(eigvals)])
+
+    u = y_tilde.T.dot(f_tilde)
+
+    m,yint,r,p,err = stats.linregress(y_bar,u)
+
+    f_bar = m
+    background = yint
+
+    F = np.zeros(np.shape(y))
+    for i in range(np.shape(y)[1]):
+        F[:,i] = u[i]*(f_tilde + f_bar)
+
+    return F
 if __name__ == "__main__":  
     pass

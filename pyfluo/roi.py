@@ -57,6 +57,8 @@ class ROISet(pfBase):
         """
         if idxs==None:
             idxs=range(len(self))
+        elif type(idxs) == int:
+            idxs = [idxs]
         for roi in idxs:
             self.rois[roi] = None
         self.rois = [r for r in self.rois if r]

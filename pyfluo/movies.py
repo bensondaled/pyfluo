@@ -2,6 +2,7 @@ from pyfluo.ts_base import TSBase
 from pyfluo.pf_base import pfBase
 from pyfluo.time_series import TimeSeries
 from pyfluo.stimulation import StimSeries
+from pyfluo.fluorescence import subtract_background as bg_rm
 from pyfluo.roi import ROI, ROISet
 import matplotlib.animation as animation
 import numpy as np
@@ -186,12 +187,13 @@ class Movie(TSBase):
             rois.append(roi)
         pl.close()
         return ROISet(rois)
-    def extract_by_roi(self, rois=None, method=np.mean):
+    def extract_by_roi(self, rois=None, method=np.mean, subtract_background=True):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
         
         **Parameters:**
             * **rois** (*ROISet* / *list*): the ROI(s) over which to extract data. If None, uses the object attribute *rois*.
             * **method** (*def*): the function by which to convert the data within an ROI to a single value.
+            * **subtract_background** (*bool*): subtract the background and noise using *pyfluo.fluorescence.remove_background*
             
         ***Returns:***
             *TimeSeries* object, with multiple rows corresponding to multiple ROIs.
@@ -204,15 +206,11 @@ class Movie(TSBase):
         for roi in rois:
             if type(roi)==int:
                 roi = self.rois[roi]
-            roi_stack = np.concatenate([[roi.mask] for i in self])
-            masked = np.ma.masked_array(self.data, mask=roi_stack)
-            axes = range(1,len(np.shape(self.data)))
-            def apply_over_axes(method, array, axes):
-                # Writing this function because numpy's is broken. Submitted a github ticket March 8 2014.
-                for ax in sorted(axes)[::-1]:
-                    array = method(array, axis=ax)
-                return array
-            ser = np.squeeze(apply_over_axes(method, masked, axes=axes))
+            data = self.data[:,~roi.mask]
+            if subtract_background:
+                data = bg_rm(data)
+            ser = method(data, axis=1) 
+
             if series == None:
                 series = TimeSeries(data=ser, time=self.time)
             else:
