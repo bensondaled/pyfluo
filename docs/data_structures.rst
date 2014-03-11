@@ -36,6 +36,8 @@ MultiChannelTiff
 Movie
 ------------
 
+.. currentmodule:: movies
+
 .. autoclass:: Movie
    :members: __init__, append, take, flatten, select_roi, extract_by_roi, z_project, play
 
