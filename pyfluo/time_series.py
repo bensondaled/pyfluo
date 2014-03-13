@@ -29,9 +29,9 @@ class TimeSeries(TSBase):
         * **name** (*str*): a unique name generated for the object when instantiated
         
     **Parameters:**
-            * **data** (*list* / *np.ndarray* / *TimeSeries*): the time series data. See below for details on parameter format.
+            * **data** (*list* / *np.ndarray* / *TimeSeries*): the time series data. If type *TimeSeries*, the *time* parameter is ignored and time attribute from this parameter is used. See below for details on parameter format.
             
-            * **time** (*list* / *np.ndarray*): list of uniformly spaced numerical values, identical in length to the number of columns in *data*. If ``None``, defaults to ``range(len(data))``.
+            * **time** (*list* / *np.ndarray*): list of uniformly spaced numerical values, identical in length to the number of columns in *data*. If *data* is type *TimeSeries*, this parameter is ignored. If ``None``, defaults to ``range(len(data))``.
             
             * **info** (*list* / *np.ndarray*): list of meta-information associated with each time point.
             
@@ -108,55 +108,47 @@ class TimeSeries(TSBase):
     def __init__(self, data, time=None, info=None, tunit='s', merge_method_data=np.mean, merge_method_time=np.mean):
         super(TimeSeries, self).__init__()
         self.tunit = tunit
-        self.fs = None
-        self.Ts = None
-        self.time = time
     
-        self._data = data
-        if type(self._data) == TimeSeries:
-            self.time = self._data.time
-            self._data = self._data.data
-        elif type(self._data)==list and type(self._data[0]) == TimeSeries:
-            if not all([len(s)==len(self._data[0]) for s in self._data]):
+        # data
+        if type(data) == TimeSeries:
+            time = data.time
+            data = data.data
+        elif type(data)==list and type(data[0]) == TimeSeries:
+            if not all([len(s)==len(data[0]) for s in data]):
                 raise Exception('Series of varying duration cannot be joined in a new TimeSeries object.')
+            time = merge_method_time([s.time for s in data], axis=0)
+            if all([s.n_series==1 for s in data]) or ( not all([s.n_series==data[0].n_series for s in data]) ) or merge_method_data==None:
+                data = np.concatenate([ts.data for ts in data])
+            elif all([s.n_series==data[0].n_series for s in data]):
+                data = merge_method_data(np.dstack([s.data for s in data]), axis=2)
+        self.data = data
 
-            self.time = merge_method_time([s.time for s in self._data], axis=0)
-            # Concatenate the TimeSeries objects if:
-            # a) they all only contain one series 
-            # b) they contain varying numbers of series
-            # c) the concatenate argument is given as True
-            if all([s.n_series==1 for s in self._data]) or ( not all([s.n_series==self._data[0].n_series for s in self._data]) ) or merge_method_data==None:
-                self._data = np.concatenate([ts.data for ts in self._data])
-            # Merge the TimeSeries objects if: they all contain the same number (>1) of series.
-            elif all([s.n_series==self._data[0].n_series for s in self._data]):
-                self._data = merge_method_data(np.dstack([s.data for s in self._data]), axis=2)
-                
-        self.data = self._data
-
-        if self.time != None:
-            self.time = np.asarray(self.time).astype(np.float64)
-        else:
-            self.time = np.array(range(len(self))).astype(np.float64)
+        # time
+        if time != None:
+            time = np.asarray(time).astype(np.float64)
+        elif time == None:
+            time = np.array(range(len(self))).astype(np.float64)
+        self.time = time
         
+        # info
+        if info == None:
+            info = [None for i in self]
         self.info = info
-        if self.info == None:
-            self.info = [None for i in self.time]
-        
-        if len(np.shape(self.data)) > 2:
-            raise Exception("Data contains too many dimensions.")
-        if len(self) != len(self.time):
-            raise Exception("Data series and time vectors contain a different number of samples.")
-        if not all(self.time[i] <= self.time[i+1] for i in xrange(len(self.time)-1)):
-            raise Exception("Time vector is not sorted.")
-    
-        self._update()
-    
+
     @property
     def data(self):
         return self._data
     @data.setter
     def data(self, data):
         self._data = np.atleast_2d(data).astype(np.float64)
+
+        if len(np.shape(data)) > 2:
+            raise Exception("Data contains too many dimensions.")
+        
+    
+    @property
+    def n_series(self):
+        return np.shape(self.data)[0]
 
     # Public Methods
     def get_series(self, idx):
@@ -424,7 +416,6 @@ class TimeSeries(TSBase):
         if len(self) > 1:           
             self.Ts = self.time[1] - self.time[0]
             self.fs = 1/self.Ts
-        self.n_series = np.shape(self.data)[0]
 
             #The following should be implemented, however it was causing problems:
             # if not all(round(self.time[i+1]-self.time[i],10) == round(self.Ts,10) for i in xrange(len(self.time)-1)):

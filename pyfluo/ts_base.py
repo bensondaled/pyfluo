@@ -6,6 +6,43 @@ from pyfluo.pf_base import pfBase
 class TSBase(pfBase):
     def __init__(self):
         super(TSBase, self).__init__()
+
+
+    @property
+    def data(self):
+        return self._data
+    @data.setter
+    def data(self, data):
+        self._data = data
+
+    @property
+    def time(self):
+        return self._time
+    @time.setter
+    def time(self, time):
+        self._time = time
+
+        if len(self) != len(time):
+            raise Exception("Data series and time vectors contain a different number of samples.")
+        if not all(time[i] <= time[i+1] for i in xrange(len(time)-1)):
+            raise Exception("Time vector is not sorted.")
+        
+        self._update()
+
+
+    @property
+    def info(self):
+        return self._info
+    @info.setter
+    def info(self, info):
+        self._info = info
+
+        if len(self) != len(info):
+            raise Exception("Length of info does not match length of data.")
+
+    def _update(self):
+        pass
+
     def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None, take_axis=0):
         """Takes time range *inclusively* on both ends.
         

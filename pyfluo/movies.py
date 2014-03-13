@@ -75,8 +75,6 @@ class Movie(TSBase):
         mspl = float(self.ex_info['state.acq.msPerLine'])
         self.pixel_duration = mspl / ppl / 1000. #seconds
         self.frame_duration = self.pixel_duration * ppl * lpf #seconds
-        self.Ts = self.frame_duration
-        self.fs = 1/self.Ts
         
         self.time = np.arange(len(self))*self.frame_duration
                 
@@ -84,7 +82,21 @@ class Movie(TSBase):
 
         self.visual_aspect = 1.0
     
+    @property
+    def data(self):
+        return self._data
+    @data.setter
+    def data(self, data):
+        self._data = np.array(data).astype(np.float64)
+
+        if len(np.shape(data)) > 3:
+            raise Exception("Data contains too many dimensions.")
+    
     # Special Calls
+    def _update(self):
+        if len(self) > 1:           
+            self.Ts = self.time[1] - self.time[0]
+            self.fs = 1/self.Ts
     def __getitem__(self, idx):
         return self.data[idx]
     def __len__(self):
@@ -289,10 +301,19 @@ class LineScan(Movie):
         line_duration = self.pixel_duration * np.shape(self.data)[1]
         self.time = np.arange(len(self))*line_duration
 
-        self.Ts = line_duration
-        self.fs = 1./self.Ts
-
         self.visual_aspect = 20
+    
+    @property
+    def data(self):
+        return self._data
+    @data.setter
+    def data(self, data):
+        self._data = np.array(data).astype(np.float64)
+
+        if len(np.shape(data)) > 2:
+            raise Exception("Data contains too many dimensions.")
+        
+        self._update()
     def z_project(self, *args, **kwargs):
         aspect = kwargs.pop('aspect', self.visual_aspect)
         return super(LineScan, self).z_project(*args, aspect=aspect, **kwargs)
