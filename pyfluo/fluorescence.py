@@ -86,7 +86,7 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
             i1=0
         search = np.take(f_bar, range(i1, idx+1+forward), axis=1)
         if np.size(search):
-            f_not[:,idx] = np.min(search, axis=1)
+            f_not[:,idx] = np.min(search, axis=1) 
     
     r = (series.data - f_not) / f_not
 
@@ -105,12 +105,10 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
     else:
         dff = r
     
-    return TimeSeries(data=dff, time=series.time)
+    return (TimeSeries(data=dff, time=series.time),f_not)
 
 def subtract_background(data):
-    # THIS FUNCTION IS CURRENTLY NOT COMPLETE. FOR NOW, IT RETURNS THE ORIGINAL DATA
-    return data
-    
+    #TODO: implement the nonhomogenous aspect   
     """
     Given a set of pixels each with a time value (rows are time points, columns are pixels), calculate and subtract background using the algorithm described in Chen et al 2006 Biophysical Journal.
     """
@@ -120,27 +118,27 @@ def subtract_background(data):
     y_tilde = y - y_bar
 
     R = []
-    for i in range(np.shape(y_tilde)[1]):
-        yi = y_tilde[:,i][:,None]
+    for pix in range(np.shape(y_tilde)[1]):
+        yi = y_tilde[:,pix][:,None]
         yy = np.dot(yi,yi.T)
         R.append(yy)
     R = np.sum(np.dstack(R), axis=2)
     
     eigvals, eigvecs = np.linalg.eig(R)
-    f_tilde = np.real(eigvecs[:,np.argmax(eigvals)])
+    f_tilde = np.real(eigvecs[:,np.argmax(eigvals)])[:,None]
 
     u = y_tilde.T.dot(f_tilde)
 
-    m,yint,r,p,err = stats.linregress(y_bar ,u)
+    m,yint,r,p,err = stats.linregress(np.squeeze(y_bar) ,np.squeeze(u))
     xint = -yint/m
-    m_inverse = 1/m
+    m_inverse = 1/m 
 
     f_bar = m_inverse 
     background = xint
 
     F = np.zeros(np.shape(y))
     for i in range(np.shape(y)[1]):
-        F[:,i] = u[i]*(f_tilde + f_bar)
+        F[:,i] = u[i]*(np.squeeze(f_tilde) + f_bar)
     return F
 if __name__ == "__main__":  
     pass
