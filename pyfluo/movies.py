@@ -105,7 +105,7 @@ class Movie(TSBase):
         return '\n'.join([
         'Movie object.',
         "Length: %i frames."%len(self),
-        "Frame Dimensions: %i x %i"%(np.shape(self.data)[0], np.shape(self.data)[1]),
+        "Frame Dimensions: %i x %i"%(np.shape(self.data)[1], np.shape(self.data)[2]),
         "Duration: %f seconds."%(self.time[-1]-self.time[0]+self.Ts),
         ])
     

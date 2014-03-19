@@ -32,14 +32,14 @@ def dff_stim(seriess, stim=None, base_time=0.3):
         dffs = dffs[0]
         
     return dffs
-def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
+def compute_dff(series, tau0=0.2, tau1=0.75, tau2=3.0, noise_filter=False):
     """Calculates delta-F over F using a sliding window method.
    
    **Parameters:** 
         * **series** (*pyfluo.TimeSeries*): series of which to compute delta F over F
-        * **tao0** (*float*): see Jia et al. 2010
-        * **tao1** (*float*): see Jia et al. 2010
-        * **tao2** (*float*): see Jia et al. 2010
+        * **tau0** (*float*): see Jia et al. 2010
+        * **tau1** (*float*): see Jia et al. 2010
+        * **tau2** (*float*): see Jia et al. 2010
         * **noise_filter** (*bool*): include the final noise filtering step of the algorithm
         
     **Returns:**
@@ -51,24 +51,24 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
         The main adjustment not specified in the algorithm is how I deal with the beginning and end of the signal. When we're too close to the borders of the signal such that averages/baselines are subject to noise, I allow the function to look in the other direction (forward if at beginning, backward if at end) to make the signal more robust. This is reflected by the variables "forward" and "backward" in the calculation of f_bar and f_not.
     """
     
-    tao0t = tao0
-    tao1t = tao1
-    tao2t = tao2
+    tau0t = tau0
+    tau1t = tau1
+    tau2t = tau2
     
     dff = None
         
-    tao0 = tao0t * series.fs
-    tao1 = tao1t * series.fs
-    tao2 = tao2t * series.fs
+    tau0 = tau0t * series.fs
+    tau1 = tau1t * series.fs
+    tau2 = tau2t * series.fs
                 
     f_bar = np.zeros(np.shape(series.data))
     for idx in range(len(series)):
-        i1 = int(idx-round(tao1/2.))
+        i1 = int(idx-round(tau1/2.))
         forward=0
         if i1<0:
             forward=abs(i1)
             i1=0
-        i2 = int(idx+round(tao1/2.)) + forward
+        i2 = int(idx+round(tau1/2.)) + forward
         backward=0
         if i2>=len(series):
             backward=i2-len(series)
@@ -79,7 +79,7 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
         
     f_not = np.zeros(np.shape(f_bar))
     for idx in range(len(series)):
-        i1 = int(idx-tao2)
+        i1 = int(idx-tau2)
         forward=0
         if i1<0:
             forward=abs(i1) 
@@ -91,7 +91,7 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
     r = (series.data - f_not) / f_not
 
     def w_func(x):
-        return np.exp(-np.abs(x)/tao0)
+        return np.exp(-np.abs(x)/tau0)
     w = w_func(np.arange(0,len(series)))
 
     dff = np.zeros(np.shape(series.data))
@@ -105,7 +105,7 @@ def compute_dff(series, tao0=0.2, tao1=0.75, tao2=3.0, noise_filter=False):
     else:
         dff = r
     
-    return (TimeSeries(data=dff, time=series.time),f_not)
+    return TimeSeries(data=dff, time=series.time)
 
 def subtract_background(data):
     #TODO: implement the nonhomogenous aspect   

@@ -45,14 +45,17 @@ class StimSeries(TimeSeries):
         self.stim_idxs = None
         self.stim_times = None
 
-        self.convert_to_delta()
-        self.process_stim_times()
+        try:
+            self.convert_to_delta()
+            self.process_stim_times()
 
-        if uniform:
-            self.uniformize(ndigits=uniform)
-       
-        self.stim_durations =   [i[1]-i[0] for i in self.stim_times]
-        self.example = self.take(self.stim_times, pad=(0.1,0.1)).merge()
+            if uniform:
+                self.uniformize(ndigits=uniform)
+           
+            self.stim_durations =   [i[1]-i[0] for i in self.stim_times]
+            self.example = self.take(self.stim_times, pad=(0.1,0.1)).merge()
+        except:
+            raise Exception('This data could not be converted to a StimSeries. This likely means the signal does not consist of clear stimulation peaks. To view the signal, try storing it in a TimeSeries, and plot that to inspect it.')
 
     def take(self, *args, **kwargs):
         return super(StimSeries, self).take(*args, output_class=TimeSeries, **kwargs)
