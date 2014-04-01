@@ -108,6 +108,7 @@ def compute_dff(series, tau0=0.2, tau1=0.75, tau2=3.0, noise_filter=False):
     return TimeSeries(data=dff, time=series.time)
 
 def subtract_background(data):
+    return data
     #TODO: implement the nonhomogenous aspect   
     """
     Given a set of pixels each with a time value (rows are time points, columns are pixels), calculate and subtract background using the algorithm described in Chen et al 2006 Biophysical Journal.
