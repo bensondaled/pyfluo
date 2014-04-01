@@ -1,5 +1,6 @@
 #from distutils.core import setup, Extension #it's either this line (distutils) or the next (setuptools). both work, using setuptools because it supports develop mode
 from setuptools import find_packages, setup, Extension
+import numpy
 from distutils.sysconfig import get_python_inc
 readme = open('README.txt').read()
 import os
@@ -19,4 +20,7 @@ setup(	name = 'PyFluo',
 						('', ['README.txt']),
 												],
 		install_requires = ['numpy', 'scipy', 'matplotlib'], 
-		ext_modules=[ Extension('_tifffile', ['pyfluo/tiff/_installation/tifffile.c'],include_dirs=[incdir]) ]		)
+		ext_modules=[ Extension('_tifffile', ['pyfluo/tiff/_installation/tifffile.c'],include_dirs=[incdir]) ],
+        include_dirs = [numpy.get_include()]
+        
+        )
