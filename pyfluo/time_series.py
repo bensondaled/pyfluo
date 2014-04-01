@@ -144,6 +144,8 @@ class TimeSeries(TSBase):
 
         if len(np.shape(data)) > 2:
             raise Exception("Data contains too many dimensions.")
+
+        #TODO: verify that time matches data now
         
     
     @property

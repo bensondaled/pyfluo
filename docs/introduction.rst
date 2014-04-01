@@ -6,9 +6,13 @@ This project is `hosted on github <https://github.com/bensondaled/pyfluo/>`_.
 
 Note that **pyfluo** is a work in progress; neither the code nor the documentation is complete. That said, it is already functional for a wide variety of tasks.
 
+Requirements
+--------------
+The library only depends upon the standard python library, plus Numpy, Scipy, and Matplotlib.
+
 Installation
 -------------
-#. Download the project `here <https://github.com/bensondaled/pyfluo/releases>`_.
+#. Download the project `here <https://github.com/bensondaled/pyfluo/>`_.
 #. Extract and navigate to the root directory.
 #. Run ``python setup.py install``
 
@@ -78,3 +82,9 @@ Shown below are examples of rois.png (left) and dff_aligned.png (right).
     :width: 40% 
 .. image:: imgs/dff_aligned.png
     :width: 40%
+
+Troubleshooting
+------------------
+A list of known fixes for common problems will be kept here.
+
+* For windows installations, VisualStudio often causes problems in installing the tiff module. A fix is explained `here <http://stackoverflow.com/questions/2817869/error-unable-to-find-vcvarsall-bat>`_.

@@ -139,6 +139,17 @@ def subtract_background(data):
     F = np.zeros(np.shape(y))
     for i in range(np.shape(y)[1]):
         F[:,i] = u[i]*(np.squeeze(f_tilde) + f_bar)
+
+    '''
+    #inhomogenous check - still incomplete
+    for pix in range(np.shape(F)[1]):
+        d = y_bar[pix] - f_bar*u[pix] - background
+        var_n = np.var(y_tilde - u[pix]*f_tilde)
+        var_d = (f_bar**2 +(1/np.shape(data)[0]))*var_n
+        std_d = np.sqrt(var_d)
+        print d<4*std_d
+    '''
+
     return F
 if __name__ == "__main__":  
     pass
