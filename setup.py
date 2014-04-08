@@ -21,6 +21,6 @@ setup(	name = 'PyFluo',
 												],
 		install_requires = ['numpy', 'scipy', 'matplotlib'], 
 		ext_modules=[ Extension('_tifffile', ['pyfluo/tiff/_installation/tifffile.c'],include_dirs=[incdir]) ],
-        include_dirs = [numpy.get_include()]
+        include_dirs = [incdir]
         
         )
