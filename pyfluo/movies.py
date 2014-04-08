@@ -280,11 +280,6 @@ class LineScan(Movie):
         skip = kwargs.pop('skip', (0,0,0))
         super(LineScan, self).__init__(*args, **kwargs)
 
-        if len(np.shape(self.data))==3:
-            self.info = list(np.repeat(self.info, np.shape(self.data)[1]))
-            self.data = self.data.reshape((np.shape(self.data)[0]*np.shape(self.data)[1], np.shape(self.data)[2]))
-        if len(np.shape(self.data))!=2:
-            raise Exception('Data given to LineScan was not of a parseable shape.')
         
         skip_beginning = skip[0]
         skip_end = skip[1]
@@ -308,12 +303,28 @@ class LineScan(Movie):
         return self._data
     @data.setter
     def data(self, data):
-        self._data = np.array(data).astype(np.float64)
-
+        self._original_data_shape = np.shape(data)
+        self._data_was_from3d = False
+        if len(np.shape(data))==3:
+            self._data_was_from3d = True
+            data = data.reshape((np.shape(data)[0]*np.shape(data)[1], np.shape(data)[2]))
+        if len(np.shape(data))!=2:
+            raise Exception('Data given to LineScan was not of a parseable shape.')
         if len(np.shape(data)) > 2:
             raise Exception("Data contains too many dimensions.")
+        self._data = np.array(data).astype(np.float64)
+    @property
+    def info(self):
+        return self._info
+    @info.setter
+    def info(self, info):
+        if self._data_was_from3d:
+            info = list(np.repeat(info, self._original_data_shape[1]))
+        self._info = info
+
+        if len(self) != len(info):
+            raise Exception("Length of info does not match length of data.")
         
-        self._update()
     def z_project(self, *args, **kwargs):
         aspect = kwargs.pop('aspect', self.visual_aspect)
         return super(LineScan, self).z_project(*args, aspect=aspect, **kwargs)
