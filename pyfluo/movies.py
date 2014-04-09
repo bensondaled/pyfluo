@@ -115,10 +115,10 @@ class Movie(TSBase):
     def append(self, movies):
         """Append another Movie object to this Movie.
         """
-        if type(movies) == Movie:
+        if type(movies) == self.__class__:
             movies = [movies]
         if type(movies) != list:
-            raise Exception('Not a valid data type to append to a Movie object (should be Movie or list of Movies).')
+            raise Exception('Not a valid data type to append to a Movie-like object (should be Movie-like or list of Movie-likes).')
         for m in movies:
             if m.frame_duration != self.frame_duration:
                 raise Exception('Frame rates of movies to be appended do not match.')

@@ -86,13 +86,11 @@ class WangLabScanImageTiff(object):
     def __init__(self, filename):
         tiff_file = TiffFile(filename)
         pages = [page for page in tiff_file]
-        
         data = [page.asarray() for page in pages]
         page_info = [self.parse_page_info(page) for page in pages]
     
         ex_info = page_info[0]
         self.n_channels = int(ex_info['state.acq.numberOfChannelsAcquire'])
-        
         self.channels = self.split_channels(data, page_info)
         self.source_name = filename
     def split_channels(self, data, page_info):
