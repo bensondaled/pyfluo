@@ -237,7 +237,7 @@ class TimeSeries(TSBase):
               [10, 11, 12] ]
         """
         if type(item) == TimeSeries:
-            item = TimeSeries.data
+            item = item.data
             self.time = merge_method_time([self.time, item.time], axis=0)
         
         self.data = np.insert(self.data,np.shape(self.data)[0],item,axis=0)
