@@ -55,7 +55,7 @@ class Movie(TSBase):
         self.data = data
         self.info = info
         if self.info==None:
-            self.info = [None for i in range(len(self))]
+            self.info = [None for i in xrange(len(self))]
             
         skip_beginning = skip[0]
         skip_end = skip[1]
@@ -67,7 +67,7 @@ class Movie(TSBase):
             self.data = self.data[:-skip_end]
             self.info = self.info[:-skip_end]
         if skip_interval:
-            self.data = self.data[[i for i in range(len(self.data)) if (i+1)%skip_interval],...]
+            self.data = self.data[[i for i in xrange(len(self.data)) if (i+1)%skip_interval],...]
         
         self.ex_info = self.info[0]
         lpf = float(self.ex_info['state.acq.linesPerFrame'])
@@ -170,7 +170,7 @@ class Movie(TSBase):
             An object of type *destination_class*, the flattened movie.
         """
         flat_data = self.data.flatten()
-        t = np.arange(len(flat_data))*self.pixel_duration
+        t = np.arange(len(flat_data), dtype=np.float64)*self.pixel_duration
         return destination_class(data=flat_data, time=t, **kwargs)      
     
     # ROI analysis
@@ -187,7 +187,7 @@ class Movie(TSBase):
             *ROI* object of selected ROI (if 1 ROI selected).
         """
         rois = []
-        for q in range(n):
+        for q in xrange(n):
             pl.clf()
             zp = self.z_project(show=True, rois=True)
             roi = None
@@ -291,7 +291,7 @@ class LineScan(Movie):
             self.data = self.data[:-skip_end]
             self.info = self.info[:-skip_end]
         if skip_interval:
-            self.data = self.data[[i for i in range(len(self.data)) if (i+1)%skip_interval],...]
+            self.data = self.data[[i for i in xrange(len(self.data)) if (i+1)%skip_interval],...]
 
         line_duration = self.pixel_duration * np.shape(self.data)[1]
         self.time = np.arange(len(self))*line_duration

@@ -3,6 +3,7 @@ from tifffile import TiffFile
 import numpy as np
 from pyfluo.movies import Movie, LineScan
 from pyfluo.util import *
+import time as pytime
 
 CHANNEL_IMG = 0
 CHANNEL_STIM = 1
@@ -49,7 +50,7 @@ class MultiChannelTiff(pfBase):
         if not all([i.n_channels==n_channels for i in tiffs]):
             raise Exception('Channel number inconsistent among provided tiffs.')
         
-        for ch in range(n_channels):    
+        for ch in xrange(n_channels):    
             movie = None
             for item in tiffs:              
                 chan = item[ch]
@@ -85,9 +86,13 @@ class WangLabScanImageTiff(object):
 
     def __init__(self, filename):
         tiff_file = TiffFile(filename)
-        pages = [page for page in tiff_file]
-        data = [page.asarray() for page in pages]
-        page_info = [self.parse_page_info(page) for page in pages]
+        first_pg = tiff_file[0].asarray()
+        data = np.empty((len(tiff_file), np.shape(first_pg)[0], np.shape(first_pg)[1]))
+        for pidx,page in enumerate(tiff_file):
+            data[pidx,:,:] = page.asarray()
+        
+        inf = self.parse_page_info(tiff_file[0].image_description) 
+        page_info = [inf for i in xrange(len(tiff_file))]
     
         ex_info = page_info[0]
         self.n_channels = int(ex_info['state.acq.numberOfChannelsAcquire'])
@@ -98,15 +103,15 @@ class WangLabScanImageTiff(object):
             raise('Tiff pages do not correspond properly to number of channels. Check tiff parsing.')
         
         channels = []
-        for ch in range(self.n_channels):
+        for ch in xrange(self.n_channels):
             channel = {}
             channel['data'] = np.concatenate([[i] for i in data[ch::self.n_channels]])
             channel['info'] = page_info[ch::self.n_channels]
             channels.append(channel)
         return channels
         
-    def parse_page_info(self, page):
-        desc = ''.join([ch for ch in page.image_description if ord(ch)<127])
+    def parse_page_info(self, img_description):
+        desc = ''.join([ch for ch in img_description if ord(ch)<127])
         fields = [field.split('=') for field in desc.split('\n') if len(field.split('='))>1]
         info = {}
         for field in fields:

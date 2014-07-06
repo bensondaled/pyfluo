@@ -108,7 +108,7 @@ class TimeSeries(TSBase):
     def __init__(self, data, time=None, info=None, tunit='s', merge_method_data=np.mean, merge_method_time=np.mean):
         super(TimeSeries, self).__init__()
         self.tunit = tunit
-    
+        
         # data
         if type(data) == TimeSeries:
             time = data.time
@@ -122,17 +122,20 @@ class TimeSeries(TSBase):
             elif all([s.n_series==data[0].n_series for s in data]):
                 data = merge_method_data(np.dstack([s.data for s in data]), axis=2)
         self.data = data
-
+        
         # time
         if time != None:
-            time = np.asarray(time).astype(np.float64)
+            if type(time) == np.ndarray and time.dtype != np.float64:
+                time = time.astype(np.float64)
+            elif type(time) == list:
+                time = np.asarray(time, dtype=np.float64)
         elif time == None:
-            time = np.array(range(len(self))).astype(np.float64)
+            time = np.arange(len(self), dtype=np.float64)
         self.time = time
         
         # info
         if info == None:
-            info = [None for i in self]
+            info = [None for i in xrange(len(self))]
         self.info = info
 
     @property
@@ -211,7 +214,7 @@ class TimeSeries(TSBase):
         
         """
         self.data = np.insert(self.data,np.shape(self.data)[-1],item,axis=len(np.shape(self.data))-1)
-        added_time = self.time[-1] + (np.array(range(len(np.shape(item))))+1)*self.Ts
+        added_time = self.time[-1] + (np.arange(len(np.shape(item)))+1)*self.Ts
         self.time = np.append(self.time, added_time)
         self._update()
     def append_series(self, item, merge_method_time=np.mean):
@@ -361,7 +364,7 @@ class TimeSeries(TSBase):
         ax = pl.gca()
         series_ticks = []
         if color==None: colors = mpl_cm.jet(np.linspace(0, 1, self.n_series))
-        else: colors = [color for i in range(self.n_series)]
+        else: colors = [color for i in xrange(self.n_series)]
         
         if self.n_series==1:
             data = d[0]
@@ -386,7 +389,7 @@ class TimeSeries(TSBase):
                 stim.plot(normalize=(0., last_max), color='black', ls='dotted')
             
             ax2 = ax.twinx()
-            pl.yticks(series_ticks, [str(i) for i in range(len(series_ticks))], weight='bold')
+            pl.yticks(series_ticks, [str(i) for i in xrange(len(series_ticks))], weight='bold')
             [l.set_color(col) for col,l in zip(colors,ax2.get_yticklabels())]
             pl.ylim(ax.get_ylim())
             

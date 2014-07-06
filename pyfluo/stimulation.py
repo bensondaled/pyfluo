@@ -2,6 +2,7 @@ from time_series import TimeSeries
 import numpy as np
 import pickle
 import time as pytime
+from pyfluo.util import *
 
 class StimSeries(TimeSeries):
     """A time series specialized for storing stimulation data.
@@ -34,7 +35,7 @@ class StimSeries(TimeSeries):
         """
         uniform = kwargs.pop('uniform', True)
         down_sample = kwargs.pop('down_sample', 64) #if not None, give n for resample
-                
+        
         super(StimSeries, self).__init__(*args, **kwargs)
         #self.original_data = self.data #if you wanted the original data
 
@@ -73,6 +74,7 @@ class StimSeries(TimeSeries):
         up = False
         idxs_down = 0
         delta_sig = np.zeros(len(self))
+
         for idx,d in enumerate(self):
             if not up and d>thresh:
                 up = True
@@ -93,7 +95,7 @@ class StimSeries(TimeSeries):
         self.data = delta_sig
     def process_stim_times(self, min_duration = 0.1, roundd=True):
         try:
-            self.stim_idxs = [[self.start_idxs[i], self.end_idxs[i]] for i in range(len(self.start_idxs))]
+            self.stim_idxs = [[self.start_idxs[i], self.end_idxs[i]] for i in xrange(len(self.start_idxs))]
         except:
             print "There was an error parsing the stimulation signal. Try viewing it manually to determine problem."
         self.stim_times = [[self.time[idx] for idx in pulse] for pulse in self.stim_idxs]
