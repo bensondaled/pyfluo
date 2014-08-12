@@ -33,6 +33,7 @@ def dff_stim(seriess, stim=None, base_time=0.3):
         
     return dffs
 def compute_dff(series, tau0=0.2, tau1=0.75, tau2=3.0, noise_filter=False):
+    ###NOTE! ISSUE! SOMETHING IS WRONG, NAMELY, THE CALCULATION OF R, ALTHOUGH VERY SIMPLE, IS CAUSING SERIOUS PROBLEMS
     """Calculates delta-F over F using a sliding window method.
    
    **Parameters:** 
@@ -47,6 +48,7 @@ def compute_dff(series, tau0=0.2, tau1=0.75, tau2=3.0, noise_filter=False):
         
     **Notes:**
         Adapted from Jia et al. 2010 Nature Protocols
+        The default parameters are recommended for 30Hz sampling rate, and cause substantial issues when sampling rate deviates.
         
         The main adjustment not specified in the algorithm is how I deal with the beginning and end of the signal. When we're too close to the borders of the signal such that averages/baselines are subject to noise, I allow the function to look in the other direction (forward if at beginning, backward if at end) to make the signal more robust. This is reflected by the variables "forward" and "backward" in the calculation of f_bar and f_not.
     """
@@ -87,7 +89,7 @@ def compute_dff(series, tau0=0.2, tau1=0.75, tau2=3.0, noise_filter=False):
         search = np.take(f_bar, range(i1, idx+1+forward), axis=1)
         if np.size(search):
             f_not[:,idx] = np.min(search, axis=1) 
-    
+   
     r = (series.data - f_not) / f_not
 
     def w_func(x):
@@ -104,7 +106,7 @@ def compute_dff(series, tau0=0.2, tau1=0.75, tau2=3.0, noise_filter=False):
             dff[:,t] = np.divide(numerator, denominator)              
     else:
         dff = r
-    
+   
     return TimeSeries(data=dff, time=series.time)
 
 def subtract_background(data):
