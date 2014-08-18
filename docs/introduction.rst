@@ -74,7 +74,7 @@ Here is a quick-start example to get you moving with pyfluo.
     pl.figure(1)
     pl.savefig('dff_aligned.png')
     # and the data
-    save([dff, stim], 'my_new_data', globals())
+    save('my_new_data', dff=dff, stim=stim)
 
 Shown below are examples of rois.png (left) and dff_aligned.png (right).
 
