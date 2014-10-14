@@ -53,10 +53,10 @@ class Movie(TSBase):
         super(Movie, self).__init__()
             
         self.data = data
+        if info == None:
+            info = [None for i in xrange(len(self))]
         self.info = info
-        if self.info==None:
-            self.info = [None for i in xrange(len(self))]
-            
+         
         skip_beginning = skip[0]
         skip_end = skip[1]
         skip_interval = skip[2]
@@ -68,15 +68,24 @@ class Movie(TSBase):
             self.info = self.info[:-skip_end]
         if skip_interval:
             self.data = self.data[[i for i in xrange(len(self.data)) if (i+1)%skip_interval],...]
-        
-        self.ex_info = self.info[0]
-        lpf = float(self.ex_info['state.acq.linesPerFrame'])
-        ppl = float(self.ex_info['state.acq.pixelsPerLine'])
-        mspl = float(self.ex_info['state.acq.msPerLine'])
-        self.pixel_duration = mspl / ppl / 1000. #seconds
-        self.frame_duration = self.pixel_duration * ppl * lpf #seconds
-        
-        self.time = np.arange(len(self))*self.frame_duration
+       
+        if time == None:
+            try:
+                self.ex_info = self.info[0]
+                lpf = float(self.ex_info['state.acq.linesPerFrame'])
+                ppl = float(self.ex_info['state.acq.pixelsPerLine'])
+                mspl = float(self.ex_info['state.acq.msPerLine'])
+                self.pixel_duration = mspl / ppl / 1000. #seconds
+                self.frame_duration = self.pixel_duration * ppl * lpf #seconds
+            except:
+                self.ex_info = None
+                self.pixel_duration = 1.
+                self.frame_duration = self.pixel_duration * np.product(self.data.shape[1:])
+            self.time = np.arange(len(self))*self.frame_duration
+        else:
+            self.time = time
+            self.frame_duration = time[1]-time[0]
+            self.pixel_duration = self.frame_duration / np.product(self.data.shape[1:])
                 
         self.rois = ROISet()
 
