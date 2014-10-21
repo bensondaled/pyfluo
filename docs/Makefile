@@ -25,7 +25,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 buildall: html
 	@echo "Worked!"
-	cd $(BUILDDIR)/html; git add . ; git commit -m "rebuilt docs"; git push origin gh-pages
+	cd $(BUILDDIR); git add . ; git commit -m "rebuilt docs"; git push origin gh-pages
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"

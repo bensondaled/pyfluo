@@ -8,7 +8,7 @@ def dff_stim(seriess, stim=None, base_time=0.3):
     FUNCTION OUT OF DATE, LIKELY CONTAINS BUGS.
     
     Args:
-        seriess (pyfluo.TimeSeries): should be passed from *compute_dff*
+        series (pyfluo.TimeSeries): should be passed from *compute_dff*
         stim (pyfluo.StimSeries): if mode is "stim," this argument represents the stimulation associated with *series*
         base_time (float): if mode is "stim," this argument represents the time before stimulation to be averaged as a base line F0.
         
