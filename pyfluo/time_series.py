@@ -50,8 +50,8 @@ class TimeSeries(TSBase):
             >>> data = [ 31.6, 81.5, 51.8, 93.7, 12.2, 16.1 ]   
                         
             >>> data = [ [5.5, 6.1, 3.3],
-                         [2.8, 1.6, 9.8],
-                         [1.2, 3.4, 5.2] ]
+            >>>          [2.8, 1.6, 9.8],
+            >>>          [1.2, 3.4, 5.2] ]
             
             
         #. A list of TimeSeries objects. This situation is handled in various ways depending on the nature of the input:
@@ -80,8 +80,8 @@ class TimeSeries(TSBase):
             
             # create a TimeSeries with multiple series
             >>> ts = TimeSeries(data = [ [2.0, 4.0, 6.0],
-                                         [1.0, 2.0, 3.0],
-                                         [5.0, 10.0, 15.0] ])
+            >>>                          [1.0, 2.0, 3.0],
+            >>>                          [5.0, 10.0, 15.0] ])
             
             # regular indexing
             >>> ts[1]
@@ -186,8 +186,8 @@ class TimeSeries(TSBase):
             # example 1
             
             >>> ts.data = [ [1, 2, 3],
-                            [4, 5, 6],
-                            [7, 8, 9] ]
+            >>>             [4, 5, 6],
+            >>>             [7, 8, 9] ]
              
             >>> ts.append(42)
              
@@ -200,8 +200,8 @@ class TimeSeries(TSBase):
             # example 2
                     
             >>> ts.data = [ [1, 2],
-                            [3, 4],
-                            [5, 6] ]
+            >>>             [3, 4],
+            >>>             [5, 6] ]
                     
             >>> ts.append([66, 77, 88])
             
@@ -227,8 +227,8 @@ class TimeSeries(TSBase):
         Example::
             
             >>> ts.data = [ [1, 2, 3],
-                            [4, 5, 6],
-                            [7, 8, 9] ]
+            >>>             [4, 5, 6],
+            >>>             [7, 8, 9] ]
                     
             >>> ts.append_series([10, 11, 12])
 
@@ -259,8 +259,8 @@ class TimeSeries(TSBase):
         Example::
         
             >>> ts.data = [ [1, 2, 3],
-                            [4, 5, 6],
-                            [7, 8, 9] ]
+            >>>             [4, 5, 6],
+            >>>             [7, 8, 9] ]
             
             >>> ts.normalize()
             
@@ -298,8 +298,8 @@ class TimeSeries(TSBase):
         Example::
         
             >>> ts.data = [ [1, 3, 5],
-                            [2, 4, 6],
-                            [9, 2, 7] ]
+            >>>             [2, 4, 6],
+            >>>             [9, 2, 7] ]
             
             >>> ts = ts.merge(method=np.mean)
             
