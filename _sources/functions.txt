@@ -12,3 +12,9 @@ compute_dff
 
 .. autofunction:: compute_dff
 
+.. currentmodule:: io
+
+.. autofunction:: save
+
+.. autofunction:: load
+
