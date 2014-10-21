@@ -1,0 +1,699 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Core Data Structures &mdash; pyfluo  documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pyfluo  documentation" href="index.html" />
+    <link rel="next" title="Core Functions" href="functions.html" />
+    <link rel="prev" title="About this library" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="functions.html" title="Core Functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="About this library"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyfluo  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="core-data-structures">
+<h1>Core Data Structures<a class="headerlink" href="#core-data-structures" title="Permalink to this headline">¶</a></h1>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#time_series.TimeSeries" title="time_series.TimeSeries"><tt class="xref py py-obj docutils literal"><span class="pre">time_series.TimeSeries</span></tt></a>(data[,&nbsp;time,&nbsp;info,&nbsp;...])</td>
+<td>A data structure that holds a one or more one-dimensional arrays of values, associated with a single time vector.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#stimulation.StimSeries" title="stimulation.StimSeries"><tt class="xref py py-obj docutils literal"><span class="pre">stimulation.StimSeries</span></tt></a>(*args,&nbsp;**kwargs)</td>
+<td>A time series specialized for storing stimulation data.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#tiff.wanglab.MultiChannelTiff" title="tiff.wanglab.MultiChannelTiff"><tt class="xref py py-obj docutils literal"><span class="pre">tiff.wanglab.MultiChannelTiff</span></tt></a>(raw[,&nbsp;klass])</td>
+<td>An object that holds multiple movie-like (from movies module) objects as channels.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#movies.Movie" title="movies.Movie"><tt class="xref py py-obj docutils literal"><span class="pre">movies.Movie</span></tt></a>(data[,&nbsp;time,&nbsp;info,&nbsp;skip])</td>
+<td>An object that holds a movie: a series of images each with a timestamp.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#movies.LineScan" title="movies.LineScan"><tt class="xref py py-obj docutils literal"><span class="pre">movies.LineScan</span></tt></a>(*args,&nbsp;**kwargs)</td>
+<td>An object that holds a line scan:  a series of 1-dimensional images each with a timestamp.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="timeseries">
+<h2>TimeSeries<a class="headerlink" href="#timeseries" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="time_series.TimeSeries">
+<em class="property">class </em><tt class="descclassname">time_series.</tt><tt class="descname">TimeSeries</tt><big>(</big><em>data</em>, <em>time=None</em>, <em>info=None</em>, <em>tunit='s'</em>, <em>merge_method_data=&lt;function mean at 0x10305d320&gt;</em>, <em>merge_method_time=&lt;function mean at 0x10305d320&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>A data structure that holds a one or more one-dimensional arrays of values, associated with a single time vector.</p>
+<p>Note that because this object can store multiple data arrays as separate <a href="#id1"><span class="problematic" id="id2">``</span></a>series&#8217;&#8216;, most of its methods perform operations in a parallel manner on each series. Unless otherwise noted, this is the default action of the class methods.</p>
+<dl class="docutils">
+<dt><strong>Attributes:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>data</strong> (<em>np.ndarray</em>): the data array of the time series.</li>
+<li><strong>time</strong> (<em>np.ndarray</em>): the time array of the time series.</li>
+<li><strong>info</strong> (<em>np.ndarray</em>): an array of meta-information associated with time points.</li>
+<li><strong>n_series</strong> (<em>int</em>): the number of time series stored in the object (i.e. the number of rows in <em>data</em>).</li>
+<li><strong>Ts</strong> (<em>float</em>): the sampling period of the time series.</li>
+<li><strong>fs</strong> (<em>float</em>): the sampling frequency of the time series.</li>
+<li><strong>tunit</strong> (<em>str</em>): the unit of measurement in which the object&#8217;s time is stored.</li>
+<li><strong>name</strong> (<em>str</em>): a unique name generated for the object when instantiated</li>
+</ul>
+</dd>
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>data</strong> (<em>list</em> / <em>np.ndarray</em> / <em>TimeSeries</em>): the time series data. If type <em>TimeSeries</em>, the <em>time</em> parameter is ignored and time attribute from this parameter is used. See below for details on parameter format.</li>
+<li><strong>time</strong> (<em>list</em> / <em>np.ndarray</em>): list of uniformly spaced numerical values, identical in length to the number of columns in <em>data</em>. If <em>data</em> is type <em>TimeSeries</em>, this parameter is ignored. If <tt class="docutils literal"><span class="pre">None</span></tt>, defaults to <tt class="docutils literal"><span class="pre">range(len(data))</span></tt>.</li>
+<li><strong>info</strong> (<em>list</em> / <em>np.ndarray</em>): list of meta-information associated with each time point.</li>
+<li><strong>tunit</strong> (<em>str</em>): the unit of measurement in which the object&#8217;s time is stored.</li>
+<li><strong>merge_method_time</strong> (<em>def</em>): the function to be used to merge time vector when necessary. See notes on <em>data</em> parameter for details.</li>
+<li><strong>merge_method_data</strong> (<em>def</em>): the function to be used to merge the data vector when necessary. See notes on <em>data</em> parameter for details.</li>
+</ul>
+</dd>
+<dt><strong>Notes:</strong></dt>
+<dd><p class="first">For the <em>data</em> parameter, the only strict constraint is that all input contains the same number of samples. There are multple types of input that are supported:</p>
+<ol class="last arabic">
+<li><p class="first">The data of one or multiple time series. In the case of multiple time series, supply a list of lists, where each list is one of the time series. This can also be a 2D np.ndarray of the same structure. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">31.6</span><span class="p">,</span> <span class="mf">81.5</span><span class="p">,</span> <span class="mf">51.8</span><span class="p">,</span> <span class="mf">93.7</span><span class="p">,</span> <span class="mf">12.2</span><span class="p">,</span> <span class="mf">16.1</span> <span class="p">]</span>   
+<span class="go">            </span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">5.5</span><span class="p">,</span> <span class="mf">6.1</span><span class="p">,</span> <span class="mf">3.3</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>         <span class="p">[</span><span class="mf">2.8</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">,</span> <span class="mf">9.8</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>         <span class="p">[</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">,</span> <span class="mf">5.2</span><span class="p">]</span> <span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">A list of TimeSeries objects. This situation is handled in various ways depending on the nature of the input:</p>
+<blockquote>
+<div><p><strong>(a)</strong> If the supplied TimeSeries objects all contain just single time series (i.e. <tt class="docutils literal"><span class="pre">TimeSeries.n_series</span> <span class="pre">==</span> <span class="pre">1</span></tt>), they are concatenated and the resulting TimeSeries will contain multiple rows of data corresponding to those inputs. The time vectors of the series are merged using the function given by the <em>merge_method_time</em> argument in the constructor.</p>
+<p><strong>(b)</strong> If the supplied TimeSeries objects contain varying numbers of time series (i.e. <tt class="docutils literal"><span class="pre">TimeSeries.n_series</span></tt> varies), the course of action is the same as (a), concatenating all the series from each TimeSeries object into one large TimeSeries object. Again, time vectors are merged as in (a).</p>
+<p><strong>(c)</strong> If the supplied TimeSeries objects contain multiple time series (i.e. two-dimensional data vectors), and <em>every one has the same number of series</em>, it is assumed that there is a relationship between the series, and they are merged. Specifically, the first series (or data row) from every supplied TimeSeries is merged into one, then the second, then third, etc. The merge is performed by the <em>merge_method_data</em> constructor argument. This course of action can be overridden by setting the <em>merge_method_data</em> constructor argument to None, in which case the input will be handled as in (b).</p>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+<dt><strong>Usage Tips:</strong></dt>
+<dd><p class="first">The <em>TimeSeries</em> object is in many ways like a numpy ndarray. In general it is safe to assume that operations performed on the object will be performed on the <em>data</em> attribute. Here are some basic pointers for using <em>TimeSeries</em>:</p>
+<ul class="last">
+<li><p class="first">Indexing:</p>
+<div class="highlight-python"><pre># create a time series
+&gt;&gt;&gt; ts = TimeSeries(data = [2.0, 4.0, 8.0, 16.0, 32.0])
+
+# basic indexing
+&gt;&gt;&gt; ts[0]
+2.0
+
+# slicing
+&gt;&gt;&gt; ts[2:4]
+np.array([8.0, 16.0])
+
+# create a TimeSeries with multiple series
+&gt;&gt;&gt; ts = TimeSeries(data = [ [2.0, 4.0, 6.0],
+&gt;&gt;&gt;                          [1.0, 2.0, 3.0],
+&gt;&gt;&gt;                          [5.0, 10.0, 15.0] ])
+
+# regular indexing
+&gt;&gt;&gt; ts[1]
+np.array([ 4.0,
+           2.0,
+           10.0 ])
+
+# index a series using a string
+&gt;&gt;&gt; ts['1']
+TimeSeries(data: [1.0, 2.0, 3.0])</pre>
+</div>
+</li>
+<li><p class="first">Arithmetic:</p>
+<div class="highlight-python"><pre># create some time series
+&gt;&gt;&gt; ts1 = TimeSeries(data = [2.0, 4.0, 8.0, 16.0])
+&gt;&gt;&gt; ts2 = TimeSeries(data = [10.0, 20.0, 30.0, 40.0])
+
+# add TimeSeries
+&gt;&gt;&gt; ts1 + ts2
+TimeSeries(data: [12.0, 24.0, 38.0 56.0])</pre>
+</div>
+</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="time_series.TimeSeries.append">
+<tt class="descname">append</tt><big>(</big><em>item</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append data to the series.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first simple">
+<li><strong>item</strong> (<em>int</em> / <em>float</em> / <em>np.ndarray</em> / <em>list</em>): the data to be appended to the series.</li>
+</ul>
+<p class="last">If a single value is supplied, the value is added to the end of the data. In the case that multiple data rows already exist in the data, the new entry is added to the end of each series.
+If a list or array is supplied, it must be the same length as the number of series (i.e. rows of data) in the object&#8217;s data. In this case, the first item in the list is added to the end of the first series, the second to the second, and so on.</p>
+</dd>
+</dl>
+<p>Examples:</p>
+<div class="highlight-python"><pre># example 1
+
+&gt;&gt;&gt; ts.data = [ [1, 2, 3],
+&gt;&gt;&gt;             [4, 5, 6],
+&gt;&gt;&gt;             [7, 8, 9] ]
+ 
+&gt;&gt;&gt; ts.append(42)
+ 
+&gt;&gt;&gt; ts.data
+
+[ [1, 2, 3, 42],
+  [4, 5, 6, 42],
+  [7, 8, 9, 42] ]
+
+# example 2
+        
+&gt;&gt;&gt; ts.data = [ [1, 2],
+&gt;&gt;&gt;             [3, 4],
+&gt;&gt;&gt;             [5, 6] ]
+        
+&gt;&gt;&gt; ts.append([66, 77, 88])
+
+&gt;&gt;&gt; ts.data
+
+[ [1, 2, 66],
+  [3, 4, 77],
+  [5, 6, 88] ]          </pre>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.append_series">
+<tt class="descname">append_series</tt><big>(</big><em>item</em>, <em>merge_method_time=&lt;function mean at 0x10305d320&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.append_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append a series, or row of data, to the object.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>item</strong> (<em>np.ndarray</em> / <em>list</em> / <em>TimeSeries</em>): array of data to be added as a new row, or series. This must be the same length as the number of time points (i.e. columns) in the object&#8217;s data.</li>
+<li><strong>merge_method_time</strong> (<em>def</em>): function to be used to merge time vectors (applies when <em>item</em> is a <em>TimeSeries</em>).</li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span> <span class="p">]</span>
+<span class="go">        </span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">append_series</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">data</span> 
+
+<span class="go">[ [1, 2, 3],</span>
+<span class="go">  [4, 5, 6],</span>
+<span class="go">  [7, 8, 9],    </span>
+<span class="go">  [10, 11, 12] ]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.get_series">
+<tt class="descname">get_series</tt><big>(</big><em>idx</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.get_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get one row of data (one series).</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>idx</strong> (<em>int</em>): the index of the desired series (i.e. row of data).</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>A TimeSeries object.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that this is equivalent to the simpler string-based indexing. For example, <tt class="docutils literal"><span class="pre">ts.get_series(1)</span></tt> is equivalent to <tt class="docutils literal"><span class="pre">ts['1']</span></tt>.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.merge">
+<tt class="descname">merge</tt><big>(</big><em>method=&lt;function mean at 0x10305d320&gt;</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the series (data rows) of the object.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>method</strong> (<em>def</em>): the function with which to perform the merge.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>A new <em>TimeSeries</em> object with just one row of data, the merged result.</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span> <span class="p">]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">data</span>
+
+<span class="go">[ [4, 3, 6] ]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.normalize">
+<tt class="descname">normalize</tt><big>(</big><em>minmax=(0.0</em>, <em>1.0)</em>, <em>by_series=True</em>, <em>in_place=False</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize the time series object.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>minmax</strong> (<em>list</em>): <tt class="docutils literal"><span class="pre">[post_normalizaton_data_min,</span> <span class="pre">max]</span></tt></li>
+<li><strong>by_series</strong> (<em>bool</em>): normalize each data row individually</li>
+<li><strong>in_place</strong>: apply the normalization to <em>this</em> instance of the object.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>A new <em>TimeSeries</em> object, normalized.</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span> <span class="p">]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">normalize</span><span class="p">()</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ts</span><span class="o">.</span><span class="n">data</span>
+
+<span class="go">[ [0, 0.5, 1],</span>
+<span class="go">  [0, 0.5, 1],</span>
+<span class="go">  [0, 0.5, 1] ]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.plot">
+<tt class="descname">plot</tt><big>(</big><em>stim=None</em>, <em>stacked=True</em>, <em>gap_fraction=0.08</em>, <em>use_idxs=False</em>, <em>normalize=False</em>, <em>show=True</em>, <em>color=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the time series.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>stim</strong> (<em>pyfluo.StimSeries</em>): stimulation to be plotted over the data.</li>
+<li><strong>stacked</strong> (<em>bool</em>): for multiple rows of data, stack instead of overlaying.</li>
+<li><strong>gap_fraction</strong> (<em>float</em>): if <tt class="docutils literal"><span class="pre">stacked==True</span></tt>, specifies the spacing between curves as a fraction of the average range of the curves.</li>
+<li><strong>use_idxs</strong> (<em>bool</em>): ignore time and instead use vector indices as x coordinate.</li>
+<li><strong>normalize</strong> (<em>bool</em>): normalize the data before plotting.</li>
+<li><strong>show</strong> (<em>bool</em>): show the plot immediately.</li>
+<li>** <strong>kwargs:</strong> any arguments accepted by <em>matplotlib.plot</em></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="time_series.TimeSeries.take">
+<tt class="descname">take</tt><big>(</big><em>time_range</em>, <em>pad=(0.0</em>, <em>0.0)</em>, <em>reset_time=True</em>, <em>merge_method_time=&lt;function mean at 0x10305d320&gt;</em>, <em>merge_method_data=&lt;function mean at 0x10305d320&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#time_series.TimeSeries.take" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract a range of data values using time indices.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>time_range</strong> (<em>list</em>): <tt class="docutils literal"><span class="pre">[start_time,</span> <span class="pre">end_time]</span></tt></li>
+<li><strong>pad</strong> (<em>list</em>): used optionally to expand the specified time range on either end. The first value is subtracted from the start time, and the second value is added to the end time.</li>
+<li><strong>reset_time</strong> (<em>bool</em>): shift the time vector of the resultant time series, such that time zero corresponds to the data originally located at <tt class="docutils literal"><span class="pre">time_range[0]</span></tt>.</li>
+<li><strong>merge_method_time</strong> (<em>def</em>): specifies how to merge time when multiple time ranges are extracted from multiple data series. See note below for details.</li>
+<li><strong>merge_method_data</strong> (<em>def</em>): specifies how to merge data when multiple time ranges are extracted from multiple data series. See note below for details.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>A new <em>TimeSeries</em> object with data corresponding to desired time range.</dd>
+<dt><strong>Notes:</strong></dt>
+<dd><ul class="first last">
+<li><p class="first">The <em>time_range</em> parameter can be either a pair of values <tt class="docutils literal"><span class="pre">(start_time,</span> <span class="pre">end_time)</span></tt>, or a list of such pairs. In the latter case, this method is applied to each pair of times, and the result is a <em>TimeSeries</em> object with multiple rows of data.</p>
+</li>
+<li><p class="first">If values in <em>time_range</em> lie outside the bounds of the time series, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+</li>
+<li><dl class="first docutils">
+<dt>Concerning merging of data: this method first extracts the desired time range/s from each row individually. If the original object contains multiple rows of data, there are two different results that should be expected: </dt>
+<dd><ol class="first arabic simple">
+<li>If only one time range is supplied, the resulting TimeSeries then contains multiple rows, each corresponding to the rows of the original object, as would be expected.</li>
+<li>If multiple time ranges are supplied, this method extracts a set of time ranges from each of the objects&#8217; series. Since TimeSeries objects are only capable of holding two-dimensional data, creation of the resulting TimeSeries will, by action of the constructor, merge this data. Because the multiple rows of the original series likely had individual significance, the default behaviour for this merge is to preserve the separation of the series.</li>
+</ol>
+<p>For example, consider a TimeSeries with 3 rows of data corresponding to the fluorescence traces of three regions of interest. One may use this <em>take</em> method to align multiple points of stimulation (say, 5) in each of these traces all at once. In the resulting <em>TimeSeries</em>, there will then be just 3 rows of data, corresponding to the 3 regions of interest. These will consist of the merged data from the 5 stimulations.</p>
+<p class="last">The merge is performed by the function supplied in the <em>merge_method</em> parameter. Importantly, this merge can be overriden, as described in the class constructor, by supplying <tt class="docutils literal"><span class="pre">merge_method=None</span></tt>. In that case, all time segments from all data series are concatenated into rows and set as the data of the resulting <em>TimeSeries</em>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="stimseries">
+<h2>StimSeries<a class="headerlink" href="#stimseries" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="stimulation.StimSeries">
+<em class="property">class </em><tt class="descclassname">stimulation.</tt><tt class="descname">StimSeries</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#stimulation.StimSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>A time series specialized for storing stimulation data.</p>
+<p>Essentially, this class takes a high-density stimulation signal and simplifies it by downsampling, binarizing, and optionally uniformizing stimulation events.</p>
+<dl class="docutils">
+<dt><strong>Attributes:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>raw_data</strong> (<em>np.ndarray</em>): the (possibly down-sampled) data in its raw form, before conversion to a binary signal.</li>
+<li><strong>stim_idxs</strong> (<em>list</em>): a list of value pairs <tt class="docutils literal"><span class="pre">(start,</span> <span class="pre">end)</span></tt> indicating the indices of the time series data at which a stimulus started and ended.</li>
+<li><strong>stim_times</strong> (<em>list</em>): a list of value pairs <tt class="docutils literal"><span class="pre">(start,</span> <span class="pre">end)</span></tt> indicating the time points at which a stimulus started and ended.</li>
+<li><strong>stim_durations</strong> (<em>list</em>): of list of values indicating the duration of each stimulus.</li>
+<li><strong>example</strong> (<em>TimeSeries</em>): an example stimulation created by taking the mean of all stimuli.</li>
+<li><strong>name</strong> (<em>str</em>): a unique name generated for the object when instantiated</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="stimulation.StimSeries.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#stimulation.StimSeries.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a StimSeries object.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>down_sample</strong> (<em>int</em>): factor by which to down sample signal before processing. Defaults to 64, meaning that upon resampling, every 64th sample is taken. If <tt class="docutils literal"><span class="pre">None</span></tt>, does not down sample.</li>
+<li><strong>uniform</strong> (<em>bool</em> / <em>int</em>): enforces that stimulation durations be equal by rounding them to the nearest <em>uniform</em> digits. Start times of stimulation events are completely perserved, while end times are adjusted slightly to allow for easier behaviour during analysis. Defaults to <tt class="docutils literal"><span class="pre">1</span></tt>. Note that if <tt class="docutils literal"><span class="pre">tunit=='s'</span></tt>, this corresponds to rounding to the nearest 100ms.</li>
+</ul>
+</dd>
+</dl>
+<p>(see TimeSeries.__init__ for complete signature)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="multichanneltiff">
+<h2>MultiChannelTiff<a class="headerlink" href="#multichanneltiff" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="tiff.wanglab.MultiChannelTiff">
+<em class="property">class </em><tt class="descclassname">tiff.wanglab.</tt><tt class="descname">MultiChannelTiff</tt><big>(</big><em>raw</em>, <em>klass=&lt;class 'pyfluo.movies.Movie'&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#tiff.wanglab.MultiChannelTiff" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that holds multiple movie-like (from movies module) objects as channels.</p>
+<p>This class is currently exclusively for creation from WangLabScanImageTiff&#8217;s. Its main goal is to circumvent the need to load a multi-channel tiff file more than once in order to attain movies from its multiple channels.</p>
+<dl class="docutils">
+<dt><strong>Attributes:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>movies</strong> (<em>list</em>): list of Movie objects.</li>
+<li><strong>name</strong> (<em>str</em>): a unique name generated for the object when instantiated</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="tiff.wanglab.MultiChannelTiff.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>raw</em>, <em>klass=&lt;class 'pyfluo.movies.Movie'&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#tiff.wanglab.MultiChannelTiff.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a MultiChannelTiff object.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>raw</strong> (<em>str</em> / <em>WangLabScanImageTiff</em> / <em>list</em> thereof): list of movies.</li>
+<li><strong>skip</strong> (<em>list</em>): a two-item list specifying how many frames to skip from the start (first item) and end (second item) of each movie.</li>
+<li><strong>klass</strong> (<em>class</em>): the type of class in which the movies should be stored (currently supports pyfluo.Movie or pyfluo.LineScan)</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tiff.wanglab.MultiChannelTiff.get_channel">
+<tt class="descname">get_channel</tt><big>(</big><em>i</em><big>)</big><a class="headerlink" href="#tiff.wanglab.MultiChannelTiff.get_channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the movie corresponding to a specified channel.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that this method is equivalent to the use of indexing. For example: <tt class="docutils literal"><span class="pre">mct.get_channel(1)</span></tt> is equivalent to <tt class="docutils literal"><span class="pre">mct[1]</span></tt>.</p>
+</div>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>i</strong> (<em>int</em>): index of channel to return.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>Object of type <em>klass</em>, described in constructor, corresponding to channel <tt class="docutils literal"><span class="pre">i</span></tt>.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="movie">
+<h2>Movie<a class="headerlink" href="#movie" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="movies.Movie">
+<em class="property">class </em><tt class="descclassname">movies.</tt><tt class="descname">Movie</tt><big>(</big><em>data</em>, <em>time=None</em>, <em>info=None</em>, <em>skip=(0</em>, <em>0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#movies.Movie" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that holds a movie: a series of images each with a timestamp. Specficially designed for two-photon microscopy data stored in tiffs.</p>
+<dl class="docutils">
+<dt><strong>Attributes:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>data</strong> (<em>np.array</em>): a 3D matrix storing the movie data as a series of frames.</li>
+<li><strong>info</strong> (<em>list</em>): a list storing any relevant data associated with each frame in the movie.</li>
+<li><strong>time</strong> (<em>np.array</em>): a one-dimensional array storing the timestamp of each frame.</li>
+<li><strong>width</strong> (<em>int</em>): width of the movie in pixels.</li>
+<li><strong>height</strong> (<em>int</em>): height of the movie in pixels.</li>
+<li><strong>pixel_duration</strong> (<em>float</em>): the duration of time (in seconds) associated with one pixel.</li>
+<li><strong>frame_duration</strong> (<em>float</em>): the duration of time (in seconds) associated with one frame.</li>
+<li><strong>Ts</strong> (<em>float</em>): sampling period (in seconds) with regard to frames. Equivalent to 1/<em>fs</em>.</li>
+<li><strong>fs</strong> (<em>float</em>): sampling frequency (in Hz) with regard to frames. Equivalent to 1/<em>Ts</em>.</li>
+<li><strong>rois</strong> (<em>ROISet</em>): contains any selected regions of interest that were stored in association with the Movie object.</li>
+<li><strong>name</strong> (<em>str</em>): a unique name generated for the object when instantiated</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="movies.Movie.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>data</em>, <em>time=None</em>, <em>info=None</em>, <em>skip=(0</em>, <em>0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#movies.Movie.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a Movie object.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>data</strong> (<em>np.array</em>): a 3D matrix storing the movie data as a series of frames. Dimensions are (n,height,width) where n is the number frames in the movie.</li>
+<li><strong>time</strong> (<em>np.array</em>): the timestamps of each frame in <em>data</em>. If <tt class="docutils literal"><span class="pre">None</span></tt>, uses <em>info</em> to extract a sampling rate and builds time based on that.</li>
+<li><strong>info</strong> (<em>list</em>): a list storing any relevant data associated with each frame in the movie. Defaults to a list of <tt class="docutils literal"><span class="pre">None</span></tt>.</li>
+<li><strong>skip</strong> (<em>list</em>): <tt class="docutils literal"><span class="pre">[number_of_frames_to_ignore_at_beginning,</span> <span class="pre">end,</span> <span class="pre">interval_on_which_to_ignore]</span></tt></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.append">
+<tt class="descname">append</tt><big>(</big><em>movies</em><big>)</big><a class="headerlink" href="#movies.Movie.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append another Movie object to this Movie.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.extract_by_roi">
+<tt class="descname">extract_by_roi</tt><big>(</big><em>rois=None</em>, <em>method=&lt;function mean at 0x10305d320&gt;</em>, <em>subtract_background=True</em><big>)</big><a class="headerlink" href="#movies.Movie.extract_by_roi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>rois</strong> (<em>ROISet</em> / <em>list</em>): the ROI(s) over which to extract data. If None, uses the object attribute <em>rois</em>.</li>
+<li><strong>method</strong> (<em>def</em>): the function by which to convert the data within an ROI to a single value.</li>
+<li><strong>subtract_background</strong> (<em>bool</em>): subtract the background and noise using <em>pyfluo.fluorescence.subtract_background</em></li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd><em>TimeSeries</em> object, with multiple rows corresponding to multiple ROIs.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.flatten">
+<tt class="descname">flatten</tt><big>(</big><em>destination_class=&lt;class 'pyfluo.stimulation.StimSeries'&gt;</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#movies.Movie.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten the values in <em>data</em> to a linear series.</p>
+<p>To be used when the movie-capturing apparatus was used to capture a signal whose natural shape is linear. For example, capturing trigger data in a tiff file.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>destination_class</strong> (<em>type</em>): the class in which to store and return the flattened data. Ideal options are <em>TimeSeries</em> or <em>StimSeries</em>.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>An object of type <em>destination_class</em>, the flattened movie.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.play">
+<tt class="descname">play</tt><big>(</big><em>loop=False</em>, <em>fps=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
+<dd><p>Play the movie.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>loop</strong> (<em>bool</em>): repeat playback upon finishing.</li>
+<li><strong>fps</strong> (<em>float</em>): playback rate in frames per second.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.select_roi">
+<tt class="descname">select_roi</tt><big>(</big><em>n=1</em>, <em>store=True</em><big>)</big><a class="headerlink" href="#movies.Movie.select_roi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select any number of regions of interest (ROI) in the movie.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>n</strong> (<em>int</em>): number of ROIs to select.</li>
+<li><strong>store</strong> (<em>bool</em>): store the selected ROI(s) as attributes of this movie instance.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd><em>ROISet</em> object storing the selected ROIs (if &gt;1 ROIs selected)
+or
+<em>ROI</em> object of selected ROI (if 1 ROI selected).</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.take">
+<tt class="descname">take</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#movies.Movie.take" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract a range of frames from the movie.</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>time_range</strong> (<em>list</em>): the start and end times of the range desired.</li>
+<li><strong>merge_method</strong> (<em>def</em>): the method used to merge results if more than one time range is supplied. If <tt class="docutils literal"><span class="pre">None</span></tt>, returns a list of movies.</li>
+<li><strong>pad</strong> (<em>list</em>): a list of 2 values specifying the padding to be inserted around specified time range. The first value is subtracted from the start time, and the second value is added to the end time.</li>
+<li><strong>reset_time</strong> (<em>bool</em>): set the first element of the resultant time series to time 0.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>Movie between supplied time range</dd>
+<dt><strong>Notes:</strong>  </dt>
+<dd>If values in <em>time_range</em> lie outside the bounds of the movie time, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as <tt class="docutils literal"><span class="pre">None</span></tt>.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="movies.Movie.z_project">
+<tt class="descname">z_project</tt><big>(</big><em>method=&lt;function mean at 0x10305d320&gt;</em>, <em>show=False</em>, <em>rois=False</em>, <em>aspect='equal'</em><big>)</big><a class="headerlink" href="#movies.Movie.z_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten/project the movie data across all frames (z-axis).</p>
+<dl class="docutils">
+<dt><strong>Parameters:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>method</strong> (<em>def</em>): function to apply across the z-axis of the data.</li>
+<li><strong>show</strong> (<em>bool</em>): display the result.</li>
+<li><strong>rois</strong> (<em>bool</em>): display this object&#8217;s stored regions of interest, as dictated by the class attribute <em>rois</em>.</li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt>
+<dd>The z-projected image (same width and height as any movie frame).</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="linescan">
+<h2>LineScan<a class="headerlink" href="#linescan" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="movies.LineScan">
+<em class="property">class </em><tt class="descclassname">movies.</tt><tt class="descname">LineScan</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#movies.LineScan" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that holds a line scan:  a series of 1-dimensional images each with a timestamp. Specficially designed for two-photon microscopy data stored in tiffs.</p>
+<p>This object is effectively identical to the <em>Movie</em> class (it is a subclass of it), but some its methods are adjusted to work with line scan data.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Core Data Structures</a><ul>
+<li><a class="reference internal" href="#timeseries">TimeSeries</a></li>
+<li><a class="reference internal" href="#stimseries">StimSeries</a></li>
+<li><a class="reference internal" href="#multichanneltiff">MultiChannelTiff</a></li>
+<li><a class="reference internal" href="#movie">Movie</a></li>
+<li><a class="reference internal" href="#linescan">LineScan</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">About this library</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="functions.html"
+                        title="next chapter">Core Functions</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/data_structures.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="functions.html" title="Core Functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="About this library"
+             >previous</a> |</li>
+        <li><a href="index.html">pyfluo  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Ben Deverett.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>
