@@ -12,9 +12,9 @@ def save(file_name, **items):
             **items (keyword-object pairs or unpacked dictionary): pairs or dictionary in which the key is the object name and the value is the object
 
     Example:
-        object_a = 'hello'
-        object_b = np.array([1,2,3])
-        save('my_saved_objects', a=object_a, b=object_b)
+        >>> object_a = 'hello'
+        >>> object_b = np.array([1,2,3])
+        >>> save('my_saved_objects', a=object_a, b=object_b)
     """     
     f = open(file_name, 'wb')
     pickle.dump(items, f, pickle.HIGHEST_PROTOCOL)
