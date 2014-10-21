@@ -51,9 +51,7 @@ class TSBase(pfBase):
         t1 = time_range[0] - pad[0]
         t2 = time_range[1] + pad[1]
         if t1 > t2:
-            t_temp = t1
-            t1 = t2
-            t2 = t_temp
+            t1,t2 = t2,t1
         idx1 = self.time_to_idx(t1, method=round) #np.floor if inclusion of time point is more important than proximity
         idx2 = self.time_to_idx(t2, method=round) #np.ceil if inclusion of time point is more important than proximity
         

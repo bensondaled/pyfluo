@@ -134,24 +134,31 @@ class ROI(pfBase):
         name (str): a unique name generated for the object when instantiated
         
     """
-    def __init__(self, shape, pts):
+    def __init__(self, shape=None, pts=None, mask=None):
         super(ROI, self).__init__()
-        self.shape = shape
-        mask = np.ones(self.shape,dtype=bool)
+        if shape!=None and pts!=None:
+            self.shape = shape
+            mask = np.ones(self.shape,dtype=bool)
 
-        if len(self.shape)==1:
-            pts = np.array(pts)[:,0]
-            pts.sort()
-            pts = pts[[0,-1]]
-            mask[pts[0]:pts[1]+1] = False
-        elif len(self.shape)==2:
-            path = mpl_path.Path(pts)
-            for ridx,row in enumerate(mask):
-                for cidx,pt in enumerate(row):
-                    if path.contains_point([cidx,ridx]):
-                        mask[ridx,cidx] = False
+            if len(self.shape)==1:
+                pts = np.array(pts)[:,0]
+                pts.sort()
+                pts = pts[[0,-1]]
+                mask[pts[0]:pts[1]+1] = False
+            elif len(self.shape)==2:
+                path = mpl_path.Path(pts)
+                for ridx,row in enumerate(mask):
+                    for cidx,pt in enumerate(row):
+                        if path.contains_point([cidx,ridx]):
+                            mask[ridx,cidx] = False
+            else:
+                raise Exception('ROI class does not support ROIs in >2 dimensions.')
+        elif mask!=None:
+            self.shape = mask.shape
+            pts = np.argwhere(mask)[:,[1,0]] #note that this does not find borders, so does not correspond to what "pts" means above
+            mask = np.logical_not(mask)
         else:
-            raise Exception('ROI class does not support ROIs in >2 dimensions.')
+            raise Exception('Not enough info supplied to make an ROI. Supply either shape and points, or a mask.')
         
         self.pts = np.array(pts)
         self.mask = mask
