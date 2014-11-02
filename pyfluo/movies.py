@@ -273,7 +273,7 @@ class Movie(TSBase):
         flag = pl.isinteractive()
         pl.ioff()
         fig = pl.figure()
-        ims = [ [pl.imshow(np.atleast_2d(i), cmap=mpl_cm.Greys_r, aspect=self.visual_aspect)] for i in self ]
+        ims = [ [pl.imshow(np.atleast_2d(i), cmap=mpl_cm.Greys_r, aspect=self.visual_aspect, vmin=np.min(self.data), vmax=np.max(self.data))] for i in self ]
         
         ani = animation.ArtistAnimation(fig, ims, interval=1./fpms, blit=False, repeat=loop, **kwargs)
         pl.show()
