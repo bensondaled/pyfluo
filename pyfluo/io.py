@@ -1,8 +1,4 @@
-import time
-import os
 import pickle
-from os.path import isfile, isdir, join, basename, splitext
-
 
 def save(file_name, **items):
     """Save any number of objects in the current workspace into a single file.
@@ -16,9 +12,9 @@ def save(file_name, **items):
         >>> object_b = np.array([1,2,3])
         >>> save('my_saved_objects', a=object_a, b=object_b)
     """     
-    f = open(file_name, 'wb')
-    pickle.dump(items, f, pickle.HIGHEST_PROTOCOL)
-    f.close()
+
+    with open(file_name, 'wb') as f:
+        pickle.dump(items, f, pickle.HIGHEST_PROTOCOL)
 def load(file_name):
         """Load previously saved object/s.
         
@@ -33,6 +29,6 @@ def load(file_name):
         Returns:
                 Dictionary of loaded objects, as {name: obj ...}
         """
-        return pickle.load(open(file_name, 'rb'))
-        
+        with open(file_name, 'rb') as f:
+            return pickle.load(f)
         
