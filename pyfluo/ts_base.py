@@ -1,9 +1,11 @@
 import numpy as np
 import cv2
 import pylab as pl
+from scipy.signal import resample as sp_resample
 import warnings
 
 class TSBase(np.ndarray):
+    __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     def __new__(cls, data, n_dims=0, time=None, info=None, Ts=None, dtype=np.float64, interactive_backend=pl):
         obj = np.asarray(data, dtype=dtype).view(cls)
       
@@ -12,14 +14,14 @@ class TSBase(np.ndarray):
 
         ### time
         obj.time, obj.Ts = time, Ts
-        assert obj.time==None or type(obj.time) in [list, np.ndarray], 'Time vector not in proper format.'
+        assert obj.time is None or type(obj.time) in [list, np.ndarray], 'Time vector not in proper format.'
         assert obj.Ts==None or type(obj.Ts) in [float, int], 'Ts (sampling interval) not in proper format.'
-        if obj.time == None:
+        if obj.time is None:
             if obj.Ts == None:
                 obj.Ts = 1.
                 warnings.warn('No time information supplied; Ts assigned as 1.0')
             obj.time = obj.Ts*np.arange(0,len(obj), dtype=np.float64)
-        elif obj.time != None:
+        elif not obj.time is None:
             obj.time = np.asarray(obj.time, dtype=np.float64)
             if obj.Ts == None:
                 obj.Ts = np.mean(obj.time[1:]-obj.time[:-1])
@@ -44,6 +46,9 @@ class TSBase(np.ndarray):
         return obj
     
     def __array_finalize__(self, obj):
+        if obj is None:
+            return
+
         _custom_attrs = ['time','info','Ts','interactive_backend','fs']
         for ca in _custom_attrs:
             setattr(self, ca, getattr(obj, ca, None))
@@ -53,10 +58,13 @@ class TSBase(np.ndarray):
 
     def __getslice__(self,start,stop):
         #This is a bug fix, solution found here: http://stackoverflow.com/questions/14553485/numpy-getitem-delayed-evaluation-and-a-1-not-the-same-as-aslice-1-none
-        return self.__getitem__(slice(start,stop))
+        copy = self.copy()
+        copy.time = self.time.__getitem__(slice(start,stop))
+        return copy.__getitem__(slice(start,stop))
     def __getitem__(self,idx):
         out = super(TSBase,self).__getitem__(idx)
         return out
+
         #dummy_data = self.view(np.ndarray)
         #dummy_data = dummy_data.__getitem__(idx)
         #new_obj = self.copy()
@@ -66,6 +74,10 @@ class TSBase(np.ndarray):
     def t2i(self, t):
         #returns the index most closely associated with time t
         return np.argmin(np.abs(self.time - t))
+    def resample(self, *args, **kwargs):
+        if 't' not in kwargs:
+            kwargs['t'] = self.time
+        return sp_resample(self, *args, **kwargs)
    # def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None, take_axis=0):
    #     """Takes time range *inclusively* on both ends.
    #     

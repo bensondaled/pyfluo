@@ -1,14 +1,18 @@
 import numpy as np
-#from roi import ROI, ROISet
-from motion import correct_motion, apply_correction
+from rois import ROI
+from traces import Trace
+from motion import correct_motion, apply_motion_correction
 import pylab as pl
 import cv2
 from ts_base import TSBase
 
 class Movie(TSBase):
+    __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     def __new__(cls, data, **kwargs):
         return super(Movie, cls).__new__(cls, data, n_dims=[3], **kwargs)
-    def project(self, axis=0, method=np.mean, show=False, rois=False, **kwargs):
+    def __init__(self, *args, **kwargs):
+        pass
+    def project(self, axis=0, method=np.mean, show=False, rois=None, **kwargs):
         """Flatten/project the movie data across one or many axes.
         
         **Parameters:**
@@ -30,8 +34,8 @@ class Movie(TSBase):
                 ax.margins(0.)
                 if pro.ndim == 2:
                     pl.imshow(pro, cmap=pl.cm.Greys_r, **kwargs)
-                    if rois:
-                        self.rois.show(mode='pts',labels=True)
+                    if rois is not None:
+                        rois.show(mode='pts',labels=True)
                 elif pro.ndim == 1:
                     pl.plot(self.time, pro)
         
@@ -82,32 +86,33 @@ class Movie(TSBase):
                 _play_once()
             cv2.destroyWindow('Movie')
     
-    def select_roi(self, n=1, store=True):
+    def select_roi(self, n=1, existing=None):
         """Select any number of regions of interest (ROI) in the movie.
         
         **Parameters:**
             * **n** (*int*): number of ROIs to select.
-            * **store** (*bool*): store the selected ROI(s) as attributes of this movie instance.
             
         **Returns:**
-            *ROISet* object storing the selected ROIs (if >1 ROIs selected)
-            or
             *ROI* object of selected ROI (if 1 ROI selected).
         """
-        rois = []
+        roi = None
         for q in xrange(n):
             pl.clf()
-            zp = self.project(show=True, rois=True)
-            roi = None
+            zp = self.project(show=True, rois=existing)
             pts = pl.ginput(0, timeout=0)
+
             if pts:
-                roi = ROI(np.shape(zp), pts)
-                if store:
-                    self.rois.add(roi)
-            rois.append(roi)
+                if roi is None:
+                    roi = ROI(pts=pts, shape=zp.shape)
+                    if existing is None:
+                        existing = roi.copy()
+                else:
+                    new_roi = ROI(pts=pts, shape=zp.shape)
+                    existing = existing.add(new_roi)
+                    roi = roi.add(new_roi)
         pl.close()
-        return ROISet(rois)
-    def extract_by_roi(self, rois=None, method=np.mean):
+        return roi
+    def extract_by_roi(self, roi, method=np.mean):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
         
         **Parameters:**
@@ -117,24 +122,16 @@ class Movie(TSBase):
         **Returns:**
             *TimeSeries* object, with multiple rows corresponding to multiple ROIs.
         """
-        series = None
-        if rois == None:
-            rois = self.rois
-        if type(rois) not in (list, tuple, ROISet):
-            rois = [rois]
-        for roi in rois:
-            if type(roi)==int:
-                roi = self.rois[roi]
-            data = self[:,~roi.mask]
-            ser = method(data, axis=1) 
+        roi = roi.as3d()
+        result = Trace(np.empty((len(self.time), len(roi))), time=self.time, Ts=self.Ts)
+        for idx,r in enumerate(roi):
+            data = self[:,~r]
+            tr = method(data, axis=1) 
+            result[:,idx] = tr
 
-            if series == None:
-                series = TimeSeries(data=ser, time=self.time)
-            else:
-                series.append_series(ser)
-        return series
-    def correct_motion(self, templates=None, values=None):
-        if values!=None and templates!=None:
-            return apply_correction(self, templates, values)
+        return result
+    def correct_motion(self, *params):
+        if params:
+            return apply_motion_correction(self, *params)
         else:
             return correct_motion(self)

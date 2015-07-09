@@ -5,6 +5,8 @@ import numpy as np
 
 
 def compute_dff(sig, window_size=5., quantile=8., subtract_minimum=False):
+    
+    sig = sig.copy()
 
     if subtract_minimum:
         sig -= sig.min()

@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from util import ProgressBar
 
-def apply_correction(mov, templates, values):
+def apply_motion_correction(mov, templates, values):
     h_i,w_i = mov.shape[1:]
     values = np.sum(values,axis=0)
     for fridx,fr in enumerate(mov):
@@ -10,7 +10,7 @@ def apply_correction(mov, templates, values):
         M = np.float32([ [1,0,shift[1]],[0,1,shift[0]] ])
         mov[fridx,:,:] = cv2.warpAffine(fr,M,(w_i,h_i),flags=cv2.INTER_CUBIC)
     return mov
-def correct_motion(mov, max_shift=5, sub_pixel=True, n_iters=5):
+def compute_motion_correction(mov, max_shift=5, sub_pixel=True, template_func=np.median, n_iters=5):
     """Performs motion correction using template matching.
     
     Args:
@@ -25,7 +25,7 @@ def correct_motion(mov, max_shift=5, sub_pixel=True, n_iters=5):
     def _run_iter(mov, base_shape, ms, sub_pixel):
         mov = mov.astype(np.float32)
         h_i,w_i = base_shape
-        template=np.median(mov,axis=0)
+        template=template_func(mov,axis=0)
         template=template[ms:h_i-ms,ms:w_i-ms].astype(np.float32)
         h,w = template.shape
 
@@ -77,7 +77,10 @@ def correct_motion(mov, max_shift=5, sub_pixel=True, n_iters=5):
         ti,vi,mov = _run_iter(mov, (h_i,w_i), max_shift, sub_pixel)
         templates.append(ti)
         values.append(vi)
-    mov_cor = apply_correction(mov_orig, np.array(templates), np.array(values))
     pbar.finish()
-    return (mov_cor, templates, values)
+    return np.array(templates), np.array(values)
 
+def correct_motion(mov, **kwargs):
+    params = compute_motion_correction(mov, **kwargs)
+    mov_cor = apply_motion_correction(mov, *params)
+    return mov_cor

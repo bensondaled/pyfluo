@@ -10,6 +10,11 @@ class Trace(TSBase):
     def __new__(cls, data, **kwargs):
         return super(Trace, cls).__new__(cls, data, n_dims=[1,2], **kwargs)
 
+    def as2d(self):
+        if self.ndim == 1:
+            return np.rollaxis(np.atleast_2d(self),-1)
+        else:
+            return self
     def normalize(self, minmax=(0., 1.), axis=None):
         """Normalize the trace object.
         
