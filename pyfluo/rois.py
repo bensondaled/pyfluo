@@ -30,10 +30,19 @@ class ROI(np.ndarray):
         return obj
 
     def _compute_pts(self):
+        data = self
         if self.ndim == 2:
-            self.pts = np.squeeze(cv2.findContours(self.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[0])
-        else: #must be 3
-            self.pts = np.array([np.squeeze(cv2.findContours(o.copy().astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)[0]) for o in self])
+            data = np.array([self])
+
+        self.pts = []
+        for r in data:
+            pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[0])
+            if len(pts) > 1:
+                pts = np.concatenate(pts)
+            pts = pts.squeeze()
+            self.pts.append(pts)
+        self.pts = np.array(self.pts).squeeze()
+
     def add(self, roi):
         roi = np.asarray(roi, dtype=ROI.DTYPE)
         if self.ndim == 2 and roi.ndim == 2:
@@ -66,7 +75,7 @@ class ROI(np.ndarray):
         xlim,ylim = pl.xlim(),pl.ylim()
 
         if mode == 'mask':
-            mask = self.as3d().copy().astype(np.float32)
+            mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
             mask *= np.arange(1,len(mask)+1)[...,np.newaxis,np.newaxis]
             mask = np.sum(mask, axis=0)
             mask[mask==0] = None #so background doesn't steal one color from colormap, offsetting correspondence to all other uses of cmap
@@ -79,6 +88,8 @@ class ROI(np.ndarray):
             else:
                 pts = self.pts
             for idx,roi in enumerate(pts):
+                if len(roi)==0:
+                    continue
                 if mode == 'pts':
                     pl.scatter(roi[:,0], roi[:,1], color=colors[idx], marker='|', linewidth=3, **kwargs)
                 if labels:
@@ -94,6 +105,7 @@ class ROI(np.ndarray):
 
         if mode == 'mask':
             return mask
+
     def as3d(self):
         if self.ndim == 2:
             return np.rollaxis(np.atleast_3d(self),-1)
@@ -103,9 +115,11 @@ class ROI(np.ndarray):
         if obj is None:
             return
         
-        _custom_attrs = ['pts']
+        _custom_attrs = []#['pts']
         for ca in _custom_attrs:
             setattr(self, ca, getattr(obj, ca, None))
+        
+        self._compute_pts() #pretty inefficient to do this here, other option is to handle slicing and getitem
 
     def __array_wrap__(self, out, context=None):
         return np.ndarray.__array_wrap__(self, out, context)

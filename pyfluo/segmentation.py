@@ -83,3 +83,9 @@ def pca_ica(mov, components=50, batch=1000, mu=1, ica_func='logcosh'):
     ind_frames = np.reshape(ind_frames.T, (components, h, w))
     
     return ind_frames  
+
+def comp_to_mask(comp, n_std=3):
+    means = np.apply_over_axes(np.mean, comp, [1,2]).squeeze()
+    stds = np.apply_over_axes(np.std, comp, [1,2]).squeeze()
+    masks = (comp.T > means+n_std*stds).T
+    return masks

@@ -56,6 +56,8 @@ class TSBase(np.ndarray):
     def __array_wrap__(self, out, context=None):
         return np.ndarray.__array_wrap__(self, out, context)
 
+    #IMPORTANT: these getslice and getitem things are hacks at the moment, worked out empirically. slicing presents some unique issues that should be further explored.
+    #that said, basic operations appear to function properly. complex slicing will inevitably cause issues
     def __getslice__(self,start,stop):
         #This is a bug fix, solution found here: http://stackoverflow.com/questions/14553485/numpy-getitem-delayed-evaluation-and-a-1-not-the-same-as-aslice-1-none
         copy = self.copy()
@@ -63,13 +65,9 @@ class TSBase(np.ndarray):
         return copy.__getitem__(slice(start,stop))
     def __getitem__(self,idx):
         out = super(TSBase,self).__getitem__(idx)
+        if type(out) == self.__class__ and type(idx) in [list,np.ndarray,tuple]:
+            out.time = out.time.__getitem__(idx)
         return out
-
-        #dummy_data = self.view(np.ndarray)
-        #dummy_data = dummy_data.__getitem__(idx)
-        #new_obj = self.copy()
-        #new_obj.data = dummy_data
-        #return new_obj
 
     def t2i(self, t):
         #returns the index most closely associated with time t
