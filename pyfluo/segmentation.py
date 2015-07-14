@@ -3,15 +3,6 @@ import pylab as pl
 from sklearn.decomposition import IncrementalPCA, FastICA
 
 def ipca(mov, components = 50, batch =1000):
-
-    # Parameters:
-    #   components (default 50)
-    #     = number of independent components to return
-    #   batch (default 1000)
-    #     = number of pixels to load into memory simultaneously
-    #       in IPCA. More requires more memory but leads to better fit
-
-
     # vectorize the images
     num_frames, h, w = mov.shape
     frame_size = h * w
@@ -40,22 +31,22 @@ def ipca(mov, components = 50, batch =1000):
 
     return eigenseries, eigenframes, proj_frame_vectors        
 
-def pca_ica(mov, components=50, batch=1000, mu=1, ica_func='logcosh'):
-    # Parameters:
-    #   components (default 50)
-    #     = number of independent components to return
-    #   batch (default 1000)
-    #     = number of pixels to load into memory simultaneously
-    #       in IPCA. More requires more memory but leads to better fit
-    #   mu (default 0.05)
-    #     = parameter in range [0,1] for spatiotemporal ICA,
-    #       higher mu puts more weight on spatial information
-    #   ICAFun (default = 'logcosh')
-    #     = cdf to use for ICA entropy maximization    
-    #
-    # Returns:
-    #   ind_frames [components, height, width]
-    #     = array of independent component "eigenframes"
+def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh'):
+    """Perform iterative PCA/ICA ROI extraction
+
+    Parameters
+    ----------
+    mov (pyfluo.Movie): input movie
+    components (int): number of independent components to return
+    batch (int): number of pixels to load into memory simultaneously. More leads to a better fit, but requires more memory.
+    mu (float): from 0-1. In spatiotemporal ICA, closer to 1 means more weight on spatial
+    ica_func (str): cdf for entropy maximization in ICA
+
+    Returns
+    -------
+    Array of shape (n,y,x) where n is number of components, and y,x correspond to shape of mov
+
+    """
 
     eigenseries, eigenframes,_proj = ipca(mov, components, batch)
     # normalize the series
@@ -85,6 +76,18 @@ def pca_ica(mov, components=50, batch=1000, mu=1, ica_func='logcosh'):
     return ind_frames  
 
 def comp_to_mask(comp, n_std=3):
+    """Convert components (ex. from pyfluo.segmentation.pica) to masks
+
+    Parameters
+    ----------
+    comp (np.ndarray): 3d array of shape (n,y,x), where n is number of components
+    n_std (float): all pixels greater than frame mean plus this many std's will be included in the mask
+
+    Returns
+    -------
+    Masks in form of 3d array of shape (n,y,x)
+
+    """
     means = np.apply_over_axes(np.mean, comp, [1,2]).squeeze()
     stds = np.apply_over_axes(np.std, comp, [1,2]).squeeze()
     masks = (comp.T > means+n_std*stds).T

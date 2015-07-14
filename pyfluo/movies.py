@@ -1,5 +1,6 @@
 import numpy as np
 from rois import ROI
+from images.tiff import Tiff
 from traces import Trace
 from motion import correct_motion, apply_motion_correction
 import pylab as pl
@@ -7,22 +8,44 @@ import cv2
 from ts_base import TSBase
 
 class Movie(TSBase):
+    """An object storing n sequential 2d images along with a time vector
+
+    Parameters
+    ----------
+    data (np.ndarray / str / pyfluo.Tiff): input data, see below
+    time [optional] (np.ndarray / list): time vector with n elements
+    Ts [optional] (float): sampling period
+    info [optional] (list / np.ndarray): info vector with n elements
+
+    Input data can be supplied in multiple ways:
+    (1) as a numpy array of shape (n,y,x)
+    (2) a string corresopnding to a file path to a tiff
+    (3) a pyfluo.Tiff object
+
+    The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0. 
+
+    It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.
+    """
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     def __new__(cls, data, **kwargs):
+        if type(data) == Tiff:
+            data = data.data.copy()
+        elif type(data) == str:
+            data = Tiff(data).data.copy()
         return super(Movie, cls).__new__(cls, data, n_dims=[3], **kwargs)
-    def __init__(self, *args, **kwargs):
-        pass
     def project(self, axis=0, method=np.mean, show=False, rois=None, **kwargs):
-        """Flatten/project the movie data across one or many axes.
+        """Flatten/project the movie data across one or many axes
         
-        **Parameters:**
-            * **axis** (*int*/*list*): axis/axes over which to flatten.
-            * **method** (*def*): function to apply across the specified axes.
-            * **show** (*bool*): display the result (if 2d, as image; if 1d, as trace).
-            * **rois** (*bool*): display this object's stored regions of interest, as dictated by the class attribute *rois*. Only applies if projection result is 2d.
+        Parameters
+        ----------
+        axis (int / list): axis/axes over which to flatten
+        method (def): function to apply across the specified axes
+        show (bool): display the result (if 2d, as image; if 1d, as trace)
+        rois (*pyfluo.ROI*): roi to display
             
-        **Returns:**
-            The projected image (dimension depend upon axes supplied).
+        Returns
+        -------
+        The projected image
         """
         pro = np.apply_over_axes(method,self,axes=axis).squeeze()
         
@@ -41,13 +64,16 @@ class Movie(TSBase):
         
         return pro
     def play(self, loop=False, fps=None, scale=1, contrast=1., backend=cv2, **kwargs):
-        """Play the movie.
+        """Play the movie
         
-        **Parameters:**
-            * **loop** (*bool*): repeat playback upon finishing.
-            * **fps** (*float*): playback rate in frames per second. Defaults to object's stored frame rate.
-            * **scale** (*float*): scaling factor to resize playback images.
-            * **backend** (*module*): package to use for playback: pl or cv2. If *None*, defaults to self.interactive_backend.
+        Parameter
+        ---------
+        loop (bool): repeat playback upon finishing
+        fps (float): playback rate in frames per second. Defaults to object's stored frame rate
+        scale (float): scaling factor to resize playback images
+        backend (module): package to use for playback (ex. pl or cv2). If *None*, defaults to self.interactive_backend
+
+        During playback, 'q' can be used to quit when playback window has focus
             
         """
         if fps==None:
@@ -89,11 +115,13 @@ class Movie(TSBase):
     def select_roi(self, n=1, existing=None):
         """Select any number of regions of interest (ROI) in the movie.
         
-        **Parameters:**
-            * **n** (*int*): number of ROIs to select.
+        Parameters
+        ----------
+        n (int): number of ROIs to select
             
-        **Returns:**
-            *ROI* object of selected ROI (if 1 ROI selected).
+        Returns
+        -------
+        ROI object
         """
         roi = None
         for q in xrange(n):
@@ -115,12 +143,14 @@ class Movie(TSBase):
     def extract_by_roi(self, roi, method=np.mean):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
         
-        **Parameters:**
-            * **rois** (*ROISet* / *list*): the ROI(s) over which to extract data. If None, uses the object attribute *rois*.
-            * **method** (*def*): the function by which to convert the data within an ROI to a single value.
+        Parameters
+        ----------
+        rois (pyfluo.ROI): the ROI(s) over which to extract data
+        method (def): the function by which to convert the data within an ROI to a single value. Defaults to np.mean
             
-        **Returns:**
-            *TimeSeries* object, with multiple rows corresponding to multiple ROIs.
+        Returns
+        -------
+        Trace object, with multiple columns corresponding to multiple ROIs
         """
         roi = roi.as3d()
         result = Trace(np.empty((len(self.time), len(roi))), time=self.time, Ts=self.Ts)
@@ -130,8 +160,14 @@ class Movie(TSBase):
             result[:,idx] = tr
 
         return result
-    def correct_motion(self, *params):
+    def correct_motion(self, *params, **kwargs):
+        """A convenience method for pyfluo.motion.correct_motion
+
+        If unnamed params are supplied, they are taken to be the output of a prior motion correction and are applied to the movies using pyfluo.motion.apply_motion_correction.
+
+        If named kwargs are supplied, they are passed along to pyfluo.motion.correct_motion.
+        """
         if params:
             return apply_motion_correction(self, *params)
         else:
-            return correct_motion(self)
+            return correct_motion(self, **kwargs)

@@ -1,11 +1,12 @@
 import pickle
 
 def save(file_name, **items):
-    """Save any number of objects in the current workspace into a single file.
+    """Save any number of objects in the current workspace into a single file
     
-    Args:
-            file_name (str): name of saved file containing objects
-            **items (keyword-object pairs or unpacked dictionary): pairs or dictionary in which the key is the object name and the value is the object
+    Parameters
+    ----------
+    file_name (str): name of file to save
+    items (keyword-object pairs or unpacked dictionary): pairs or dictionary in which the key is the object name and the value is the object
 
     Example:
         >>> object_a = 'hello'
@@ -16,18 +17,18 @@ def save(file_name, **items):
     with open(file_name, 'wb') as f:
         pickle.dump(items, f, pickle.HIGHEST_PROTOCOL)
 def load(file_name):
-        """Load previously saved object/s.
+        """Load previously saved object/s
         
-        Args:
-                file_name (str): file to load
-                
-        Notes:
-                When used from a script, this function can be used to load the saved objects directly into the workspace, as follows:
-                globals().update(load(path))
-                (But note that this will overwrite current variables in the workspace if their names are the same.)
-                
-        Returns:
-                Dictionary of loaded objects, as {name: obj ...}
+        Parameters
+        ----------
+        file_name (str): file to load
+        
+        Returns
+        -------
+        Dictionary of loaded objects, as {name: obj ...}
+         
+        Note: this function can be used to load the saved objects directly into the workspace, as follows (variables with matching names will be overwritten):
+        >>> globals().update(load(path))
         """
         with open(file_name, 'rb') as f:
             return pickle.load(f)

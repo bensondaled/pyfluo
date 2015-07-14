@@ -27,7 +27,7 @@ class TSBase(np.ndarray):
                 obj.Ts = np.mean(obj.time[1:]-obj.time[:-1])
                 warnings.warn('Sampling interval Ts inferred as mean of time vector intervals.')
             elif obj.Ts != None:
-                if obj.Ts != np.mean(obj.time[1:]-obj.time[:-1]):
+                if round(obj.Ts,7) != round(np.mean(obj.time[1:]-obj.time[:-1]),7):
                     warnings.warn('Sampling interval does not match time vector. This may affect future operations.')
         obj.fs = 1./obj.Ts
         
@@ -56,26 +56,41 @@ class TSBase(np.ndarray):
     def __array_wrap__(self, out, context=None):
         return np.ndarray.__array_wrap__(self, out, context)
 
-    #IMPORTANT: these getslice and getitem things are hacks at the moment, worked out empirically. slicing presents some unique issues that should be further explored.
-    #that said, basic operations appear to function properly. complex slicing will inevitably cause issues
     def __getslice__(self,start,stop):
         #This is a bug fix, solution found here: http://stackoverflow.com/questions/14553485/numpy-getitem-delayed-evaluation-and-a-1-not-the-same-as-aslice-1-none
         copy = self.copy()
         copy.time = self.time.__getitem__(slice(start,stop))
         return copy.__getitem__(slice(start,stop))
+
     def __getitem__(self,idx):
+        # the rules in this method have been determined empiricially by inferring the behaviour of numpy under various circumstances. Complex slicing may cause isses still. The important realization is that when an array is indexed with a *list* (not tuple) containing only slice objects, it is treated identically to how *tuples* are treated for indexing purposes. When updating this, other ndarray-based objects, like ROI, should be updated
         out = super(TSBase,self).__getitem__(idx)
-        if type(out) == self.__class__ and type(idx) in [list,np.ndarray,tuple]:
+       
+        if type(out) == self.__class__ and type(idx) in [int, float]:
+            pass
+
+        elif type(out) == self.__class__ and type(idx)==slice:
             out.time = out.time.__getitem__(idx)
+        
+        elif type(out) == self.__class__ and (type(idx) in [tuple] or (type(idx) in [list,np.ndarray] and all([type(i)==slice for i in idx]))):
+            idxi = idx[0]
+            out.time = out.time.__getitem__(idxi)
+      
+        elif type(out) == self.__class__ and type(idx) in [list,np.ndarray]:
+            # ex mov[[1,2,3]]
+            out.time = out.time.__getitem__(idx)
+     
         return out
 
     def t2i(self, t):
         #returns the index most closely associated with time t
         return np.argmin(np.abs(self.time - t))
     def resample(self, *args, **kwargs):
-        if 't' not in kwargs:
+        if 't' not in kwargs or kwargs['t']==None:
             kwargs['t'] = self.time
-        return sp_resample(self, *args, **kwargs)
+        new_data,new_time = sp_resample(self, *args, **kwargs)
+        return self.__class__(data=new_data, time=new_time)
+
    # def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None, take_axis=0):
    #     """Takes time range *inclusively* on both ends.
    #     
