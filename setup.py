@@ -7,8 +7,8 @@ import numpy as np
 
 incdir = os.path.join(get_python_inc(plat_specific=1), 'Numerical')
 
-setup(	name = 'PyFluo',
-		version = '1.0',
+setup(	name = 'pyfluo',
+		version = '2.0',
 		author = 'Ben Deverett',
 		author_email = 'bendeverett@gmail.com',
 		url = 'https://github.com/bensondaled/pyfluo',
@@ -20,7 +20,6 @@ setup(	name = 'PyFluo',
 						('', ['README.txt']),
 												],
 		install_requires = ['numpy', 'scipy', 'matplotlib'], 
-		ext_modules=[ Extension('_tifffile', ['pyfluo/tiff/_installation/tifffile.c'],include_dirs=[incdir]) ],
         include_dirs = [incdir, np.get_include()]
         
         )

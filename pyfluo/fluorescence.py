@@ -10,12 +10,18 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
 
     Parameters
     ----------
-    data (np.ndarray): n-dimensional data (DFF is taken over axis 0)
-    percentile (float): percentile of data window to be taken as F0
-    window_size (float): size of window to determine F0, in seconds
-    step_size (float): size of steps used to determine F0, in seconds
-    subtract_minimum (bool): substract minimum value from data before computing
-    pad_mode (str): mode argument for np.pad, used to specify F0 determination at start of data
+    data : np.ndarray
+        n-dimensional data (DFF is taken over axis 0)
+    percentile : float 
+        percentile of data window to be taken as F0
+    window_size : float
+        size of window to determine F0, in seconds
+    step_size : float
+        size of steps used to determine F0, in seconds
+    subtract_minimum : bool
+        substract minimum value from data before computing
+    pad_mode : str 
+        mode argument for np.pad, used to specify F0 determination at start of data
 
     Returns
     -------

@@ -9,9 +9,12 @@ class ROI(np.ndarray):
 
     Parameters
     ----------
-    mask (np.ndarray): a 2d boolean mask where True indicates interior of ROI
-    pts (list / np.ndarray): a list of points defining the border of ROI
-    shape (list / tuple): shape of the mask
+    mask : np.ndarray
+        a 2d boolean mask where True indicates interior of ROI
+    pts : list, np.ndarray
+        a list of points defining the border of ROI
+    shape : list, tuple
+        shape of the mask
 
     There are 2 ways to define an ROI:
     (1) Supply a mask
@@ -19,7 +22,6 @@ class ROI(np.ndarray):
 
     In either case, the ROI object automatically resolves both the mask and points
 
-    NOTE: slicing and indexing is still not supported due to pts issues. My presumed best solution is to find a way to put _compute_pts into array_finalize, even though it's a bit redundant sometimes
     """
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     DTYPE = bool
@@ -65,7 +67,8 @@ class ROI(np.ndarray):
 
         Parameters
         ----------
-        roi (pyfluo.ROI / np.ndarray): the ROI to be added
+        roi : pyfluo.ROI, np.ndarray
+            the ROI to be added
 
         Returns
         -------
@@ -93,10 +96,14 @@ class ROI(np.ndarray):
         
         Parameters
         ----------
-        mode ('mask' / 'pts'): specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points (those originally selected)
-        labels (bool): display labels over ROIs
-        cmap (matplotlib.LinearSegmentedColormap): color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
-        kwargs: any arguments accepted by matplotlib.imshow
+        mode : 'mask', 'pts'
+            specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points (those originally selected)
+        labels : bool
+            display labels over ROIs
+        cmap : matplotlib.LinearSegmentedColormap
+            color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
+        kwargs : dict
+            any arguments accepted by matplotlib.imshow
 
         Returns
         -------

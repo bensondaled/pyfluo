@@ -5,8 +5,10 @@ def save(file_name, **items):
     
     Parameters
     ----------
-    file_name (str): name of file to save
-    items (keyword-object pairs or unpacked dictionary): pairs or dictionary in which the key is the object name and the value is the object
+    file_name : str
+        name of file to save
+    items : keyword-object pairs or unpacked dictionary 
+        pairs or dictionary in which the key is the object name and the value is the object
 
     Example:
         >>> object_a = 'hello'
@@ -21,7 +23,8 @@ def load(file_name):
         
         Parameters
         ----------
-        file_name (str): file to load
+        file_name : str
+            file to load
         
         Returns
         -------

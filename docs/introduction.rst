@@ -6,9 +6,20 @@ This project is `hosted on github <https://github.com/bensondaled/pyfluo/>`_.
 
 Note that **pyfluo** is a work in progress; neither the code nor the documentation is complete. That said, it is already functional for a wide variety of tasks.
 
+Because the library is constantly under progress, the documentation for functions and classes on this site may be out of date. The most reliable way to determine the available functions and their signatures is to interactively check them after importing the package (for example in ipython).
+
 Requirements
 --------------
-The library only depends upon the standard python library, plus Numpy, Scipy, and Matplotlib.
+The library has the following dependencies:
+
+* numpy
+* scipy
+* scikit-learn
+* matplotlib
+* opencv
+* pims (for tiffs)
+
+Note that currently, only numpy, scipy, and matplotlib are enforced on installation of the package.
 
 Installation
 -------------
@@ -23,68 +34,48 @@ Here is a quick-start example to get you moving with pyfluo.
 .. code-block:: python
     :linenos:
 
-    from pyfluo import MultiChannelTiff, Movie, LineScan
-    from pyfluo.fluorescence import compute_dff
-    from pyfluo.tiff import CHANNEL_IMG, CHANNEL_STIM
-    from pyfluo.io import save, load
-    import os
-    import numpy as np
-    import pylab as pl
-    pl.ion()
-    
-    # reload previously saved data
-    globals().update(load('my_saved_data'))
-    
-    # specify tif files to be loaded
-    dir_name = './lab-data/experiment-june25/'
-    names = [os.path.join(dir_name,file_name) for file_name in os.listdir(dir_name) if '500Hz' in file_name]
-    
-    # load tif files
-    mct = MultiChannelTiff(names, skip=(10,0,0), klass=Movie) # this skipped the first ten frames of each tiff file
-    # mct = MultiChannelTiff(names, skip=(0,0,32), klass=LineScan) # this skipped every 32 lines in every tiff file
-    mov = mct[CHANNEL_IMG]
-    stim = mct[CHANNEL_STIM].flatten()
-    
+    from pyfluo import ROI, Tiff, Movie, Trace, compute_dff, pca_ica, comp_to_mask, save
+
+    # create a movie from a tiff file
+    mov = Movie('/Users/ben/PhD/data/mov.tif', Ts=0.03)
+
+    # motion correct the movie
+    mov = mov.correct_motion(n_iters=1)
+
+    # convert the movie to delta f over f
+    mov = compute_dff(mov, window_size=1.0, step_size=0.100)
+
     # play the movie
-    mov.play(fps=15)
+    mov.play(fps=30, scale=5, contrast=3)
 
-    # extract and align stimulation events from movie, then play result
-    mov_stims = mov.take(stim.stim_times, pad=(.5, .5), merge_method=np.mean)
-    mov_stims.play(loop=True)
-    
-    # select some regions of interest & extract their signals
-    mov.select_roi(3)
-    signals = mov.extract_by_roi()
-    
-    # compute delta-f over f of signals
-    dff = compute_dff(signals)
-    
-    # extract and align stimulation events from signals
-    dff_stims = dff.take(stim.stim_times, pad=(.5,.5))
+    # manually select some ROIs
+    roi = mov.select_roi(3)
 
-    # plot the result
-    dff_stims.plot(stim=stim.example)
-    
-    # show the regions corresponding to plot
-    pl.figure()
-    mov.z_project(show=True, rois=True)
-    
-    # save the figures
-    pl.savefig('rois.png')
-    pl.figure(1)
-    pl.savefig('dff_aligned.png')
-    # and the data
-    save('my_new_data', dff=dff, stim=stim)
+    # or alternatively: use PCA/ICA to determine ROIs
+    #comp = pca_ica(mov, components=12)
+    #roi = ROI(mask=comp_to_mask(comp))
 
-Shown below are examples of rois.png (left) and dff_aligned.png (right).
+    # display the movie with its ROIs
+    mov.project(show=True, roi=roi)
 
-.. image:: imgs/rois.png
+    # extract traces
+    tr = mov.extract_by_roi(roi)
+
+    # display traces
+    tr.plot()
+
+    # save the traces
+    save('my_data', traces=tr)
+
+Shown below are examples of the projected movie (left), and extracted traces (right).
+
+.. image:: imgs/movie.png
     :width: 40% 
-.. image:: imgs/dff_aligned.png
+.. image:: imgs/traces.png
     :width: 40%
 
 Troubleshooting
 ------------------
 A list of known fixes for common problems will be kept here.
 
-* For windows installations, VisualStudio often causes problems in installing the tiff module. A fix is explained `here <http://stackoverflow.com/questions/2817869/error-unable-to-find-vcvarsall-bat>`_.
+* For windows installations, VisualStudio often causes problems in installing tiff-related modules. An example fix to such a problem is explained `here <http://stackoverflow.com/questions/2817869/error-unable-to-find-vcvarsall-bat>`_.

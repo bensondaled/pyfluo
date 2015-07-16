@@ -12,10 +12,14 @@ class Movie(TSBase):
 
     Parameters
     ----------
-    data (np.ndarray / str / pyfluo.Tiff): input data, see below
-    time [optional] (np.ndarray / list): time vector with n elements
-    Ts [optional] (float): sampling period
-    info [optional] (list / np.ndarray): info vector with n elements
+    data : np.ndarray, str, pyfluo.Tiff 
+        input data, see below
+    time : [optional] np.ndarray, list
+        time vector with n elements
+    Ts : [optional] float
+        sampling period
+    info : [optional] list, np.ndarray
+        info vector with n elements
 
     Input data can be supplied in multiple ways:
     (1) as a numpy array of shape (n,y,x)
@@ -38,10 +42,14 @@ class Movie(TSBase):
         
         Parameters
         ----------
-        axis (int / list): axis/axes over which to flatten
-        method (def): function to apply across the specified axes
-        show (bool): display the result (if 2d, as image; if 1d, as trace)
-        rois (*pyfluo.ROI*): roi to display
+        axis : int, list
+            axis/axes over which to flatten
+        method : def
+            function to apply across the specified axes
+        show : bool
+            display the result (if 2d, as image; if 1d, as trace)
+        rois : pyfluo.ROI 
+            roi to display
             
         Returns
         -------
@@ -68,11 +76,16 @@ class Movie(TSBase):
         
         Parameter
         ---------
-        loop (bool): repeat playback upon finishing
-        fps (float): playback rate in frames per second. Defaults to object's stored frame rate
-        scale (float): scaling factor to resize playback images
-        contrast (float): scaling factor for pixel values
-        backend (module): package to use for playback (ex. pl or cv2). If *None*, defaults to self.interactive_backend
+        loop : bool 
+            repeat playback upon finishing
+        fps : float
+            playback rate in frames per second. Defaults to object's fs attribute
+        scale : float 
+            scaling factor to resize playback images
+        contrast : float
+            scaling factor for pixel values
+        backend : module 
+            package to use for playback (ex. pl or cv2). If *None*, defaults to self.interactive_backend
 
         During playback, 'q' can be used to quit when playback window has focus
             
@@ -118,7 +131,8 @@ class Movie(TSBase):
         
         Parameters
         ----------
-        n (int): number of ROIs to select
+        n : int
+            number of ROIs to select
             
         Returns
         -------
@@ -142,12 +156,14 @@ class Movie(TSBase):
         pl.close()
         return roi
     def extract_by_roi(self, roi, method=np.mean):
-        """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied.
+        """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied
         
         Parameters
         ----------
-        rois (pyfluo.ROI): the ROI(s) over which to extract data
-        method (def): the function by which to convert the data within an ROI to a single value. Defaults to np.mean
+        roi : pyfluo.ROI
+            the rois over which to extract data
+        method : def 
+            the function by which to convert the data within an ROI to a single value. Defaults to np.mean
             
         Returns
         -------

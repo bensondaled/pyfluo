@@ -6,11 +6,13 @@ class Tiff(object):
 
     Parameters
     ----------
-    file_path (str): path to tiff file
+    file_path : str 
+        path to tiff file
 
     Attributes
     ----------
-    data (np.ndarray): the data, with shape (n,y,x)
+    data : np.ndarray
+        the data, with shape (n,y,x)
 
     """
     def __init__(self, file_path):

@@ -1,0 +1,6 @@
+To update docs:
+1. edit these files as desired
+2. make html
+3. in another directory, checkout the gh-pages branch of pyfluo (git clone -b gh-pages git@github.com:bensondaled/pyfluo.git)
+4. copy docs/out to replace contents of gh-pages branch
+5. commit and push the gh-pages branch

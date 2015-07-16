@@ -8,10 +8,14 @@ class Trace(TSBase):
 
     Parameters
     ----------
-    data (np.ndarray): input data, either 1d or 2d. Details below
-    time [optional] (np.ndarray / list): time vector with n elements
-    Ts [optional] (float): sampling period
-    info [optional] (list / np.ndarray): info vector with n elements
+    data : np.ndarray
+        input data, either 1d or 2d. Details below
+    time : [optional] np.ndarray, list 
+        time vector with n elements
+    Ts : [optional] float
+        sampling period
+    info : [optional] list, np.ndarray
+        info vector with n elements
 
     The data in Trace objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, trace[0] corresponds to the data at time 0. 
 
@@ -37,8 +41,10 @@ class Trace(TSBase):
         
         Parameters
         ----------
-        minmax (list / tuple): ``[post_normalizaton_data_min, max]``
-        axis (int): axis over which to normalize
+        minmax : list, tuple 
+            ``[post_normalizaton_data_min, max]``
+        axis : int 
+            axis over which to normalize
             
         Returns
         -------
@@ -50,35 +56,41 @@ class Trace(TSBase):
         new_obj.data = (self-omin)/(omax-omin) * (newmax-newmin) + newmin
         return new_obj
 
-    def plot(self, stacked=True, gap_fraction=0.08, **kwargs):
+    def plot(self, stacked=True, subtract_minimum=True, cmap=pl.cm.jet, **kwargs):
         """Plot the data
         
         Parameters
         ----------
-        stacked (bool): for multiple series of data, stack instead of overlaying.
-        gap_fraction (float): if ``stacked==True``, specifies the spacing between curves as a fraction of the average range of the curves
-        kwargs: any arguments accepted by matplotlib.plot
-        """
-        gap = gap_fraction * np.mean(np.ptp(self, axis=0))
-        d = np.atleast_2d(self)
+        stacked : bool 
+            for multiple columns of data, stack instead of overlaying
+        subtract_minimum : bool
+            subtract minimum from each individual trace
+        cmap : matplotlib.LinearSegmentedColormap
+            color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
+        kwargs : dict
+            any arguments accepted by matplotlib.plot
 
+        Returns
+        -------
+        The matplotlib axes object corresponding to the data plot
+        """
+        d = np.atleast_2d(self).copy()
         ax = pl.gca()
-        series_ticks = []
-        colors = pl.cm.jet(np.linspace(0, 1, d.shape[1]))
-        
-        last_max = 0.
-        for idx,series in enumerate(d.T):
-            data = np.ma.masked_array(series,np.isnan(series))
-            data = data-np.ma.min(data) + stacked*last_max
-            if stacked: series_ticks.append(np.ma.mean(data))
-            else:   series_ticks.append(data[-1])
-            
-            ax.plot(self.time, data.filled(np.nan), color=colors[idx], **kwargs)
-            last_max = np.ma.max(data) + stacked*gap
-        
+
+        colors = cmap(np.linspace(0, 1, d.shape[1]))
+        ax.set_color_cycle(colors)
+
+        if subtract_minimum:
+            d -= d.min(axis=0)
+        if stacked:
+            d += np.append(0, np.cumsum(d.max(axis=0))[:-1])
+        ax.plot(self.time, d)        
+       
+        # display trace labels along right
         ax2 = ax.twinx()
-        pl.yticks(series_ticks, [str(i) for i in xrange(len(series_ticks))], weight='bold')
-        [l.set_color(col) for col,l in zip(colors,ax2.get_yticklabels())]
-        pl.ylim(ax.get_ylim())
-            
-        pl.xlabel('Time')   
+        ax2.set_ylim(ax.get_ylim())
+        ax2.set_yticks(d.mean(axis=0))
+        ax2.set_yticklabels([str(i) for i in xrange(d.shape[1])], weight='bold')
+        [l.set_color(c) for l,c in zip(ax2.get_yticklabels(), colors)]
+
+        return ax

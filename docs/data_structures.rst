@@ -3,35 +3,17 @@ Core Data Structures
 
 .. autosummary::
 	
-	time_series.TimeSeries
-    stimulation.StimSeries
-	tiff.wanglab.MultiChannelTiff
+	traces.Trace
 	movies.Movie
-    movies.LineScan
+    roi.ROI
 
-TimeSeries
+Traces
 ---------------
 
-.. currentmodule:: time_series
+.. currentmodule:: traces
 
-.. autoclass:: TimeSeries
-   :members: __init__, get_series, append, append_series, normalize, merge, take, plot
-
-StimSeries
-------------
-
-.. currentmodule:: stimulation
-
-.. autoclass:: StimSeries
-   :members: __init__
-
-MultiChannelTiff
-------------------
-
-.. currentmodule:: tiff.wanglab
-
-.. autoclass:: MultiChannelTiff
-   :members: __init__, get_channel
+.. autoclass:: Trace
+   :members: __init__, plot
 
 Movie
 ------------
@@ -39,10 +21,13 @@ Movie
 .. currentmodule:: movies
 
 .. autoclass:: Movie
-   :members: __init__, append, take, flatten, select_roi, extract_by_roi, z_project, play
+   :members: __init__, select_roi, extract_by_roi, project, play
 
 
-LineScan
+ROI
 ------------
 
-.. autoclass:: LineScan
+.. currentmodule:: roi
+
+.. autoclass:: ROI
+    :members: __init__, show
