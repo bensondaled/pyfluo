@@ -1,0 +1,657 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyfluo.util.progressbar package &mdash; .  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title=".  documentation" href="index.html" />
+    <link rel="up" title="pyfluo.util package" href="pyfluo.util.html" />
+    <link rel="next" title="setup module" href="setup.html" />
+    <link rel="prev" title="pyfluo.util package" href="pyfluo.util.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="setup.html" title="setup module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pyfluo.util.html" title="pyfluo.util package"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">.  documentation</a> &raquo;</li>
+          <li><a href="pyfluo.html" >pyfluo package</a> &raquo;</li>
+          <li><a href="pyfluo.util.html" accesskey="U">pyfluo.util package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pyfluo-util-progressbar-package">
+<h1>pyfluo.util.progressbar package<a class="headerlink" href="#pyfluo-util-progressbar-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pyfluo.util.progressbar.compat">
+<span id="pyfluo-util-progressbar-compat-module"></span><h2>pyfluo.util.progressbar.compat module<a class="headerlink" href="#module-pyfluo.util.progressbar.compat" title="Permalink to this headline">¶</a></h2>
+<p>Compatibility methods and classes for the progressbar module.</p>
+</div>
+<div class="section" id="module-pyfluo.util.progressbar.progressbar">
+<span id="pyfluo-util-progressbar-progressbar-module"></span><h2>pyfluo.util.progressbar.progressbar module<a class="headerlink" href="#module-pyfluo.util.progressbar.progressbar" title="Permalink to this headline">¶</a></h2>
+<p>Main ProgressBar class.</p>
+<dl class="class">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.progressbar.</tt><tt class="descname">ProgressBar</tt><big>(</big><em>maxval=None</em>, <em>widgets=None</em>, <em>term_width=None</em>, <em>poll=1</em>, <em>left_justify=True</em>, <em>fd=&lt;open file '&lt;stderr&gt;'</em>, <em>mode 'w' at 0x10028e1e0&gt;</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/progressbar.html#ProgressBar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>The ProgressBar class which updates and prints the bar.</p>
+<p>A common way of using it is like:
+&gt;&gt;&gt; pbar = ProgressBar().start()
+&gt;&gt;&gt; for i in range(100):
+...    # do something
+...    pbar.update(i+1)
+...
+&gt;&gt;&gt; pbar.finish()</p>
+<p>You can also use a ProgressBar as an iterator:
+&gt;&gt;&gt; progress = ProgressBar()
+&gt;&gt;&gt; for i in progress(some_iterable):
+...    # do something
+...</p>
+<p>Since the progress bar is incredibly customizable you can specify
+different widgets of any type in any order. You can even write your own
+widgets! However, since there are already a good number of widgets you
+should probably play around with them before moving on to create your own
+widgets.</p>
+<p>The term_width parameter represents the current terminal width. If the
+parameter is set to an integer then the progress bar will use that,
+otherwise it will attempt to determine the terminal width falling back to
+80 columns if the width cannot be determined.</p>
+<p>When implementing a widget&#8217;s update method you are passed a reference to
+the current progress bar. As a result, you have access to the
+ProgressBar&#8217;s methods and attributes. Although there is nothing preventing
+you from changing the ProgressBar you should treat it as read only.</p>
+<dl class="docutils">
+<dt>Useful methods and attributes include (Public API):</dt>
+<dd><ul class="first last">
+<li><p class="first">currval: current progress (0 &lt;= currval &lt;= maxval)</p>
+</li>
+<li><p class="first">maxval: maximum (and final) value</p>
+</li>
+<li><p class="first">finished: True if the bar has finished (reached 100%)</p>
+</li>
+<li><p class="first">start_time: the time when start() method of ProgressBar was called</p>
+</li>
+<li><dl class="first docutils">
+<dt>seconds_elapsed: seconds elapsed since start_time and last call to</dt>
+<dd><p class="first last">update</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">percentage(): progress in percent [0..100]</p>
+</li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.currval">
+<tt class="descname">currval</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.currval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.fd">
+<tt class="descname">fd</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.fd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.finish">
+<tt class="descname">finish</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/progressbar.html#ProgressBar.finish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.finish" title="Permalink to this definition">¶</a></dt>
+<dd><p>Puts the ProgressBar bar in the finished state.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.finished">
+<tt class="descname">finished</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.finished" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.last_update_time">
+<tt class="descname">last_update_time</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.last_update_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.left_justify">
+<tt class="descname">left_justify</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.left_justify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.maxval">
+<tt class="descname">maxval</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.maxval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.next">
+<tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.next_update">
+<tt class="descname">next_update</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.next_update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.num_intervals">
+<tt class="descname">num_intervals</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.num_intervals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.percent">
+<tt class="descname">percent</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.percent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the progress as a percentage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.percentage">
+<tt class="descname">percentage</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/progressbar.html#ProgressBar.percentage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.percentage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the progress as a percentage.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.poll">
+<tt class="descname">poll</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.poll" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.seconds_elapsed">
+<tt class="descname">seconds_elapsed</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.seconds_elapsed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.signal_set">
+<tt class="descname">signal_set</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.signal_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.start">
+<tt class="descname">start</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/progressbar.html#ProgressBar.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts measuring time, and prints the bar at 0%.</p>
+<p>It returns self so you can use it like this:
+&gt;&gt;&gt; pbar = ProgressBar().start()
+&gt;&gt;&gt; for i in range(100):
+...    # do something
+...    pbar.update(i+1)
+...
+&gt;&gt;&gt; pbar.finish()</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.start_time">
+<tt class="descname">start_time</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.start_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.term_width">
+<tt class="descname">term_width</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.term_width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.update">
+<tt class="descname">update</tt><big>(</big><em>value=None</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/progressbar.html#ProgressBar.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the ProgressBar to a new value.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.update_interval">
+<tt class="descname">update_interval</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.update_interval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.progressbar.ProgressBar.widgets">
+<tt class="descname">widgets</tt><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.ProgressBar.widgets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.progressbar.UnknownLength">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.progressbar.</tt><tt class="descname">UnknownLength</tt><a class="reference internal" href="_modules/pyfluo/util/progressbar/progressbar.html#UnknownLength"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.progressbar.UnknownLength" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-pyfluo.util.progressbar.widgets">
+<span id="pyfluo-util-progressbar-widgets-module"></span><h2>pyfluo.util.progressbar.widgets module<a class="headerlink" href="#module-pyfluo.util.progressbar.widgets" title="Permalink to this headline">¶</a></h2>
+<p>Default ProgressBar widgets.</p>
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.AdaptiveETA">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">AdaptiveETA</tt><big>(</big><em>format='Elapsed Time: %s'</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#AdaptiveETA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AdaptiveETA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Timer" title="pyfluo.util.progressbar.widgets.Timer"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Timer</span></tt></a></p>
+<p>Widget which attempts to estimate the time of arrival.</p>
+<dl class="docutils">
+<dt>Uses a weighted average of two estimates:</dt>
+<dd><ol class="first last arabic simple">
+<li>ETA based on the total progress and time elapsed so far</li>
+<li>ETA based on the progress as per tha last 10 update reports</li>
+</ol>
+</dd>
+</dl>
+<p>The weight depends on the current progress so that to begin with the
+total progress is used and at the end only the most recent progress is
+used.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.AdaptiveETA.NUM_SAMPLES">
+<tt class="descname">NUM_SAMPLES</tt><em class="property"> = 10</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AdaptiveETA.NUM_SAMPLES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.AdaptiveETA.TIME_SENSITIVE">
+<tt class="descname">TIME_SENSITIVE</tt><em class="property"> = True</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AdaptiveETA.TIME_SENSITIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.AdaptiveETA.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#AdaptiveETA.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AdaptiveETA.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget to show the ETA or total time when finished.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.AnimatedMarker">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">AnimatedMarker</tt><big>(</big><em>markers='|/-\'</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#AnimatedMarker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AnimatedMarker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>An animated marker for the progress bar which defaults to appear as if
+it were rotating.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.AnimatedMarker.curmark">
+<tt class="descname">curmark</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AnimatedMarker.curmark" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.AnimatedMarker.markers">
+<tt class="descname">markers</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AnimatedMarker.markers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.AnimatedMarker.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#AnimatedMarker.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.AnimatedMarker.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget to show the next marker or the first marker when
+finished</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.Bar">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">Bar</tt><big>(</big><em>marker='#'</em>, <em>left='|'</em>, <em>right='|'</em>, <em>fill=' '</em>, <em>fill_left=True</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Bar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.WidgetHFill" title="pyfluo.util.progressbar.widgets.WidgetHFill"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.WidgetHFill</span></tt></a></p>
+<p>A progress bar which stretches to fill the line.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Bar.fill">
+<tt class="descname">fill</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar.fill" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Bar.fill_left">
+<tt class="descname">fill_left</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar.fill_left" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Bar.left">
+<tt class="descname">left</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar.left" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Bar.marker">
+<tt class="descname">marker</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar.marker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Bar.right">
+<tt class="descname">right</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar.right" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.Bar.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em>, <em>width</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Bar.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Bar.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the progress bar and its subcomponents.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.BouncingBar">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">BouncingBar</tt><big>(</big><em>marker='#'</em>, <em>left='|'</em>, <em>right='|'</em>, <em>fill=' '</em>, <em>fill_left=True</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#BouncingBar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.BouncingBar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Bar" title="pyfluo.util.progressbar.widgets.Bar"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Bar</span></tt></a></p>
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.BouncingBar.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em>, <em>width</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#BouncingBar.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.BouncingBar.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the progress bar and its subcomponents.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.Counter">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">Counter</tt><big>(</big><em>format='%d'</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Counter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>Displays the current count.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Counter.format_string">
+<tt class="descname">format_string</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Counter.format_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.Counter.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Counter.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Counter.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.ETA">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">ETA</tt><big>(</big><em>format='Elapsed Time: %s'</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#ETA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.ETA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Timer" title="pyfluo.util.progressbar.widgets.Timer"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Timer</span></tt></a></p>
+<p>Widget which attempts to estimate the time of arrival.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.ETA.TIME_SENSITIVE">
+<tt class="descname">TIME_SENSITIVE</tt><em class="property"> = True</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.ETA.TIME_SENSITIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.ETA.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#ETA.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.ETA.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget to show the ETA or total time when finished.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.FileTransferSpeed">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">FileTransferSpeed</tt><big>(</big><em>unit='B'</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#FileTransferSpeed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FileTransferSpeed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>Widget for showing the transfer speed (useful for file transfers).</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.FileTransferSpeed.FORMAT">
+<tt class="descname">FORMAT</tt><em class="property"> = '%6.2f %s%s/s'</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FileTransferSpeed.FORMAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.FileTransferSpeed.PREFIXES">
+<tt class="descname">PREFIXES</tt><em class="property"> = ' kMGTPEZY'</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FileTransferSpeed.PREFIXES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.FileTransferSpeed.unit">
+<tt class="descname">unit</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FileTransferSpeed.unit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.FileTransferSpeed.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#FileTransferSpeed.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FileTransferSpeed.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget with the current SI prefixed speed.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.FormatLabel">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">FormatLabel</tt><big>(</big><em>format</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#FormatLabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FormatLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Timer" title="pyfluo.util.progressbar.widgets.Timer"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Timer</span></tt></a></p>
+<p>Displays a formatted label.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.FormatLabel.format_string">
+<tt class="descname">format_string</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FormatLabel.format_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.FormatLabel.mapping">
+<tt class="descname">mapping</tt><em class="property"> = {'seconds': ('seconds_elapsed', None), 'max': ('maxval', None), 'value': ('currval', None), 'last_update': ('last_update_time', None), 'start': ('start_time', None), 'finished': ('finished', None), 'elapsed': ('seconds_elapsed', &lt;function format_time at 0x103e15aa0&gt;)}</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FormatLabel.mapping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.FormatLabel.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#FormatLabel.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.FormatLabel.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.Percentage">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">Percentage</tt><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Percentage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Percentage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>Displays the current percentage as a number with a percent sign.</p>
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.Percentage.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Percentage.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Percentage.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.ReverseBar">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">ReverseBar</tt><big>(</big><em>marker='#'</em>, <em>left='|'</em>, <em>right='|'</em>, <em>fill=' '</em>, <em>fill_left=False</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#ReverseBar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.ReverseBar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Bar" title="pyfluo.util.progressbar.widgets.Bar"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Bar</span></tt></a></p>
+<p>A bar which has a marker which bounces from side to side.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.RotatingMarker">
+<tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">RotatingMarker</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.RotatingMarker" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pyfluo.util.progressbar.widgets.AnimatedMarker" title="pyfluo.util.progressbar.widgets.AnimatedMarker"><tt class="xref py py-class docutils literal"><span class="pre">AnimatedMarker</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.SimpleProgress">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">SimpleProgress</tt><big>(</big><em>sep=' of '</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#SimpleProgress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.SimpleProgress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>Returns progress as a count of the total (e.g.: &#8220;5 of 47&#8221;).</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.SimpleProgress.sep">
+<tt class="descname">sep</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.SimpleProgress.sep" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.SimpleProgress.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#SimpleProgress.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.SimpleProgress.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.Timer">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">Timer</tt><big>(</big><em>format='Elapsed Time: %s'</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Timer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Timer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>Widget which displays the elapsed seconds.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Timer.TIME_SENSITIVE">
+<tt class="descname">TIME_SENSITIVE</tt><em class="property"> = True</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Timer.TIME_SENSITIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Timer.format_string">
+<tt class="descname">format_string</tt><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Timer.format_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyfluo.util.progressbar.widgets.Timer.format_time">
+<em class="property">static </em><tt class="descname">format_time</tt><big>(</big><em>seconds</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Timer.format_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Timer.format_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats time as the string &#8220;HH:MM:SS&#8221;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.Timer.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Timer.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Timer.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget to show the elapsed time.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.Widget">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">Widget</tt><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Widget"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Widget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">abc.AbstractWidget</span></tt></p>
+<p>The base class for all widgets.</p>
+<p>The ProgressBar will call the widget&#8217;s update value when the widget should
+be updated. The widget&#8217;s size may change between calls, but the widget may
+display incorrectly if the size changes drastically and repeatedly.</p>
+<p>The boolean TIME_SENSITIVE informs the ProgressBar that it should be
+updated more often because it is time sensitive.</p>
+<dl class="attribute">
+<dt id="pyfluo.util.progressbar.widgets.Widget.TIME_SENSITIVE">
+<tt class="descname">TIME_SENSITIVE</tt><em class="property"> = False</em><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Widget.TIME_SENSITIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.Widget.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#Widget.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.Widget.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget.</p>
+<p>pbar - a reference to the calling ProgressBar</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyfluo.util.progressbar.widgets.WidgetHFill">
+<em class="property">class </em><tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">WidgetHFill</tt><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#WidgetHFill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.WidgetHFill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyfluo.util.progressbar.widgets.Widget" title="pyfluo.util.progressbar.widgets.Widget"><tt class="xref py py-class docutils literal"><span class="pre">pyfluo.util.progressbar.widgets.Widget</span></tt></a></p>
+<p>The base class for all variable width widgets.</p>
+<p>This widget is much like the hfill command in TeX, it will expand to
+fill the line. You can use more than one in the same line, and they will
+all have the same width, and together will fill the line.</p>
+<dl class="method">
+<dt id="pyfluo.util.progressbar.widgets.WidgetHFill.update">
+<tt class="descname">update</tt><big>(</big><em>pbar</em>, <em>width</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#WidgetHFill.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.WidgetHFill.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the widget providing the total width the widget must fill.</p>
+<p>pbar - a reference to the calling ProgressBar
+width - The total width the widget must fill</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pyfluo.util.progressbar.widgets.format_updatable">
+<tt class="descclassname">pyfluo.util.progressbar.widgets.</tt><tt class="descname">format_updatable</tt><big>(</big><em>updatable</em>, <em>pbar</em><big>)</big><a class="reference internal" href="_modules/pyfluo/util/progressbar/widgets.html#format_updatable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyfluo.util.progressbar.widgets.format_updatable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-pyfluo.util.progressbar">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyfluo.util.progressbar" title="Permalink to this headline">¶</a></h2>
+<p>Text progress bar library for Python.</p>
+<p>A text progress bar is typically used to display the progress of a long
+running operation, providing a visual cue that processing is underway.</p>
+<p>The ProgressBar class manages the current progress, and the format of the line
+is given by a number of widgets. A widget is an object that may display
+differently depending on the state of the progress bar. There are three types
+of widgets:</p>
+<blockquote>
+<div><ul class="simple">
+<li>a string, which always shows itself</li>
+<li>a ProgressBarWidget, which may return a different value every time its
+update method is called</li>
+<li>a ProgressBarWidgetHFill, which is like ProgressBarWidget, except it
+expands to fill the remaining width of the line.</li>
+</ul>
+</div></blockquote>
+<p>The progressbar module is very easy to use, yet very powerful. It will also
+automatically enable features like auto-resizing when the system supports it.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyfluo.util.progressbar package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-pyfluo.util.progressbar.compat">pyfluo.util.progressbar.compat module</a></li>
+<li><a class="reference internal" href="#module-pyfluo.util.progressbar.progressbar">pyfluo.util.progressbar.progressbar module</a></li>
+<li><a class="reference internal" href="#module-pyfluo.util.progressbar.widgets">pyfluo.util.progressbar.widgets module</a></li>
+<li><a class="reference internal" href="#module-pyfluo.util.progressbar">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pyfluo.util.html"
+                        title="previous chapter">pyfluo.util package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="setup.html"
+                        title="next chapter">setup module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/pyfluo.util.progressbar.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="setup.html" title="setup module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pyfluo.util.html" title="pyfluo.util package"
+             >previous</a> |</li>
+        <li><a href="index.html">.  documentation</a> &raquo;</li>
+          <li><a href="pyfluo.html" >pyfluo package</a> &raquo;</li>
+          <li><a href="pyfluo.util.html" >pyfluo.util package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>

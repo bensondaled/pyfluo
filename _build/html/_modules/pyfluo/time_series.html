@@ -1,0 +1,443 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyfluo.time_series &mdash; .  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title=".  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">.  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyfluo.time_series</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">pyfluo.ts_base</span> <span class="kn">import</span> <span class="n">TSBase</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="kn">as</span> <span class="nn">mpl_cm</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">time</span> <span class="kn">as</span> <span class="nn">pytime</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+	
+<div class="viewcode-block" id="TimeSeries"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries">[docs]</a><span class="k">class</span> <span class="nc">TimeSeries</span><span class="p">(</span><span class="n">TSBase</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;A data structure that holds a one or more one-dimensional arrays of values, associated with a single time vector.</span>
+<span class="sd">	</span>
+<span class="sd">	Attributes:</span>
+<span class="sd">		data (np.ndarray): the data array of the time series.</span>
+<span class="sd">		</span>
+<span class="sd">		time (np.ndarray): the time array of the time series.</span>
+<span class="sd">		</span>
+<span class="sd">		info (np.ndarray): an array of meta-information associated with time points.</span>
+<span class="sd">		</span>
+<span class="sd">		n_series (int): the number of time series stored in the object (i.e. the number of rows in *data*).</span>
+<span class="sd">		</span>
+<span class="sd">		Ts (float): the sampling period of the time series.</span>
+<span class="sd">		</span>
+<span class="sd">		fs (float): the sampling frequency of the time series.</span>
+<span class="sd">		</span>
+<span class="sd">		tunit (str): the unit of measurement in which the object&#39;s time is stored.</span>
+<span class="sd">		</span>
+<span class="sd">		name (str): a unique name generated for the object when instantiated</span>
+<span class="sd">		</span>
+<span class="sd">	Because this object can store multiple data arrays as separate ``series&#39;&#39;, most of its methods perform operations in a parallel manner on each series. Unless otherwise noted, this is the default action of the class methods.</span>
+<span class="sd">		</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">tunit</span><span class="o">=</span><span class="s">&#39;s&#39;</span><span class="p">,</span> <span class="n">merge_method_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">merge_method_time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Initialize a TimeSeries object.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			data (list / np.ndarray / TimeSeries):</span>
+<span class="sd">				**Option 1**: the data of one or multiple time series. In the case of multiple time series, supply a list of lists, where each list is one of the time series. This can also be a 2D numpy ndarray of the same structure.</span>
+<span class="sd">				**Option 2**: a list of TimeSeries objects. This situation is handled in various ways depending on the nature of the input:</span>
+<span class="sd">					(a) If the supplied TimeSeries objects all contain just single time series (i.e. a one-dimensional data vector), they are concatenated and the resulting TimeSeries will contain multiple rows of data corresponding to those inputs. The time vectors of the series are merged using the function given by the *merge_method_time* argument in the constructor.</span>
+<span class="sd">					(b) If the supplied TimeSeries objects contain varying numbers of time series (i.e. two-dimensional data vectors with different numbers of rows), the course of action is the same as (a), concatenating all the series from each TimeSeries object into one large TimeSeries object. Again, time vectors are merged as in (a).</span>
+<span class="sd">					(c) If the supplied TimeSeries objects contain multiple time series (i.e. two-dimensional data vectors), and *every one has the same number of series*, it is assumed that there is a relationship between the series, and they are merged. Specifically, the first series (or data row) from every supplied TimeSeries is merged into one, then the second, then third, etc. The merge is performed by the *merge_method_data* constructor argument. This course of action can be overridden by setting the *merge_method_data* constructor argument to None, in which case the input will be handled as in (b).</span>
+<span class="sd">			</span>
+<span class="sd">			time (list or np.ndarray): list of uniformly spaced numerical values, identical in length to the number of columns in *data*. If *None*, defaults to range(len(*data*)).</span>
+<span class="sd">			</span>
+<span class="sd">			info (list or np.ndarray): list of meta-information associated with each time point.</span>
+<span class="sd">			</span>
+<span class="sd">			tunit (str): the unit of measurement in which the object&#39;s time is stored.</span>
+<span class="sd">			</span>
+<span class="sd">			merge_method_time (def): the function to be used to merge time vector when necessary. See *data* argument for details.</span>
+<span class="sd">			</span>
+<span class="sd">			merge_method_data (def): the function to be used to merge the data vector when necessary. See *data* argument for details.</span>
+<span class="sd">					&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">pytime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&quot;TimeSeries-%Y%m</span><span class="si">%d</span><span class="s">_%H%M%S&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">tunit</span> <span class="o">=</span> <span class="n">tunit</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">fs</span> <span class="o">=</span> <span class="bp">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">Ts</span> <span class="o">=</span> <span class="bp">None</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+		
+		<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+		<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="n">TimeSeries</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span>
+		<span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">TimeSeries</span><span class="p">:</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]):</span>
+				<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Series of varying duration cannot be joined in a new TimeSeries object.&#39;</span><span class="p">)</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">merge_method_time</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">time</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+			<span class="c"># Concatenate the TimeSeries objects if:</span>
+			<span class="c"># a) they all only contain one series </span>
+			<span class="c"># b) they contain varying numbers of series</span>
+			<span class="c"># c) the concatenate argument is given as True</span>
+			<span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">n_series</span><span class="o">==</span><span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">])</span> <span class="ow">or</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">n_series</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">n_series</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">])</span> <span class="p">)</span> <span class="ow">or</span> <span class="n">merge_method_data</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">ts</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">])</span>
+			<span class="c"># Merge the TimeSeries objects if: they all contain the same number (&gt;1) of series.</span>
+			<span class="k">elif</span> <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">n_series</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">n_series</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]):</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">merge_method_data</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+				
+		<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+		
+		<span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">info</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">]</span>
+		
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Data contains too many dimensions.&quot;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Data series and time vectors contain a different number of samples.&quot;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)):</span>
+			<span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Time vector is not sorted.&quot;</span><span class="p">)</span>
+	
+		<span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">()</span>
+	
+	<span class="c"># Public Methods</span>
+<div class="viewcode-block" id="TimeSeries.get_series"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.get_series">[docs]</a>	<span class="k">def</span> <span class="nf">get_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; Get one row of data (one series).</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			idx (int): the index of the desired series (i.e. row of data).</span>
+<span class="sd">			</span>
+<span class="sd">		Note that this is equivalent to the simpler string-based indexing.</span>
+<span class="sd">		For example, the following two commands are equivalent:</span>
+<span class="sd">		ts.get_series(1)</span>
+<span class="sd">		ts[&#39;1&#39;]</span>
+<span class="sd">		</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">==</span><span class="nb">int</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)]</span>
+		<span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="p">[[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]]</span></div>
+<div class="viewcode-block" id="TimeSeries.append"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.append">[docs]</a>	<span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; Append data to the series.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			item (int / float / long / np.ndarray / list):</span>
+<span class="sd">			If a single value is supplied, the value is added to the end of the data. In the case of multiple data rows, it is added to the end of each series.</span>
+<span class="sd">			If a list or array is supplied, it must be the same length as the number of series (i.e. rows of data) in the object&#39;s data. In this case, the first item in the list is added to the end of the first series, the second to the second, and so on.</span>
+<span class="sd">			</span>
+<span class="sd">		Examples:</span>
+<span class="sd">		</span>
+<span class="sd">		(1)</span>
+<span class="sd">		data = 	[ 	[1, 2, 3],</span>
+<span class="sd">					[4, 5, 6],</span>
+<span class="sd">					[7, 8, 9]	]</span>
+<span class="sd">					</span>
+<span class="sd">		following .append(42) :</span>
+<span class="sd">		</span>
+<span class="sd">		data =	[	[1, 2, 3, 42],</span>
+<span class="sd">					[4, 5, 6, 42],</span>
+<span class="sd">					[7, 8, 9, 42]	]</span>
+<span class="sd">					</span>
+<span class="sd">		(2)</span>
+<span class="sd">		data = 	[ 	[1, 2],</span>
+<span class="sd">					[3, 4],</span>
+<span class="sd">					[5, 6]	]</span>
+<span class="sd">					</span>
+<span class="sd">		following .append([66, 77, 88]) :</span>
+<span class="sd">		</span>
+<span class="sd">		data =	[	[1, 2, 66],</span>
+<span class="sd">					[3, 4, 77],</span>
+<span class="sd">					[5, 6, 88]	]			</span>
+<span class="sd">			</span>
+<span class="sd">		</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">item</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+		<span class="n">added_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">item</span><span class="p">))))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Ts</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">added_time</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">()</span></div>
+<div class="viewcode-block" id="TimeSeries.append_series"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.append_series">[docs]</a>	<span class="k">def</span> <span class="nf">append_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">merge_method_time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; Append a series, or row of data, to the object.</span>
+
+<span class="sd">		Args:</span>
+<span class="sd">			item (np.ndarray / list / TimeSeries): array of data to be added as a new row, or series. This must be the same length as the number of time points (i.e. columns) in the object&#39;s data.</span>
+<span class="sd">			merge_method_time (def): function to be used to merge time vectors.</span>
+<span class="sd">			</span>
+<span class="sd">		Note: if a TimeSeries object is supplied, the time vectors of the current and added series will be averaged.</span>
+
+<span class="sd">		Example:</span>
+
+<span class="sd">		data = 	[ 	[1, 2, 3],</span>
+<span class="sd">					[4, 5, 6],</span>
+<span class="sd">					[7, 8, 9]	]</span>
+<span class="sd">					</span>
+<span class="sd">		following .append([10, 11, 12]) :</span>
+
+<span class="sd">		data = 	[ 	[1, 2, 3],</span>
+<span class="sd">					[4, 5, 6],</span>
+<span class="sd">					[7, 8, 9],	</span>
+<span class="sd">					[10, 11, 12]	]</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="n">TimeSeries</span><span class="p">:</span>
+			<span class="n">item</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">data</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">merge_method_time</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">time</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+		
+		<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">item</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">()</span></div>
+<div class="viewcode-block" id="TimeSeries.normalize"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minmax</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">),</span> <span class="n">in_place</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Normalize the time series object.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			minmax (2-item list): (desired post-normalizaton data minimum, maximum)</span>
+<span class="sd">			in_place: apply the normalization to *this* instance of the object</span>
+<span class="sd">			</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			A new time series object, normalized.</span>
+<span class="sd">			</span>
+<span class="sd">		Example:</span>
+<span class="sd">		</span>
+<span class="sd">		data = 	[ 	[1, 2, 3],</span>
+<span class="sd">					[4, 5, 6],</span>
+<span class="sd">					[7, 8, 9]	]</span>
+<span class="sd">					</span>
+<span class="sd">		following .normalize():</span>
+
+<span class="sd">		data = 	[ 	[0, 0.5, 1],</span>
+<span class="sd">					[0, 0.5, 1],</span>
+<span class="sd">					[0, 0.5, 1],	]</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">newmin</span> <span class="o">=</span> <span class="n">minmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+		<span class="n">newmax</span> <span class="o">=</span> <span class="n">minmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+		<span class="n">omin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+		<span class="n">omax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+		<span class="n">newdata</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">-</span><span class="n">omin</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">omax</span><span class="o">-</span><span class="n">omin</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">newmax</span><span class="o">-</span><span class="n">newmin</span><span class="p">)</span> <span class="o">+</span> <span class="n">newmin</span>
+		<span class="n">new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="n">new</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">newdata</span>
+		<span class="n">new</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
+		<span class="k">if</span> <span class="n">in_place</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">data</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">time</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">()</span>
+		<span class="k">return</span> <span class="n">new</span></div>
+<div class="viewcode-block" id="TimeSeries.merge"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.merge">[docs]</a>	<span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Merge the series (data rows) of the object.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			method (def): the function with which to perform the merge.</span>
+<span class="sd">			</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			A new time series object with just one row of data, the merged result.</span>
+<span class="sd">			</span>
+<span class="sd">		Example:</span>
+<span class="sd">		</span>
+<span class="sd">		data = 	[ 	[1, 3, 5],</span>
+<span class="sd">					[2, 4, 6],</span>
+<span class="sd">					[9, 2, 7]	]</span>
+<span class="sd">					</span>
+<span class="sd">		following .merge(method=np.mean):</span>
+
+<span class="sd">		data = 	[ [4, 3, 6]	]</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">method</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">tunit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tunit</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">series</span></div>
+<div class="viewcode-block" id="TimeSeries.take"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.take">[docs]</a>	<span class="k">def</span> <span class="nf">take</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_range</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span> <span class="n">reset_time</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">merge_method_time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">merge_method_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Extract a range of data values using time indices.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			time_range (2-item list): the start and end times of the range desired.</span>
+<span class="sd">			pad (2-item list): an optional extra amount of time with which to expand the specified time range on either end. The first value is subtracted from the start time, and the second value is added to the end time.</span>
+<span class="sd">			reset_time (bool): shift the time vector of the resultant time series, such that time zero corresponds to the data originally located at time_range[0].</span>
+<span class="sd">			merge_method_time (def): specifies how to merge time when multiple time ranges are extracted from multiple data series. See note below for details.</span>
+<span class="sd">			merge_method_data (def): specifies how to merge data when multiple time ranges are extracted from multiple data series. See note below for details.</span>
+<span class="sd">			</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			TimeSeries between supplied time range.</span>
+<span class="sd">		</span>
+<span class="sd">		Notes:</span>
+<span class="sd">			The *time_range* argument can be either a pair of values (start_time, end_time), or a list of such pairs. In the latter case, this method is applied to each pair of times, and the result is returned in a collection.</span>
+<span class="sd">			</span>
+<span class="sd">			If values in *time_range* lie outside the bounds of the time series, or if the padding causes this to be true, the time vector is extrapolated accordingly, and the data for all non-existent points is given as None. </span>
+<span class="sd">			</span>
+<span class="sd">			Concerning merging of data: this method first extracts the desired time range/s from each row individually. If the original object contains multiple rows of data, there are two different results that should be expected: </span>
+<span class="sd">			(1)  If only one time range is supplied, the resulting TimeSeries then contains multiple rows, each corresponding to the rows of the original object, as would be expected.</span>
+<span class="sd">			(2) If multiple time ranges are supplied, this method extracts a set of time ranges from each of the objects&#39; series. Since TimeSeries objects are only capable of holding two-dimensional data, creation of the resulting TimeSeries will, by action of the constructor, merge this data. Because the multiple rows of the original series likely had individual significance, the default behaviour for this merge is to preserve the separation of the series. </span>
+<span class="sd">			For example, consider a TimeSeries with 3 rows of data corresponding to the fluorescence traces of three regions of interest. One may use this *take* method to align multiple points of stimulation (say, 5) in each of these traces all at once. In the resulting TimeSeries, there will then be just 3 rows of data, corresponding to the 3 regions of interest. These will consist of the merged data from the 5 stimulations. </span>
+<span class="sd">			The merge is performed by the function supplied in the *merge_method* argument. Importantly, this merge can be over-riden, as described in the class constructor, by supplying merge_method=None. In that case, all time segments from all data series are concatenated into rows and set as the data of the resulting TimeSeries.</span>
+<span class="sd">			</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		
+		<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">time_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+			<span class="n">time_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">time_range</span><span class="p">]</span>
+		<span class="n">stims</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_take</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="n">pad</span><span class="p">,</span> <span class="n">reset_time</span><span class="o">=</span><span class="n">reset_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">time_range</span><span class="p">],</span> <span class="n">merge_method_time</span><span class="o">=</span><span class="n">merge_method_time</span><span class="p">,</span> <span class="n">merge_method_data</span><span class="o">=</span><span class="n">merge_method_data</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">stims</span></div>
+<div class="viewcode-block" id="TimeSeries.plot"><a class="viewcode-back" href="../../pyfluo.html#pyfluo.time_series.TimeSeries.plot">[docs]</a>	<span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stim</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stacked</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">gap_fraction</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">use_idxs</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Plot the time series.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			stim (pyfluo.StimSeries): stimulation to be plotted over the data.</span>
+<span class="sd">			stacked (bool): for multiple rows of data, stack instead of overlaying.</span>
+<span class="sd">			gap_fraction (float): if stacked==True, specifies the spacing between curves as a fraction of the range of the lower curve.</span>
+<span class="sd">			use_idxs (bool): ignore time and instead use vector indices as x coordinate.</span>
+<span class="sd">			normalize (bool): normalize the data before plotting.</span>
+<span class="sd">			show (bool): show the plot immediately.</span>
+<span class="sd">			**kwargs: any arguments accepted by *matplotlib.plot*</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="n">use_idxs</span><span class="p">:</span>	<span class="n">t</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+		<span class="k">else</span><span class="p">:</span>	<span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
+			
+		<span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>	<span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">normalize</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+		<span class="k">else</span><span class="p">:</span>	<span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+		
+		<span class="n">ax</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+		<span class="n">series_ticks</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">if</span> <span class="n">color</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>	<span class="n">colors</span> <span class="o">=</span> <span class="n">mpl_cm</span><span class="o">.</span><span class="n">jet</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_series</span><span class="p">))</span>
+		<span class="k">else</span><span class="p">:</span> <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">color</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_series</span><span class="p">)]</span>
+		
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_series</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+			<span class="n">data</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+			<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">stim</span><span class="p">:</span>
+				<span class="n">stim</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s">&#39;dotted&#39;</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_series</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>		
+			<span class="n">last_max</span> <span class="o">=</span> <span class="mf">0.</span>
+			<span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">series</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+				<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_array</span><span class="p">(</span><span class="n">series</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+				<span class="n">smin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+				<span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">-</span><span class="n">smin</span> <span class="o">+</span> <span class="n">stacked</span><span class="o">*</span><span class="n">last_max</span>
+				<span class="k">if</span> <span class="n">stacked</span><span class="p">:</span>	<span class="n">series_ticks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+				<span class="k">else</span><span class="p">:</span>	<span class="n">series_ticks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+			
+				<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+			
+				<span class="k">if</span> <span class="n">stim</span> <span class="ow">and</span> <span class="n">stacked</span><span class="p">:</span>
+					<span class="n">stim</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s">&#39;dotted&#39;</span><span class="p">)</span>
+				
+				<span class="n">last_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="n">stacked</span><span class="o">*</span><span class="n">gap_fraction</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+			
+			<span class="k">if</span> <span class="n">stim</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">stacked</span><span class="p">:</span>
+				<span class="n">stim</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s">&#39;dashed&#39;</span><span class="p">)</span>
+		
+			<span class="n">ax2</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>
+			<span class="n">pl</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">series_ticks</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series_ticks</span><span class="p">))],</span> <span class="n">weight</span><span class="o">=</span><span class="s">&#39;bold&#39;</span><span class="p">)</span>
+			<span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span><span class="n">l</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">colors</span><span class="p">,</span><span class="n">ax2</span><span class="o">.</span><span class="n">get_yticklabels</span><span class="p">())]</span>
+			<span class="n">pl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span>
+			
+		<span class="n">pl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Time (</span><span class="si">%s</span><span class="s">)&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">tunit</span><span class="p">)</span>	
+		<span class="k">if</span> <span class="n">show</span><span class="p">:</span>	<span class="n">pl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+		
+	<span class="c"># Special Methods</span></div>
+	<span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+	<span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+	<span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="n">idx</span><span class="p">]</span>
+		<span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">)],</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">tunit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tunit</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="nb">str</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">],</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">tunit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tunit</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+		<span class="s">&#39;TimeSeries object.&#39;</span><span class="p">,</span>
+		<span class="s">&#39;Number of series: </span><span class="si">%i</span><span class="s">&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">n_series</span><span class="p">,</span>
+		<span class="s">&quot;Length: </span><span class="si">%i</span><span class="s"> samples.&quot;</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
+		<span class="s">&quot;Duration: </span><span class="si">%f</span><span class="s"> seconds.&quot;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">Ts</span><span class="p">),</span>
+		<span class="p">])</span>
+	<span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="s">&quot;Time: </span><span class="si">%s</span><span class="se">\n</span><span class="s">Data: </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">__repr__</span><span class="p">(),</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">__repr__</span><span class="p">())</span>
+	<span class="k">def</span> <span class="nf">_update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>			
+			<span class="bp">self</span><span class="o">.</span><span class="n">Ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">fs</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">Ts</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n_series</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+			<span class="c">#The following should be implemented, however it was causing problems:</span>
+			<span class="c"># if not all(round(self.time[i+1]-self.time[i],10) == round(self.Ts,10) for i in xrange(len(self.time)-1)):</span>
+			<span class="c"># 	raise Exception(&quot;Time vector does not have a consistent sampling period to within 10 decimal places.&quot;)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">.  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.
+    </div>
+  </body>
+</html>
