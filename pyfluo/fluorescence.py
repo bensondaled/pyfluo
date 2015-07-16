@@ -34,7 +34,8 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
         data -= data.min()
      
     pad_size = window_size - 1
-    padded = np.pad(data, ((pad_size,0),(0,0),(0,0)), mode=pad_mode)
+    pad = ((pad_size,0),) + tuple([(0,0) for _ in xrange(data.ndim-1)])
+    padded = np.pad(data, pad, mode=pad_mode)
 
     out_size = ((len(padded) - window_size) // step_size) + 1
     pbar = ProgressBar(maxval=out_size).start()

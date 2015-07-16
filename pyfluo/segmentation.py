@@ -1,6 +1,8 @@
 import numpy as np
 import pylab as pl
 from sklearn.decomposition import IncrementalPCA, FastICA
+import multiprocessing as mup
+from util import display_time_elapsed
 
 def ipca(mov, components = 50, batch =1000):
     # vectorize the images
@@ -47,6 +49,8 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh'):
     Array of shape (n,y,x) where n is number of components, and y,x correspond to shape of mov
 
     """
+    p = mup.Process(target=display_time_elapsed)
+    p.start()
 
     eigenseries, eigenframes,_proj = ipca(mov, components, batch)
     # normalize the series
@@ -72,6 +76,8 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh'):
     frame_size = h * w
     ind_frames = joint_ics[:frame_size, :]
     ind_frames = np.reshape(ind_frames.T, (components, h, w))
+    
+    p.terminate()
     
     return ind_frames  
 

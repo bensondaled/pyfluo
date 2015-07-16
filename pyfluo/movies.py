@@ -1,5 +1,5 @@
 import numpy as np
-from rois import ROI
+from roi import ROI
 from images.tiff import Tiff
 from traces import Trace
 from motion import correct_motion, apply_motion_correction
@@ -32,7 +32,7 @@ class Movie(TSBase):
             data = data.data.copy()
         elif type(data) == str:
             data = Tiff(data).data.copy()
-        return super(Movie, cls).__new__(cls, data, n_dims=[3], **kwargs)
+        return super(Movie, cls).__new__(cls, data, _ndim=[3], **kwargs)
     def project(self, axis=0, method=np.mean, show=False, rois=None, **kwargs):
         """Flatten/project the movie data across one or many axes
         
@@ -71,6 +71,7 @@ class Movie(TSBase):
         loop (bool): repeat playback upon finishing
         fps (float): playback rate in frames per second. Defaults to object's stored frame rate
         scale (float): scaling factor to resize playback images
+        contrast (float): scaling factor for pixel values
         backend (module): package to use for playback (ex. pl or cv2). If *None*, defaults to self.interactive_backend
 
         During playback, 'q' can be used to quit when playback window has focus
@@ -152,14 +153,8 @@ class Movie(TSBase):
         -------
         Trace object, with multiple columns corresponding to multiple ROIs
         """
-        roi = roi.as3d()
-        result = Trace(np.empty((len(self.time), len(roi))), time=self.time, Ts=self.Ts)
-        for idx,r in enumerate(roi):
-            data = self[:,~r]
-            tr = method(data, axis=1) 
-            result[:,idx] = tr
+        return Trace((roi.as3d().reshape((len(roi),-1)).dot(self.reshape((len(self),-1)).T)).T, time=self.time, Ts=self.Ts)
 
-        return result
     def correct_motion(self, *params, **kwargs):
         """A convenience method for pyfluo.motion.correct_motion
 

@@ -20,7 +20,7 @@ class Trace(TSBase):
     It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.
     """
     def __new__(cls, data, **kwargs):
-        return super(Trace, cls).__new__(cls, data, n_dims=[1,2], **kwargs)
+        return super(Trace, cls).__new__(cls, data, _ndim=[1,2], **kwargs)
 
     def as2d(self):
         """Return 2d version of object

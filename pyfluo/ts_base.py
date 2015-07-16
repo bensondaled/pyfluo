@@ -6,11 +6,14 @@ import warnings
 
 class TSBase(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    def __new__(cls, data, n_dims=0, time=None, info=None, Ts=None, dtype=np.float64, interactive_backend=pl):
+    _custom_attrs = ['time', 'info', 'Ts', 'interactive_backend', 'fs', '_ndim']
+    _custom_attrs_slice = ['time', 'info']
+    def __new__(cls, data, _ndim=0, time=None, info=None, Ts=None, dtype=np.float64, interactive_backend=pl):
         obj = np.asarray(data, dtype=dtype).view(cls)
       
         ### data
-        assert obj.ndim in n_dims, 'Movie data has invalid dimensions'
+        assert obj.ndim in _ndim, 'Input data has invalid dimensions'
+        obj._ndim = _ndim
 
         ### time
         obj.time, obj.Ts = time, Ts
@@ -44,42 +47,39 @@ class TSBase(np.ndarray):
         assert len(obj) == len(obj.info), 'Data and info vectors are different lengths.'
 
         return obj
-    
     def __array_finalize__(self, obj):
         if obj is None:
             return
 
-        _custom_attrs = ['time','info','Ts','interactive_backend','fs']
-        for ca in _custom_attrs:
+        for ca in TSBase._custom_attrs:
             setattr(self, ca, getattr(obj, ca, None))
 
     def __array_wrap__(self, out, context=None):
         return np.ndarray.__array_wrap__(self, out, context)
 
     def __getslice__(self,start,stop):
-        #This is a bug fix, solution found here: http://stackoverflow.com/questions/14553485/numpy-getitem-delayed-evaluation-and-a-1-not-the-same-as-aslice-1-none
-        copy = self.copy()
-        copy.time = self.time.__getitem__(slice(start,stop))
-        return copy.__getitem__(slice(start,stop))
+        #classic bug fix
+        return self.__getitem__(slice(start,stop))
 
     def __getitem__(self,idx):
-        # the rules in this method have been determined empiricially by inferring the behaviour of numpy under various circumstances. Complex slicing may cause isses still. The important realization is that when an array is indexed with a *list* (not tuple) containing only slice objects, it is treated identically to how *tuples* are treated for indexing purposes. When updating this, other ndarray-based objects, like ROI, should be updated
         out = super(TSBase,self).__getitem__(idx)
-       
-        if type(out) == self.__class__ and type(idx) in [int, float]:
-            pass
+        if not isinstance(out,TSBase):
+            return out
 
-        elif type(out) == self.__class__ and type(idx)==slice:
-            out.time = out.time.__getitem__(idx)
+        if self.ndim < max(self._ndim): #changed to max from min
+            pass
+        elif self.ndim in self._ndim:
+            if type(idx) in (int, float):
+                return out.view(np.ndarray)
+            elif type(idx) == slice:
+                idxi = idx
+            elif type(idx)==tuple or all([type(i)==slice for i in idx]):
+                idxi = idx[0]
+            else:
+                idxi = idx
+            for ca in TSBase._custom_attrs_slice:
+                setattr(out, ca, getattr(out, ca, None)[idxi])
         
-        elif type(out) == self.__class__ and (type(idx) in [tuple] or (type(idx) in [list,np.ndarray] and all([type(i)==slice for i in idx]))):
-            idxi = idx[0]
-            out.time = out.time.__getitem__(idxi)
-      
-        elif type(out) == self.__class__ and type(idx) in [list,np.ndarray]:
-            # ex mov[[1,2,3]]
-            out.time = out.time.__getitem__(idx)
-     
         return out
 
     def t2i(self, t):

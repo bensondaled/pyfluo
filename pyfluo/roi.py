@@ -23,6 +23,8 @@ class ROI(np.ndarray):
     """
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     DTYPE = bool
+    _custom_attrs = ['pts']
+    _custom_attrs_slice = ['pts']
     def __new__(cls, mask=None, pts=None, shape=None):
         if np.any(mask) and np.any(pts):
             warnings.warn('Both mask and points supplied. Mask will be used by default.')
@@ -37,27 +39,26 @@ class ROI(np.ndarray):
             cv2.fillConvexPoly(data, pts, (1,1,1), lineType=cv2.CV_AA)
         else:
             raise Exception('Insufficient data supplied.')
-
         obj = np.asarray(data, dtype=ROI.DTYPE).view(cls)
         assert obj.ndim in [2,3]
         
-        obj._compute_pts()
-        
         return obj
+    def __init__(self, *args, **kwargs):
+        self._compute_pts()
 
     def _compute_pts(self):
-        data = self
+        data = self.copy().view(np.ndarray)
         if self.ndim == 2:
             data = np.array([self])
 
-        self.pts = []
+        selfpts = []
         for r in data:
             pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[0])
             if len(pts) > 1:
                 pts = np.concatenate(pts)
             pts = pts.squeeze()
-            self.pts.append(pts)
-        self.pts = np.array(self.pts).squeeze()
+            selfpts.append(pts)
+        self.pts = np.asarray(selfpts).squeeze()
 
     def add(self, roi):
         """Add an ROI to the ROI object
@@ -101,7 +102,7 @@ class ROI(np.ndarray):
         -------
         If mode=='mask', the combined mask of all ROIs used for display
         """
-       
+
         cmap = cmap
         colors = cmap(np.linspace(0, 1, len(self)))
         ax = pl.gca()
@@ -153,17 +154,27 @@ class ROI(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return
-        
-        _custom_attrs = ['pts']
-        for ca in _custom_attrs:
+
+        for ca in ROI._custom_attrs:
             setattr(self, ca, getattr(obj, ca, None))
 
-        #_compute_pts will ideally go here, but I need to sort out conditions, b/c sometimes __array_finalize__ is called when _compute_pts is impossible
-        
-    def __array_wrap__(self, out, context=None):
-        out._compute_pts()
-        return np.ndarray.__array_wrap__(self, out, context)
+    # Commenting this out until I encounter a scenario where it proves necessary
+    #def __array_wrap__(self, out, context=None):
+    #    out._compute_pts()
+    #    return np.ndarray.__array_wrap__(self, out, context)
 
     def __getslice__(self,start,stop):
-        #This is a bug fix, solution found here: http://stackoverflow.com/questions/14553485/numpy-getitem-delayed-evaluation-and-a-1-not-the-same-as-aslice-1-none
+        #classic bug fix
         return self.__getitem__(slice(start,stop))
+
+    def __getitem__(self, idx):
+        out = super(ROI,self).__getitem__(idx)
+        if not isinstance(out, ROI):
+            return out
+        if self.ndim == 2: #no mods when slicing a single roi
+            pass
+        elif self.ndim == 3: #multiple rois: need associated pts
+            for ca in ROI._custom_attrs_slice:
+                setattr(out, ca, getattr(out, ca, None)[idx])
+        return out
+
