@@ -68,8 +68,8 @@
 </tr>
 </tbody>
 </table>
-<div class="section" id="timeseries">
-<h2>TimeSeries<a class="headerlink" href="#timeseries" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="traces">
+<h2>Traces<a class="headerlink" href="#traces" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="traces.Trace">
 <em class="property">class </em><code class="descclassname">traces.</code><code class="descname">Trace</code><a class="headerlink" href="#traces.Trace" title="Permalink to this definition">¶</a></dt>
@@ -222,7 +222,6 @@
 (1) Supply a mask
 (2) Supply both pts and shape</p>
 <p>In either case, the ROI object automatically resolves both the mask and points</p>
-<p>NOTE: slicing and indexing is still not supported due to pts issues. My presumed best solution is to find a way to put _compute_pts into array_finalize, even though it&#8217;s a bit redundant sometimes</p>
 <dl class="method">
 <dt id="roi.ROI.show">
 <code class="descname">show</code><span class="sig-paren">(</span><em>mode='pts'</em>, <em>labels=True</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.ROI.show" title="Permalink to this definition">¶</a></dt>
@@ -254,7 +253,7 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Core Data Structures</a><ul>
-<li><a class="reference internal" href="#timeseries">TimeSeries</a></li>
+<li><a class="reference internal" href="#traces">Traces</a></li>
 <li><a class="reference internal" href="#movie">Movie</a></li>
 <li><a class="reference internal" href="#roi">ROI</a></li>
 </ul>

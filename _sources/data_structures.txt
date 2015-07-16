@@ -7,7 +7,7 @@ Core Data Structures
 	movies.Movie
     roi.ROI
 
-TimeSeries
+Traces
 ---------------
 
 .. currentmodule:: traces
