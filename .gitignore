@@ -1,4 +1,4 @@
-docs-output
+docs/out
 
 .DS_Store
 *.py[cod]
