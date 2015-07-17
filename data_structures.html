@@ -192,13 +192,14 @@
 
 <dl class="method">
 <dt id="movies.Movie.select_roi">
-<code class="descname">select_roi</code><span class="sig-paren">(</span><em>n=1</em>, <em>existing=None</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.select_roi" title="Permalink to this definition">¶</a></dt>
-<dd><p>Select any number of regions of interest (ROI) in the movie.</p>
+<code class="descname">select_roi</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.select_roi" title="Permalink to this definition">¶</a></dt>
+<dd><p>A convenience method for pyfluo.roi.select_roi(self.project(), <a href="#id1"><span class="problematic" id="id2">*</span></a>args, <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs)</p>
 <dl class="docutils">
-<dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>number of ROIs to select</dd>
+<dt>projection_method <span class="classifier-delimiter">:</span> <span class="classifier">def</span></dt>
+<dd>&#8216;method&#8217; parameter for Movie.project, used in display</dd>
+<dt><a href="#id5"><span class="problematic" id="id6">*</span></a>args, <a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs</dt>
+<dd>those accepted by pyfluo.roi.select_roi</dd>
 </dl>
-<p>ROI object</p>
 </dd></dl>
 
 </dd></dl>
