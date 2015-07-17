@@ -1,5 +1,7 @@
 docs/out/*
 
+*.swp
+
 .DS_Store
 *.py[cod]
 
