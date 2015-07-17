@@ -59,8 +59,14 @@
 <tr class="row-even"><td><a class="reference internal" href="#segmentation.pca_ica" title="segmentation.pca_ica"><code class="xref py py-obj docutils literal"><span class="pre">segmentation.pca_ica</span></code></a>(mov[,&nbsp;components,&nbsp;...])</td>
 <td>Perform iterative PCA/ICA ROI extraction</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#motion.correct_motion" title="motion.correct_motion"><code class="xref py py-obj docutils literal"><span class="pre">motion.correct_motion</span></code></a>(mov,&nbsp;**kwargs)</td>
+<tr class="row-odd"><td><a class="reference internal" href="#segmentation.comp_to_mask" title="segmentation.comp_to_mask"><code class="xref py py-obj docutils literal"><span class="pre">segmentation.comp_to_mask</span></code></a>(comp[,&nbsp;n_std])</td>
+<td>Convert components (ex.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#motion.correct_motion" title="motion.correct_motion"><code class="xref py py-obj docutils literal"><span class="pre">motion.correct_motion</span></code></a>(mov[,&nbsp;return_vals])</td>
 <td>Performs motion correction using template matching.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#roi.select_roi" title="roi.select_roi"><code class="xref py py-obj docutils literal"><span class="pre">roi.select_roi</span></code></a>(img[,&nbsp;n,&nbsp;existing,&nbsp;...])</td>
+<td>Select any number of regions of interest (ROI) in the movie.</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">io.save</span></code></td>
 <td></td>
@@ -114,12 +120,27 @@
 </dd></dl>
 
 <dl class="function">
+<dt id="segmentation.comp_to_mask">
+<code class="descclassname">segmentation.</code><code class="descname">comp_to_mask</code><span class="sig-paren">(</span><em>comp</em>, <em>n_std=3</em><span class="sig-paren">)</span><a class="headerlink" href="#segmentation.comp_to_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert components (ex. from pyfluo.segmentation.pica) to masks</p>
+<dl class="docutils">
+<dt>comp <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
+<dd>3d array of shape (n,y,x), where n is number of components</dd>
+<dt>n_std <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>all pixels greater than frame mean plus this many std&#8217;s will be included in the mask</dd>
+</dl>
+<p>Masks in form of 3d array of shape (n,y,x)</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="motion.correct_motion">
-<code class="descclassname">motion.</code><code class="descname">correct_motion</code><span class="sig-paren">(</span><em>mov</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#motion.correct_motion" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">motion.</code><code class="descname">correct_motion</code><span class="sig-paren">(</span><em>mov</em>, <em>return_vals=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#motion.correct_motion" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performs motion correction using template matching.</p>
 <dl class="docutils">
 <dt>mov <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.Movie</span></dt>
 <dd>input movie</dd>
+<dt>return_vals <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>return the values (templates, (shifts, correlations)) associated with the correction</dd>
 <dt>max_shift <span class="classifier-delimiter">:</span> <span class="classifier">int </span></dt>
 <dd>maximum number of pixels to shift frame on each iteration</dd>
 <dt>sub_pixel <span class="classifier-delimiter">:</span> <span class="classifier">bool </span></dt>
@@ -129,8 +150,28 @@
 <dt>n_iters <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>number of iterations to run</dd>
 </dl>
-<p>A Movie object in which motion is corrected</p>
+<p>A Movie object in which motion is corrected
+Or, if return_vals: [corrected_movie, values]</p>
 <p>Note that this function is a convenience function for calling compute_motion_correction followed by apply_motion_correction.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="roi.select_roi">
+<code class="descclassname">roi.</code><code class="descname">select_roi</code><span class="sig-paren">(</span><em>img</em>, <em>n=1</em>, <em>existing=None</em>, <em>show_mode='pts'</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.select_roi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select any number of regions of interest (ROI) in the movie.</p>
+<dl class="docutils">
+<dt>img <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
+<dd>image over which to select roi</dd>
+<dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>number of ROIs to select</dd>
+<dt>existing <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.ROI</span></dt>
+<dd>pre-existing rois to which to add selections</dd>
+<dt>show_mode <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;pts&#8217;, &#8216;mask&#8217;</span></dt>
+<dd>mode by which to show existing rois</dd>
+<dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib.LinearSegmentedColormap</span></dt>
+<dd>color map with which to display img</dd>
+</dl>
+<p>ROI object</p>
 </dd></dl>
 
 </div>

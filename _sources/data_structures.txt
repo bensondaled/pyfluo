@@ -13,7 +13,7 @@ Traces
 .. currentmodule:: traces
 
 .. autoclass:: Trace
-   :members: __init__, plot
+   :members: __init__, plot, normalize
 
 Movie
 ------------
@@ -21,7 +21,7 @@ Movie
 .. currentmodule:: movies
 
 .. autoclass:: Movie
-   :members: __init__, select_roi, extract_by_roi, project, play
+   :members: __init__, project, play, extract_by_roi, correct_motion, select_roi
 
 
 ROI
@@ -30,4 +30,4 @@ ROI
 .. currentmodule:: roi
 
 .. autoclass:: ROI
-    :members: __init__, show
+    :members: __init__, show, add
