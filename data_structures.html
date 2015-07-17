@@ -92,12 +92,6 @@
 <p>The data in Trace objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, trace[0] corresponds to the data at time 0.</p>
 <p>This object can be used to store multiple time series of data, for example the traces corresponding to multiple ROIs in a movie. In this case, the above convention still holds, and trace[0] will supply an n-length vector corresponding to n series of data at time 0.</p>
 <p>It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.</p>
-<dl class="attribute">
-<dt id="traces.Trace.__init__">
-<code class="descname">__init__</code><a class="headerlink" href="#traces.Trace.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>x.__init__(...) initializes x; see help(type(x)) for signature</p>
-</dd></dl>
-
 <dl class="method">
 <dt id="traces.Trace.normalize">
 <code class="descname">normalize</code><span class="sig-paren">(</span><em>minmax=(0.0</em>, <em>1.0)</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="headerlink" href="#traces.Trace.normalize" title="Permalink to this definition">¶</a></dt>
@@ -153,12 +147,6 @@
 (3) a pyfluo.Tiff object</p>
 <p>The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0.</p>
 <p>It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.</p>
-<dl class="attribute">
-<dt id="movies.Movie.__init__">
-<code class="descname">__init__</code><a class="headerlink" href="#movies.Movie.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>x.__init__(...) initializes x; see help(type(x)) for signature</p>
-</dd></dl>
-
 <dl class="method">
 <dt id="movies.Movie.correct_motion">
 <code class="descname">correct_motion</code><span class="sig-paren">(</span><em>*params</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.correct_motion" title="Permalink to this definition">¶</a></dt>
