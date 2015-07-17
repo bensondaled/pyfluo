@@ -52,7 +52,10 @@
   <div class="section" id="core-data-structures">
 <h1>Core Data Structures<a class="headerlink" href="#core-data-structures" title="Permalink to this headline">¶</a></h1>
 <p>The advantage of pyfluo is that its core data structures are subclasses of numpy&#8217;s ndarray. This means that by and large, native numpy operations work on pyfluo Movies, Traces, ROIs, etc. However, these objects also store other data, including frame rates, time vectors, associated points, information, etc. where applicable. The biggest challenge in development has been to properly handle the advanced slicing, and as such, some features may break when slicing pyfluo objects. If this occurs, you can always retrieve raw forms of your data using:</p>
-<p>Where my_obj can be a Movie, Trace, ROI, etc. This page is a summary (albeit incomplete) of the important data structures.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">raw_data</span> <span class="o">=</span> <span class="n">my_obj</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where my_obj can be a Movie, Trace, ROI, etc. This page is a summary (albeit incomplete) of the important data structures.</p>
 <table border="1" class="longtable docutils">
 <colgroup>
 <col width="10%" />
