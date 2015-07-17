@@ -11,6 +11,14 @@ def apply_motion_correction(mov, templates, values):
         mov[fridx,:,:] = cv2.warpAffine(fr,M,(w_i,h_i),flags=cv2.INTER_CUBIC)
     return mov
 def compute_motion_correction(mov, max_shift=5, sub_pixel=True, template_func=np.median, n_iters=5):
+    """Computes motion correction shifts by template matching
+    
+    Parameters
+    ----------
+    (described in correct_motion doc)
+    
+    This can be used on its own to attain only the shifts without correcting the movie
+    """
     def _run_iter(mov, base_shape, ms, sub_pixel):
         mov = mov.astype(np.float32)
         h_i,w_i = base_shape
@@ -69,13 +77,15 @@ def compute_motion_correction(mov, max_shift=5, sub_pixel=True, template_func=np
     pbar.finish()
     return np.array(templates), np.array(values)
 
-def correct_motion(mov, **kwargs):
+def correct_motion(mov, return_vals=False, **kwargs):
     """Performs motion correction using template matching.
     
     Parameters
     ----------
     mov : pyfluo.Movie
         input movie
+    return_vals : bool
+        return the values (templates, (shifts, correlations)) associated with the correction
     max_shift : int 
         maximum number of pixels to shift frame on each iteration
     sub_pixel : bool 
@@ -88,9 +98,13 @@ def correct_motion(mov, **kwargs):
     Returns
     -------
     A Movie object in which motion is corrected
+    Or, if return_vals: [corrected_movie, values]
 
     Note that this function is a convenience function for calling compute_motion_correction followed by apply_motion_correction.
     """
     params = compute_motion_correction(mov, **kwargs)
     mov_cor = apply_motion_correction(mov, *params)
-    return mov_cor
+    to_ret = mov_cor
+    if return_vals:
+        to_ret = [mov_cor, params]
+    return to_ret

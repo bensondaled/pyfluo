@@ -1,5 +1,5 @@
 import numpy as np
-from roi import ROI
+from roi import ROI, select_roi
 from images.tiff import Tiff
 from traces import Trace
 from motion import correct_motion, apply_motion_correction
@@ -55,6 +55,8 @@ class Movie(TSBase):
         -------
         The projected image
         """
+        if method == None:
+            method = np.mean
         pro = np.apply_over_axes(method,self,axes=axis).squeeze()
         
         if show:
@@ -126,35 +128,18 @@ class Movie(TSBase):
                 _play_once()
             cv2.destroyWindow('Movie')
     
-    def select_roi(self, n=1, existing=None):
-        """Select any number of regions of interest (ROI) in the movie.
-        
+    def select_roi(self, *args, **kwargs):
+        """A convenience method for pyfluo.roi.select_roi(self.project(), *args, **kwargs)
+
         Parameters
         ----------
-        n : int
-            number of ROIs to select
-            
-        Returns
-        -------
-        ROI object
+        projection_method : def
+            'method' parameter for Movie.project, used in display
+        *args, **kwargs
+            those accepted by pyfluo.roi.select_roi
         """
-        roi = None
-        for q in xrange(n):
-            pl.clf()
-            zp = self.project(show=True, rois=existing)
-            pts = pl.ginput(0, timeout=0)
-
-            if pts:
-                if roi is None:
-                    roi = ROI(pts=pts, shape=zp.shape)
-                    if existing is None:
-                        existing = roi.copy()
-                else:
-                    new_roi = ROI(pts=pts, shape=zp.shape)
-                    existing = existing.add(new_roi)
-                    roi = roi.add(new_roi)
-        pl.close()
-        return roi
+        zp = self.project(show=False, method=kwargs.pop('projection_method',None))
+        return select_roi(zp, *args, **kwargs)
     def extract_by_roi(self, roi, method=np.mean):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied
         

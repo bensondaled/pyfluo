@@ -4,6 +4,46 @@ import pylab as pl
 import warnings
 from PIL import Image, ImageDraw
 
+def select_roi(img, n=1, existing=None, show_mode='pts', cmap=pl.cm.Greys_r):
+    """Select any number of regions of interest (ROI) in the movie.
+    
+    Parameters
+    ----------
+    img : np.ndarray
+        image over which to select roi
+    n : int
+        number of ROIs to select
+    existing : pyfluo.ROI
+        pre-existing rois to which to add selections
+    show_mode : 'pts', 'mask'
+        mode by which to show existing rois
+    cmap : matplotlib.LinearSegmentedColormap
+        color map with which to display img
+        
+    Returns
+    -------
+    ROI object
+    """
+    roi = None
+    for q in xrange(n):
+        pl.clf()
+        pl.imshow(img, cmap=cmap)
+        if existing is not None:
+            existing.show(mode=show_mode)
+        pts = pl.ginput(0, timeout=0)
+
+        if pts:
+            if roi is None:
+                roi = ROI(pts=pts, shape=img.shape)
+                if existing is None:
+                    existing = roi.copy()
+            else:
+                new_roi = ROI(pts=pts, shape=img.shape)
+                existing = existing.add(new_roi)
+                roi = roi.add(new_roi)
+    pl.close()
+    return roi
+
 class ROI(np.ndarray):
     """An object storing ROI information for 1 or more ROIs
 

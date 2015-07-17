@@ -34,13 +34,13 @@ Here is a quick-start example to get you moving with pyfluo.
 .. code-block:: python
     :linenos:
 
-    from pyfluo import ROI, Tiff, Movie, Trace, compute_dff, pca_ica, comp_to_mask, save
+    from pyfluo import ROI, Tiff, Movie, Trace, correct_motion, compute_dff, pca_ica, comp_to_mask, save
 
     # create a movie from a tiff file
     mov = Movie('/Users/ben/PhD/data/mov.tif', Ts=0.03)
 
     # motion correct the movie
-    mov = mov.correct_motion(n_iters=1)
+    mov = correct_motion(mov, n_iters=1) #or use the convenience method mov.correct_motion
 
     # convert the movie to delta f over f
     mov = compute_dff(mov, window_size=1.0, step_size=0.100)
