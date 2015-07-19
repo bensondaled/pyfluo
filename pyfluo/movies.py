@@ -73,7 +73,7 @@ class Movie(TSBase):
                     pl.plot(self.time, pro)
         
         return pro
-    def play(self, loop=False, fps=None, scale=1, contrast=1., backend=cv2, **kwargs):
+    def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, **kwargs):
         """Play the movie
         
         Parameter
@@ -86,6 +86,8 @@ class Movie(TSBase):
             scaling factor to resize playback images
         contrast : float
             scaling factor for pixel values
+        show_time : bool
+            show time on image
         backend : module 
             package to use for playback (ex. pl or cv2). If *None*, defaults to self.interactive_backend
 
@@ -108,14 +110,17 @@ class Movie(TSBase):
             ani = animation.ArtistAnimation(fig, ims, interval=1./fpms, blit=False, repeat=loop, **kwargs)
             pl.show()
             if flag:    pl.ion()
+
         elif backend == cv2:
             size = tuple(scale*np.array(self.shape)[-1:0:-1])
             minn,maxx = self.min(),self.max()
             def _play_once():
                 to_play = contrast * (self+minn)/(maxx-minn)
-                to_play[to_play>1.0] = 1.0
-                for fr in to_play:
+                to_play[to_play>1.0] = 1.0 #clips; this should become a parameter
+                for idx,fr in enumerate(to_play):
                     fr = cv2.resize(fr,size)
+                    if show_time:
+                        cv2.putText(fr, str(self.time[idx]), (5,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (120,100,80), thickness=3)
                     cv2.imshow('Movie',fr)
                     k=cv2.waitKey(int(1./fpms))
                     if k == ord('q'):

@@ -3,7 +3,7 @@ import warnings
 from util import sliding_window as sw
 from util import ProgressBar
 
-def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_minimum=True, pad_mode='symmetric'):
+def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_minimum=True, pad_mode='edge'):
     """Compute delta-f-over-f
 
     Computes the percentile-based delta-f-over-f along the 0th axis of the supplied data.

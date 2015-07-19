@@ -75,6 +75,7 @@ class Trace(TSBase):
         The matplotlib axes object corresponding to the data plot
         """
         d = np.atleast_2d(self).copy()
+
         ax = pl.gca()
 
         colors = cmap(np.linspace(0, 1, d.shape[1]))
@@ -92,5 +93,7 @@ class Trace(TSBase):
         ax2.set_yticks(d.mean(axis=0))
         ax2.set_yticklabels([str(i) for i in xrange(d.shape[1])], weight='bold')
         [l.set_color(c) for l,c in zip(ax2.get_yticklabels(), colors)]
+
+        pl.gcf().canvas.draw()
 
         return ax

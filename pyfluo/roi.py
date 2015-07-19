@@ -2,9 +2,10 @@ import numpy as np
 import cv2
 import pylab as pl
 import warnings
+import matplotlib.lines as mlines
 from PIL import Image, ImageDraw
 
-def select_roi(img, n=1, existing=None, show_mode='pts', cmap=pl.cm.Greys_r):
+def select_roi(img, n=1, existing=None, mode='lasso', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
     """Select any number of regions of interest (ROI) in the movie.
     
     Parameters
@@ -15,34 +16,37 @@ def select_roi(img, n=1, existing=None, show_mode='pts', cmap=pl.cm.Greys_r):
         number of ROIs to select
     existing : pyfluo.ROI
         pre-existing rois to which to add selections
+    mode : 'polygon', 'lasso'
+        mode by which to select roi
     show_mode : 'pts', 'mask'
         mode by which to show existing rois
     cmap : matplotlib.LinearSegmentedColormap
         color map with which to display img
+    lasso_strictness : float
+        number from 0-inf, to do with tolerance for edge finding
         
     Returns
     -------
     ROI object
     """
-    roi = None
     for q in xrange(n):
         pl.clf()
         pl.imshow(img, cmap=cmap)
         if existing is not None:
             existing.show(mode=show_mode)
-        pts = pl.ginput(0, timeout=0)
+        if mode == 'polygon':
+            pts = pl.ginput(0, timeout=0)
+        elif mode == 'lasso':
+            pts = lasso(lasso_strictness)
 
-        if pts:
-            if roi is None:
-                roi = ROI(pts=pts, shape=img.shape)
-                if existing is None:
-                    existing = roi.copy()
+        if pts is not None:
+            new_roi = ROI(pts=pts, shape=img.shape)
+            if existing is None:
+                existing = ROI(pts=pts, shape=img.shape)
             else:
-                new_roi = ROI(pts=pts, shape=img.shape)
                 existing = existing.add(new_roi)
-                roi = roi.add(new_roi)
     pl.close()
-    return roi
+    return existing
 
 class ROI(np.ndarray):
     """An object storing ROI information for 1 or more ROIs
@@ -224,4 +228,79 @@ class ROI(np.ndarray):
             for ca in ROI._custom_attrs_slice:
                 setattr(out, ca, getattr(out, ca, None)[idx])
         return out
+
+
+# Lasso
+def dist(p1,p2):
+    p1,p2 = np.array(p1),np.array(p2)
+    d = np.sqrt(np.sum((p1-p2)**2))
+    return d
+
+class Lasso(object):
+    #TODO: delete points, adaptive edges, max_dist for new pt
+    def __init__(self, strictness=1):
+        self.on = False
+        self.pts = []
+        self.marks = []
+
+        self.fig = pl.gcf()
+        self.ax = pl.gca()
+        pl.autoscale(enable=False)
+        self.cid_move = self.fig.canvas.mpl_connect('motion_notify_event', self.onmove)
+        self.cid_click = self.fig.canvas.mpl_connect('button_release_event', self.onclick)
+        self.cid_exit = self.fig.canvas.mpl_connect('axes_leave_event', self.onexit)
+        self.cid_keyup = self.fig.canvas.mpl_connect('key_release_event', self.on_keyup)
+
+        img = self.ax.get_images()[0].get_array().view(np.ndarray)
+        img = (img-img.min())/(img.max()-img.min())
+        img *= 255
+        img = img.astype(np.uint8)
+        edge_img = cv2.Canny(img, img.mean(), img.mean()+strictness*img.std())
+        self.edge_pts = np.argwhere(edge_img)
+        self.fig.canvas.start_event_loop(timeout=-1)
+    def get_best(self, pt):    
+        dists = np.array([dist(pt,ep) for ep in self.edge_pts]) #ventually np.vectorize
+        best = self.edge_pts[np.argmin(np.abs(dists))]
+        return best
+    def add_pt(self, pt):
+        pt = list(pt)
+        if pt not in self.pts:
+            line = mlines.Line2D([pt[0]], [pt[1]], marker='+', color='r')
+            self.ax.add_line(line)
+            self.marks.append(line)
+            self.pts.append(pt)
+            self.fig.canvas.draw()
+    def onclick(self,event):
+        if self.on:
+            pt = np.array([event.ydata,event.xdata])
+            self.add_pt(pt[::-1])
+    def onmove(self,event):
+        if self.on:
+            pt = np.array([event.ydata,event.xdata])
+            best = self.get_best(pt)
+            self.add_pt(best[::-1])
+    def onenter(self,event):
+        pass
+    def onexit(self,event):
+        self.on = False
+    def on_keyup(self,event):
+        if not self.on:
+            self.on = True
+        else:
+            self.pts = np.array(self.pts)
+            self.end()
+    def end(self):
+        self.fig.canvas.mpl_disconnect(self.cid_exit)
+        self.fig.canvas.mpl_disconnect(self.cid_move)
+        self.fig.canvas.mpl_disconnect(self.cid_click)
+        self.fig.canvas.mpl_disconnect(self.cid_keyup)
+        for mark in self.marks:
+            mark.remove()
+        self.fig.canvas.stop_event_loop()
+        self.fig.canvas.draw()
+
+def lasso(strictness):
+    print 'Press enter to begin and end.'
+    l = Lasso(strictness)
+    return l.pts
 

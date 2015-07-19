@@ -77,7 +77,7 @@ def compute_motion_correction(mov, max_shift=5, sub_pixel=True, template_func=np
     pbar.finish()
     return np.array(templates), np.array(values)
 
-def correct_motion(mov, return_vals=False, **kwargs):
+def correct_motion(mov, return_vals=False, crop=True, **kwargs):
     """Performs motion correction using template matching.
     
     Parameters
@@ -86,6 +86,9 @@ def correct_motion(mov, return_vals=False, **kwargs):
         input movie
     return_vals : bool
         return the values (templates, (shifts, correlations)) associated with the correction
+    crop : bool
+        crop movie according to max shifts before returning
+        NOTE this needs attention
     max_shift : int 
         maximum number of pixels to shift frame on each iteration
     sub_pixel : bool 
@@ -104,6 +107,11 @@ def correct_motion(mov, return_vals=False, **kwargs):
     """
     params = compute_motion_correction(mov, **kwargs)
     mov_cor = apply_motion_correction(mov, *params)
+    if crop:
+        shifts = np.sum(params[1],axis=0)[:,:2]
+        maxx,maxy = (shifts.max(axis=0)).astype(int)
+        minx,miny = (shifts.min(axis=0)).astype(int)
+        mov_cor = mov_cor[-miny:-maxy, -minx:-maxx]
     to_ret = mov_cor
     if return_vals:
         to_ret = [mov_cor, params]
