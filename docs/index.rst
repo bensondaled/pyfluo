@@ -3,13 +3,15 @@ Welcome to the documentation for **pyfluo**.
 
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 	
    introduction
 
    data_structures
 
    functions
+
+   contribute
 
 
 Indices and tables

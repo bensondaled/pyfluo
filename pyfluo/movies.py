@@ -37,7 +37,7 @@ class Movie(TSBase):
         elif type(data) == str:
             data = Tiff(data).data.copy()
         return super(Movie, cls).__new__(cls, data, _ndim=[3], **kwargs)
-    def project(self, axis=0, method=np.mean, show=False, rois=None, **kwargs):
+    def project(self, axis=0, method=np.mean, show=False, roi=None, **kwargs):
         """Flatten/project the movie data across one or many axes
         
         Parameters
@@ -48,7 +48,7 @@ class Movie(TSBase):
             function to apply across the specified axes
         show : bool
             display the result (if 2d, as image; if 1d, as trace)
-        rois : pyfluo.ROI 
+        roi : pyfluo.ROI 
             roi to display
             
         Returns
@@ -67,8 +67,8 @@ class Movie(TSBase):
                 ax.margins(0.)
                 if pro.ndim == 2:
                     pl.imshow(pro, cmap=pl.cm.Greys_r, **kwargs)
-                    if rois is not None:
-                        rois.show(mode='pts',labels=True)
+                    if roi is not None:
+                        roi.show(mode='pts',labels=True)
                 elif pro.ndim == 1:
                     pl.plot(self.time, pro)
         
