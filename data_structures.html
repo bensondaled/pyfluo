@@ -170,7 +170,7 @@
 
 <dl class="method">
 <dt id="movies.Movie.play">
-<code class="descname">play</code><span class="sig-paren">(</span><em>loop=False</em>, <em>fps=None</em>, <em>scale=1</em>, <em>contrast=1.0</em>, <em>backend=&lt;module 'cv2' from '/Users/ben/anaconda/lib/python2.7/site-packages/cv2.so'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
+<code class="descname">play</code><span class="sig-paren">(</span><em>loop=False</em>, <em>fps=None</em>, <em>scale=1</em>, <em>contrast=1.0</em>, <em>show_time=True</em>, <em>backend=&lt;module 'cv2' from '/Users/ben/anaconda/lib/python2.7/site-packages/cv2.so'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
 <dd><p>Play the movie</p>
 <dl class="docutils">
 <dt>loop <span class="classifier-delimiter">:</span> <span class="classifier">bool </span></dt>
@@ -181,6 +181,8 @@
 <dd>scaling factor to resize playback images</dd>
 <dt>contrast <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
 <dd>scaling factor for pixel values</dd>
+<dt>show_time <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>show time on image</dd>
 <dt>backend <span class="classifier-delimiter">:</span> <span class="classifier">module </span></dt>
 <dd>package to use for playback (ex. pl or cv2). If <em>None</em>, defaults to self.interactive_backend</dd>
 </dl>
@@ -189,7 +191,7 @@
 
 <dl class="method">
 <dt id="movies.Movie.project">
-<code class="descname">project</code><span class="sig-paren">(</span><em>axis=0</em>, <em>method=&lt;function mean&gt;</em>, <em>show=False</em>, <em>rois=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.project" title="Permalink to this definition">¶</a></dt>
+<code class="descname">project</code><span class="sig-paren">(</span><em>axis=0</em>, <em>method=&lt;function mean&gt;</em>, <em>show=False</em>, <em>roi=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.project" title="Permalink to this definition">¶</a></dt>
 <dd><p>Flatten/project the movie data across one or many axes</p>
 <dl class="docutils">
 <dt>axis <span class="classifier-delimiter">:</span> <span class="classifier">int, list</span></dt>
@@ -198,7 +200,7 @@
 <dd>function to apply across the specified axes</dd>
 <dt>show <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
 <dd>display the result (if 2d, as image; if 1d, as trace)</dd>
-<dt>rois <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.ROI </span></dt>
+<dt>roi <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.ROI </span></dt>
 <dd>roi to display</dd>
 </dl>
 <p>The projected image</p>
