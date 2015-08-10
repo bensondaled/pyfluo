@@ -13,11 +13,3 @@ Welcome to the documentation for **pyfluo**.
 
    contribute
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
