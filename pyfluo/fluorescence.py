@@ -1,3 +1,5 @@
+#TODO: choose a df/f method
+
 import numpy as np
 import warnings
 from util import sliding_window as sw
@@ -53,3 +55,48 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
     pbar.finish()
 
     return (data-f0)/f0 
+
+def computeDFF_AG(self,secsWindow=5,quantilMin=8,subtract_minimum=False,squared_F=True):
+    """ 
+    compute the DFF of the movie
+    In order to compute the baseline frames are binned according to the window length parameter
+    and then the intermediate values are interpolated. 
+    Parameters
+    ----------
+    secsWindow: length of the windows used to compute the quantile
+    quantilMin : value of the quantile
+
+    """
+    
+    print "computing minimum ..."; sys.stdout.flush()
+    minmov=np.min(self.mov)
+    if subtract_minimum:
+        self.mov=self.mov-np.min(self.mov)+.1
+        minmov=np.min(self.mov)
+
+    assert(minmov>0),"All pixels must be nonnegative"                       
+    numFrames,linePerFrame,pixPerLine=np.shape(self.mov)
+    downsampfact=int(secsWindow/self.frameRate);
+    elm_missing=int(np.ceil(numFrames*1.0/downsampfact)*downsampfact-numFrames)
+    padbefore=np.floor(elm_missing/2.0)
+    padafter=np.ceil(elm_missing/2.0)
+    print 'Inizial Size Image:' + np.str(np.shape(self.mov)); sys.stdout.flush()
+    self.mov=np.pad(self.mov,((padbefore,padafter),(0,0),(0,0)),mode='reflect')
+    numFramesNew,linePerFrame,pixPerLine=np.shape(self.mov)
+    #% compute baseline quickly
+    print "binning data ..."; sys.stdout.flush()
+    movBL=np.reshape(self.mov,(downsampfact,int(numFramesNew/downsampfact),linePerFrame,pixPerLine));
+    movBL=np.percentile(movBL,quantilMin,axis=0);
+    print "interpolating data ..."; sys.stdout.flush()   
+    print movBL.shape        
+    movBL=scipy.ndimage.zoom(np.array(movBL,dtype=np.float32),[downsampfact ,1, 1],order=0, mode='constant', cval=0.0, prefilter=False)
+    
+    #% compute DF/F
+    if squared_F:
+        self.mov=(self.mov-movBL)/np.sqrt(movBL)
+    else:
+        self.mov=(self.mov-movBL)/movBL
+        
+    self.mov=self.mov[padbefore:len(movBL)-padafter,:,:]; 
+    print 'Final Size Movie:' +  np.str(self.mov.shape)          
+    

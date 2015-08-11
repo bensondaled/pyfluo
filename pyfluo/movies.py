@@ -1,8 +1,10 @@
+#TODO: fix resize
+
 import numpy as np
 from roi import ROI, select_roi
 from images.tiff import Tiff
 from traces import Trace
-from motion import correct_motion, apply_motion_correction
+from motion import motion_correct, apply_motion_correction
 import pylab as pl
 import cv2
 from ts_base import TSBase
@@ -172,3 +174,34 @@ class Movie(TSBase):
             return apply_motion_correction(self, *params)
         else:
             return correct_motion(self, **kwargs)
+
+    def resize(mov,factor,interpolation=cv2.INTER_AREA): 
+        """NEEDS FIXING
+        Resize movie along axis and interpolate or lowpass when necessary
+        
+        Parameters
+        ----------
+        factor : float / tuple / list
+            multiplying factor for dimensions (t,y,x), ex. 0.5 will downsample by 2. If number, it is used for all dimensions
+        interpolation : def
+            defaults to cv2.INTER_AREA. Set to none if you do not want interpolation or lowpass
+        """              
+        if fx!=1 or fy!=1:
+            print "reshaping along x and y"
+            t,h,w=mov.shape
+            newshape=(int(w*fy),int(h*fx))
+            mov=[];
+            print(newshape)
+            for frame in mov:                
+                mov.append(cv2.resize(frame,newshape,fx=fx,fy=fy,interpolation=interpolation))
+            mov=np.asarray(mov)
+        if fz!=1:
+            print "reshaping along z"            
+            t,h,w=mov.shape
+            mov=np.reshape(self.mov,(t,h*w))
+            mov=cv2.resize(self.mov,(h*w,int(fz*t)),fx=1,fy=fz,interpolation=interpolation)
+    #            self.mov=cv2.resize(self.mov,(h*w,int(fz*t)),fx=1,fy=fz,interpolation=interpolation)
+            mov=np.reshape(self.mov,(int(fz*t),h,w))
+            frameRate=self.frameRate/fz
+
+

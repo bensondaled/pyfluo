@@ -5,7 +5,7 @@ import warnings
 import matplotlib.lines as mlines
 from PIL import Image, ImageDraw
 
-def select_roi(img, n=1, existing=None, mode='lasso', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
+def select_roi(img, n=1, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
     """Select any number of regions of interest (ROI) in the movie.
     
     Parameters
