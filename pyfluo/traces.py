@@ -1,3 +1,5 @@
+#TODO: plotting fails when tr is only one trace, due to 2d issues
+
 from ts_base import TSBase
 import numpy as np
 import pylab as pl
@@ -74,24 +76,27 @@ class Trace(TSBase):
         -------
         The matplotlib axes object corresponding to the data plot
         """
-        d = np.atleast_2d(self).copy()
+        d = self.copy()
+        n = 1 #number of traces
+        if len(d.shape)>1:
+            n = d.shape[1]
 
         ax = pl.gca()
 
-        colors = cmap(np.linspace(0, 1, d.shape[1]))
+        colors = cmap(np.linspace(0, 1, n))
         ax.set_color_cycle(colors)
 
         if subtract_minimum:
             d -= d.min(axis=0)
-        if stacked:
+        if stacked and n>1:
             d += np.append(0, np.cumsum(d.max(axis=0))[:-1])
-        ax.plot(self.time, d)        
+        ax.plot(self.time, d)
        
         # display trace labels along right
         ax2 = ax.twinx()
         ax2.set_ylim(ax.get_ylim())
-        ax2.set_yticks(d.mean(axis=0))
-        ax2.set_yticklabels([str(i) for i in xrange(d.shape[1])], weight='bold')
+        ax2.set_yticks(np.atleast_1d(d.mean(axis=0)))
+        ax2.set_yticklabels([str(i) for i in xrange(n)], weight='bold')
         [l.set_color(c) for l,c in zip(ax2.get_yticklabels(), colors)]
 
         pl.gcf().canvas.draw()

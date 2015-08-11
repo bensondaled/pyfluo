@@ -1,3 +1,5 @@
+#TODO: issues when selecting only 1 roi, dimensional related to extraction from movie
+
 import numpy as np
 import cv2
 import pylab as pl
