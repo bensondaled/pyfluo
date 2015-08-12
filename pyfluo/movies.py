@@ -6,6 +6,7 @@ from images.tiff import Tiff
 from traces import Trace
 from motion import motion_correct, apply_motion_correction
 import pylab as pl
+from matplotlib import animation
 import cv2
 from ts_base import TSBase
 
@@ -107,9 +108,16 @@ class Movie(TSBase):
             flag = pl.isinteractive()
             pl.ioff()
             fig = pl.figure()
-            ims = [ [pl.imshow(np.atleast_2d(i), cmap=pl.cm.Greys_r, aspect=self.visual_aspect, vmin=np.min(self.data), vmax=np.max(self.data))] for i in self ]
+            im = pl.imshow(np.zeros(self[0].shape), cmap=pl.cm.Greys_r, vmin=np.min(self), vmax=np.max(self))
+            self._idx = 0
+            def func(*args):
+                self._idx += 1
+                if self._idx>=len(self):
+                    return None
+                im.set_array(self[self._idx])
+                return im,
             
-            ani = animation.ArtistAnimation(fig, ims, interval=1./fpms, blit=False, repeat=loop, **kwargs)
+            ani = animation.FuncAnimation(fig, func, interval=1./fpms, blit=False, repeat=loop, **kwargs)
             pl.show()
             if flag:    pl.ion()
 
