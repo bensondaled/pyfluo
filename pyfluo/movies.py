@@ -169,7 +169,8 @@ class Movie(TSBase):
         -------
         Trace object, with multiple columns corresponding to multiple ROIs
         """
-        return Trace((roi.as3d().reshape((len(roi),-1)).dot(self.reshape((len(self),-1)).T)).T, time=self.time, Ts=self.Ts)
+        roi3 = roi.as3d()
+        return Trace((roi3.reshape((len(roi3),-1)).dot(self.reshape((len(self),-1)).T)).T, time=self.time, Ts=self.Ts)
 
     def correct_motion(self, *params, **kwargs):
         """A convenience method for pyfluo.motion.correct_motion
