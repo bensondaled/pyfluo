@@ -88,7 +88,7 @@ class TSBase(np.ndarray):
     def resample(self, *args, **kwargs):
         """Resample time series object using scipy's resample
 
-        Parameters are those of scipy.signal.resample
+        Parameters are those of scipy.signal.resample, with *num* (number of samples in resampled result) as the only mandatory parameter
         """
         if 't' not in kwargs or kwargs['t']==None:
             kwargs['t'] = self.time
