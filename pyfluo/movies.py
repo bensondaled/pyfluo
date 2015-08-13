@@ -1,6 +1,5 @@
-#TODO: fix resize
-
 import numpy as np
+from scipy.ndimage.interpolation import zoom as szoom
 from roi import ROI, select_roi
 from images.tiff import Tiff
 from traces import Trace
@@ -40,7 +39,7 @@ class Movie(TSBase):
         elif type(data) == str:
             data = Tiff(data).data.copy()
         return super(Movie, cls).__new__(cls, data, _ndim=[3], **kwargs)
-    def project(self, axis=0, method=np.mean, show=False, roi=None, **kwargs):
+    def project(self, axis=0, method=np.mean, show=False, roi=None, backend=pl, **kwargs):
         """Flatten/project the movie data across one or many axes
         
         Parameters
@@ -53,6 +52,8 @@ class Movie(TSBase):
             display the result (if 2d, as image; if 1d, as trace)
         roi : pyfluo.ROI 
             roi to display
+        backend : module
+            module used for interactive display (only matplotlib currently supported)
             
         Returns
         -------
@@ -63,17 +64,14 @@ class Movie(TSBase):
         pro = np.apply_over_axes(method,self,axes=axis).squeeze()
         
         if show:
-            if self.interactive_backend == cv2:
-                raise Exception('cv2 backend does not yet support projection.')
-            elif self.interactive_backend == pl:
-                ax = pl.gca()
-                ax.margins(0.)
-                if pro.ndim == 2:
-                    pl.imshow(pro, cmap=pl.cm.Greys_r, **kwargs)
-                    if roi is not None:
-                        roi.show(mode='pts',labels=True)
-                elif pro.ndim == 1:
-                    pl.plot(self.time, pro)
+            ax = pl.gca()
+            ax.margins(0.)
+            if pro.ndim == 2:
+                pl.imshow(pro, cmap=pl.cm.Greys_r, **kwargs)
+                if roi is not None:
+                    roi.show(mode='pts',labels=True)
+            elif pro.ndim == 1:
+                pl.plot(self.time, pro)
         
         return pro
     def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, **kwargs):
@@ -92,7 +90,7 @@ class Movie(TSBase):
         show_time : bool
             show time on image
         backend : module 
-            package to use for playback (ex. pl or cv2). If *None*, defaults to self.interactive_backend
+            package to use for playback (ex. pl or cv2)
 
         During playback, 'q' can be used to quit when playback window has focus
             
@@ -101,9 +99,6 @@ class Movie(TSBase):
             fps = self.fs
         fpms = fps / 1000.
 
-        if backend == None:
-            backend = self.interactive_backend
-       
         if backend == pl:
             flag = pl.isinteractive()
             pl.ioff()
@@ -184,33 +179,24 @@ class Movie(TSBase):
         else:
             return correct_motion(self, **kwargs)
 
-    def resize(mov,factor,interpolation=cv2.INTER_AREA): 
-        """NEEDS FIXING
-        Resize movie along axis and interpolate or lowpass when necessary
+    def resize(self, factor, order=0):
+        """Resize movie using scipy.ndimage.zoom
         
         Parameters
         ----------
-        factor : float / tuple / list
-            multiplying factor for dimensions (t,y,x), ex. 0.5 will downsample by 2. If number, it is used for all dimensions
-        interpolation : def
-            defaults to cv2.INTER_AREA. Set to none if you do not want interpolation or lowpass
+        factor : float, tuple, list
+            multiplying factor for dimensions (y,x), ex. 0.5 will downsample by 2. If number, it is used for all dimensions
+        order : int
+            order of interpolation (0=nearest, 1=bilinear, 2=cubic)
         """              
-        if fx!=1 or fy!=1:
-            print "reshaping along x and y"
-            t,h,w=mov.shape
-            newshape=(int(w*fy),int(h*fx))
-            mov=[];
-            print(newshape)
-            for frame in mov:                
-                mov.append(cv2.resize(frame,newshape,fx=fx,fy=fy,interpolation=interpolation))
-            mov=np.asarray(mov)
-        if fz!=1:
-            print "reshaping along z"            
-            t,h,w=mov.shape
-            mov=np.reshape(self.mov,(t,h*w))
-            mov=cv2.resize(self.mov,(h*w,int(fz*t)),fx=1,fy=fz,interpolation=interpolation)
-    #            self.mov=cv2.resize(self.mov,(h*w,int(fz*t)),fx=1,fy=fz,interpolation=interpolation)
-            mov=np.reshape(self.mov,(int(fz*t),h,w))
-            frameRate=self.frameRate/fz
-
-
+        if type(factor) in [int,long,float]:
+            factor = [factor,factor]
+        elif type(factor) in [list,tuple,np.ndarray]:
+            factor = list(factor)
+        else:
+            raise Exception('factor parameter not understood')
+        res = szoom(self, [1]+factor, order=order)
+        res = self.__class__(res)
+        for ca in self._custom_attrs:
+            res.__setattr__(ca, self.__getattribute__(ca))
+        return res

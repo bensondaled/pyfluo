@@ -6,9 +6,9 @@ import warnings
 
 class TSBase(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['time', 'info', 'Ts', 'interactive_backend', 'fs', '_ndim']
+    _custom_attrs = ['time', 'info', 'Ts', 'fs', '_ndim']
     _custom_attrs_slice = ['time', 'info']
-    def __new__(cls, data, _ndim=0, time=None, info=None, Ts=None, dtype=np.float64, interactive_backend=pl):
+    def __new__(cls, data, _ndim=0, time=None, info=None, Ts=None, dtype=np.float64):
         obj = np.asarray(data, dtype=dtype).view(cls)
       
         ### data
@@ -40,7 +40,7 @@ class TSBase(np.ndarray):
             obj.info = [None for _ in xrange(len(obj))]
 
         ### other attributes
-        obj.interactive_backend = interactive_backend
+        #(none)
 
         ### consistency checks
         assert len(obj) == len(obj.time), 'Data and time vectors are different lengths.'
