@@ -86,10 +86,10 @@ class TSBase(np.ndarray):
         #returns the index most closely associated with time t
         return np.argmin(np.abs(self.time - t))
     def resample(self, *args, **kwargs):
-    """Resample time series object using scipy's resample
+        """Resample time series object using scipy's resample
 
-    Parameters are those of scipy.signal.resample
-    """
+        Parameters are those of scipy.signal.resample
+        """
         if 't' not in kwargs or kwargs['t']==None:
             kwargs['t'] = self.time
         new_data,new_time = sp_resample(self, *args, **kwargs)
