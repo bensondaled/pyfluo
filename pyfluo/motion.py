@@ -40,6 +40,8 @@ def motion_correct(mov, return_vals=False, crop=False, **kwargs):
         modify the supplied array so as not to allocate new memory for a copy
     return_vals : bool
         return the values (templates, (shifts, correlations)) associated with the correction
+    prog_bar : bool
+        show progress bar, defaults to True
     crop : bool
         crop movie according to max shifts before returning
         TODO! this needs attention
@@ -68,7 +70,7 @@ def motion_correct(mov, return_vals=False, crop=False, **kwargs):
     return ret
 
 
-def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False):
+def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False, prog_bar=True):
         """Compute template, shifts, and correlations associated with template-matching-based motion correction
 
         Parameters
@@ -107,9 +109,9 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False):
         h,w = template.shape
         
         shifts=[]   # store the amount of shift in each frame
-        pbar = ProgressBar(maxval=n_frames_).start()
+        if prog_bar:    pbar = ProgressBar(maxval=n_frames_).start()
         for i,frame in enumerate(mov):
-             pbar.update(i)             
+             if prog_bar:    pbar.update(i)             
              res = cv2.matchTemplate(frame,template,cv2.TM_CCORR_NORMED)
              avg_corr=np.mean(res)
              top_left = cv2.minMaxLoc(res)[3]
@@ -133,5 +135,5 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False):
                      
              shifts.append([sh_x_n,sh_y_n,avg_corr]) 
                  
-        pbar.finish()         
+        if prog_bar:    pbar.finish()         
         return np.asarray(template), np.asarray(shifts)
