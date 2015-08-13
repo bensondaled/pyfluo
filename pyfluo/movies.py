@@ -167,8 +167,8 @@ class Movie(TSBase):
         roi3 = roi.as3d()
         return Trace((roi3.reshape((len(roi3),-1)).dot(self.reshape((len(self),-1)).T)).T, time=self.time, Ts=self.Ts)
 
-    def correct_motion(self, *params, **kwargs):
-        """A convenience method for pyfluo.motion.correct_motion
+    def motion_correct(self, *params, **kwargs):
+        """A convenience method for pyfluo.motion.motion_correct
 
         If unnamed params are supplied, they are taken to be the output of a prior motion correction and are applied to the movies using pyfluo.motion.apply_motion_correction.
 
@@ -177,7 +177,7 @@ class Movie(TSBase):
         if params:
             return apply_motion_correction(self, *params)
         else:
-            return correct_motion(self, **kwargs)
+            return motion_correct(self, **kwargs)
 
     def resize(self, factor, order=0):
         """Resize movie using scipy.ndimage.zoom
