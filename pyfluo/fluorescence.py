@@ -34,7 +34,10 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
 
     window_size = int(window_size*data.fs)
     step_size = int(step_size*data.fs)
-
+    
+    if window_size<1:
+        warnings.warn('Requested a window size smaller than sampling interval. Using sampling interval.')
+        window_size = 1.
     if step_size<1:
         warnings.warn('Requested a step size smaller than sampling interval. Using sampling interval.')
         step_size = 1.
