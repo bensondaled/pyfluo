@@ -8,7 +8,7 @@ class TSBase(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     _custom_attrs = ['time', 'info', 'Ts', 'fs', '_ndim']
     _custom_attrs_slice = ['time', 'info']
-    def __new__(cls, data, _ndim=0, time=None, info=None, Ts=None, dtype=np.float64):
+    def __new__(cls, data, _ndim=0, time=None, info=None, Ts=None, dtype=np.float32):
         obj = np.asarray(data, dtype=dtype).view(cls)
       
         ### data
@@ -23,9 +23,9 @@ class TSBase(np.ndarray):
             if obj.Ts == None:
                 obj.Ts = 1.
                 warnings.warn('No time information supplied; Ts assigned as 1.0')
-            obj.time = obj.Ts*np.arange(0,len(obj), dtype=np.float64)
+            obj.time = obj.Ts*np.arange(0,len(obj), dtype=np.float32)
         elif not obj.time is None:
-            obj.time = np.asarray(obj.time, dtype=np.float64)
+            obj.time = np.asarray(obj.time, dtype=np.float32)
             if obj.Ts == None:
                 obj.Ts = np.mean(obj.time[1:]-obj.time[:-1])
                 warnings.warn('Sampling interval Ts inferred as mean of time vector intervals.')
