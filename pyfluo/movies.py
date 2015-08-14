@@ -37,7 +37,7 @@ class Movie(TSBase):
         if type(data) == Tiff:
             data = data.data.copy()
         elif type(data) == str:
-            data = Tiff(data).data.copy()
+            data = Tiff(data).data
         return super(Movie, cls).__new__(cls, data, _ndim=[3], **kwargs)
     def project(self, axis=0, method=np.mean, show=False, roi=None, backend=pl, **kwargs):
         """Flatten/project the movie data across one or many axes
