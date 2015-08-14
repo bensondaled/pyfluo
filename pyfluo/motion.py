@@ -13,9 +13,17 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_plac
         obtained from the function compute_motion, list of [x_shift, y_shift] for each frame
     interpolation : def
         interpolation for 
+
+    This supports the correction of single frames as well, given a single shift
     """
     if not in_place:
         mov=mov.copy()
+
+    if len(mov.shape)==2: #single frame
+        mov = np.array([mov])
+    if len(shifts.shape)==1: #single shift
+        shifts = np.array([shifts])
+
     t,h,w=mov.shape
     for i,frame in enumerate(mov):
         sh_x_n, sh_y_n = shifts[i]
