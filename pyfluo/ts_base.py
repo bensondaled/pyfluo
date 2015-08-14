@@ -92,7 +92,7 @@ class TSBase(np.ndarray):
         """
         if 't' not in kwargs or kwargs['t']==None:
             kwargs['t'] = self.time
-        new_data,new_time = sp_resample(self, *args, **kwargs)
+        new_data,new_time = sp_resample(self, *args, axis=0, **kwargs)
         return self.__class__(data=new_data, time=new_time)
 
    # def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None, take_axis=0):

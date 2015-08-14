@@ -29,7 +29,7 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_plac
         sh_x_n, sh_y_n = shifts[i]
         M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n]])                 
         mov[i] = cv2.warpAffine(frame,M,(w,h),flags=interpolation)
-    return mov     
+    return mov.squeeze()
     
 def motion_correct(mov, return_vals=False, crop=False, **kwargs):
     """Perform motion correction using template matching.
