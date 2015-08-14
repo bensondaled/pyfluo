@@ -5,7 +5,7 @@ import warnings
 from util import sliding_window as sw
 from util import ProgressBar
 
-def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_minimum=True, pad_mode='edge'):
+def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_minimum=True, pad_mode='edge', in_place=False, prog_bar=True):
     """Compute delta-f-over-f
 
     Computes the percentile-based delta-f-over-f along the 0th axis of the supplied data.
@@ -29,7 +29,8 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
     -------
     Data of the same shape as input, transformed to DFF
     """
-    data = data.copy()
+    if not in_place:
+        data = data.copy()
 
     window_size = int(window_size*data.fs)
     step_size = int(step_size*data.fs)
@@ -46,15 +47,15 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
     padded = np.pad(data, pad, mode=pad_mode)
 
     out_size = ((len(padded) - window_size) // step_size) + 1
-    pbar = ProgressBar(maxval=out_size).start()
+    if prog_bar:    pbar = ProgressBar(maxval=out_size).start()
     f0 = []
     for idx,win in enumerate(sw(padded, ws=window_size, ss=step_size)):
         f0.append(np.percentile(win, percentile, axis=0))
-        pbar.update(idx)
+        if prog_bar:    pbar.update(idx)
     f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
-    pbar.finish()
+    if prog_bar:    pbar.finish()
 
-    return (data-f0)/f0 
+    return (data-f0)/f0
 
 def computeDFF_AG(self,secsWindow=5,quantilMin=8,subtract_minimum=False,squared_F=True):
     """ 
