@@ -122,7 +122,7 @@ class Movie(TSBase):
             size = tuple(scale*np.array(self.shape)[-1:0:-1])
             minn,maxx = self.min(),self.max()
             def _play_once():
-                to_play = contrast * (self+minn)/(maxx-minn)
+                to_play = contrast * (self-minn)/(maxx-minn)
                 to_play[to_play>1.0] = 1.0 #clips; this should become a parameter
                 for idx,fr in enumerate(to_play):
                     fr = cv2.resize(fr,size)
