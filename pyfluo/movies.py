@@ -1,3 +1,5 @@
+#TODO: np.append does not perserve custom attrs
+
 import numpy as np
 from scipy.ndimage.interpolation import zoom as szoom
 from roi import ROI, select_roi
