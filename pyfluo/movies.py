@@ -132,6 +132,7 @@ class Movie(TSBase):
                     k=cv2.waitKey(int(1./fpms))
                     if k == ord('q'):
                         return False
+                return True
             if loop:
                 cont = True
                 while cont:
