@@ -35,7 +35,7 @@ def ipca(mov, components=50, batch=1000):
 
     return eigenseries, eigenframes, proj_frame_vectors        
    
-def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh'):
+def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh', show_status=True):
     """Perform iterative PCA/ICA ROI extraction
 
     Parameters
@@ -50,14 +50,17 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh'):
         from 0-1. In spatiotemporal ICA, closer to 1 means more weight on spatial
     ica_func : str 
         cdf for entropy maximization in ICA
+    show_status : bool
+        show time elapsed while running
 
     Returns
     -------
     Array of shape (n,y,x) where n is number of components, and y,x correspond to shape of mov
 
     """
-    p = mup.Process(target=display_time_elapsed)
-    p.start()
+    if show_status:
+        p = mup.Process(target=display_time_elapsed)
+        p.start()
 
     eigenseries, eigenframes,_proj = ipca(mov, components, batch)
     # normalize the series
@@ -84,7 +87,7 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh'):
     ind_frames = joint_ics[:frame_size, :]
     ind_frames = np.reshape(ind_frames.T, (components, h, w))
     
-    p.terminate()
+    if show_status:  p.terminate()
     
     return ind_frames  
 
