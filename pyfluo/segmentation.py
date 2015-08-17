@@ -4,12 +4,13 @@ import cv2
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
 import multiprocessing as mup
+from scipy.ndimage.filters import gaussian_filter
 from util import display_time_elapsed
 
 def ipca(mov, components=50, batch=1000):
     # vectorize the images
-    num_frames, h, w = np.shape(mov);
-    frame_size = h * w;
+    num_frames, h, w = np.shape(mov)
+    frame_size = h * w
     frame_samples = np.reshape(mov, (num_frames, frame_size)).T
     
     # run IPCA to approxiate the SVD
@@ -140,53 +141,46 @@ def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='compon
     space_components = estimator.components.reshape((n_components,h,w))
     return space_components,time_components
         
-def comps_to_roi(spcomps, numSTD=4, gaussiansigmax=2 , gaussiansigmay=2):
+def comps_to_roi(comps, n_std=4, sigma=(2,2)):
         """
         Given the spatial components output of the IPCA_stICA function extract possible regions of interest
         The algorithm estimates the significance of a components by thresholding the components after gaussian smoothing
+        
         Parameters
         -----------
-        spcompomps, 3d array containing the spatial components
-        numSTD: number of standard deviation above the mean of the spatial component to be considered signiificant
+        comps : np.ndarray 
+            spatial components
+        n_std : float 
+            number of standard deviations above the mean of the spatial component to be considered signiificant
+        sigma : int, list
+            parameter for scipy.ndimage.filters.gaussian_filter (i.e. (sigma_y, sigma_x))
         """        
         
-        numcomps, width, height=spcomps.shape
-        rowcols=int(np.ceil(np.sqrt(numcomps)));  
+        n_comps, width, height=comps.shape
+        rowcols=int(np.ceil(np.sqrt(n_comps)))
         
-        #%
-        allMasks=[];
-        maskgrouped=[];
-        for k in xrange(0,numcomps):
-            comp=spcomps[k]
-#            plt.subplot(rowcols,rowcols,k+1)
-            comp=gaussian_filter(comp,[gaussiansigmay,gaussiansigmax])
+        allMasks = []
+        maskgrouped = []
+        for k,comp in enumerate(comps):
+            comp = gaussian_filter(comp, sigma)
             
-            maxc=np.percentile(comp,99);
-            minc=np.percentile(comp,1);
-#            comp=np.sign(maxc-np.abs(minc))*comp;
+            maxc = np.percentile(comp,99)
+            minc = np.percentile(comp,1)
             q75, q25 = np.percentile(comp, [75 ,25])
             iqr = q75 - q25
-            minCompValuePos=np.median(comp)+numSTD*iqr/1.35;  
-            minCompValueNeg=np.median(comp)-numSTD*iqr/1.35;            
+            minCompValuePos=np.median(comp)+n_std*iqr/1.35  
+            minCompValueNeg=np.median(comp)-n_std*iqr/1.35            
 
             # got both positive and negative large magnitude pixels
-            compabspos=comp*(comp>minCompValuePos)-comp*(comp<minCompValueNeg);
-
+            compabspos=comp*(comp>minCompValuePos)-comp*(comp<minCompValueNeg)
 
             #height, width = compabs.shape
             labeledpos, n = label(compabspos>0, np.ones((3,3)))
             maskgrouped.append(labeledpos)
-            for jj in range(1,n+1):
+            for jj in xrange(1,n+1):
                 tmp_mask=np.asarray(labeledpos==jj)
                 allMasks.append(tmp_mask)
-#            labeledneg, n = label(compabsneg>0, np.ones((3,3)))
-#            maskgrouped.append(labeledneg)
-#            for jj in range(n):
-#                tmp_mask=np.asarray(labeledneg==jj)
-#                allMasks.append(tmp_mask)
-#            plt.imshow(labeled)                             
-#            plt.axis('off')         
-        return allMasks,maskgrouped
+        return np.array(allMasks), np.array(maskgrouped)
 
 def local_correlations(self,eight_neighbours=False):
      # Output:
@@ -218,20 +212,20 @@ def local_correlations(self,eight_neighbours=False):
      
      if eight_neighbours:
          neighbors = 8 * np.ones(np.shape(self.mov)[1:3])  
-         neighbors[0,:] = neighbors[0,:] - 3;
-         neighbors[-1,:] = neighbors[-1,:] - 3;
-         neighbors[:,0] = neighbors[:,0] - 3;
-         neighbors[:,-1] = neighbors[:,-1] - 3;
-         neighbors[0,0] = neighbors[0,0] + 1;
-         neighbors[-1,-1] = neighbors[-1,-1] + 1;
-         neighbors[-1,0] = neighbors[-1,0] + 1;
-         neighbors[0,-1] = neighbors[0,-1] + 1;
+         neighbors[0,:] = neighbors[0,:] - 3
+         neighbors[-1,:] = neighbors[-1,:] - 3
+         neighbors[:,0] = neighbors[:,0] - 3
+         neighbors[:,-1] = neighbors[:,-1] - 3
+         neighbors[0,0] = neighbors[0,0] + 1
+         neighbors[-1,-1] = neighbors[-1,-1] + 1
+         neighbors[-1,0] = neighbors[-1,0] + 1
+         neighbors[0,-1] = neighbors[0,-1] + 1
      else:
          neighbors = 4 * np.ones(np.shape(self.mov)[1:3]) 
-         neighbors[0,:] = neighbors[0,:] - 1;
-         neighbors[-1,:] = neighbors[-1,:] - 1;
-         neighbors[:,0] = neighbors[:,0] - 1;
-         neighbors[:,-1] = neighbors[:,-1] - 1;
+         neighbors[0,:] = neighbors[0,:] - 1
+         neighbors[-1,:] = neighbors[-1,:] - 1
+         neighbors[:,0] = neighbors[:,0] - 1
+         neighbors[:,-1] = neighbors[:,-1] - 1
      
 
      rho = np.divide(rho, neighbors)
@@ -262,11 +256,11 @@ def partition_fov_kmeans(self,tradeoff_weight=.5,fx=.25,fy=.25,n_clusters=4,max_
     T,h,w=m1.mov.shape
     Y=np.reshape(m1.mov,(T,h*w))
     mcoef=np.corrcoef(Y.T)
-    idxA,idxB =  np.meshgrid(range(w),range(h));
+    idxA,idxB =  np.meshgrid(range(w),range(h))
     coordmat=np.vstack((idxA.flatten(),idxB.flatten()))
-    distanceMatrix=euclidean_distances(coordmat.T);
+    distanceMatrix=euclidean_distances(coordmat.T)
     distanceMatrix=distanceMatrix/np.max(distanceMatrix)
-    estim=KMeans(n_clusters=n_clusters,max_iter=max_iter);
+    estim=KMeans(n_clusters=n_clusters,max_iter=max_iter)
     kk=estim.fit(tradeoff_weight*mcoef-(1-tradeoff_weight)*distanceMatrix)
     labs=kk.labels_
     fovs=np.reshape(labs,(h,w))
