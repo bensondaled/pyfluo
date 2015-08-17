@@ -18,7 +18,7 @@ class TSBase(np.ndarray):
         ### time
         obj.time, obj.Ts = time, Ts
         assert obj.time is None or type(obj.time) in [list, np.ndarray], 'Time vector not in proper format.'
-        assert obj.Ts==None or type(obj.Ts) in [float, int], 'Ts (sampling interval) not in proper format.'
+        assert obj.Ts==None or type(obj.Ts) in [float, int, long, np.float16, np.float32, np.float64], 'Ts (sampling interval) not in proper format.'
         if obj.time is None:
             if obj.Ts == None:
                 obj.Ts = 1.
