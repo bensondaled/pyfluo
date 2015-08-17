@@ -5,6 +5,7 @@ from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
 import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import label
 from util import display_time_elapsed
 
 def ipca(mov, components=50, batch=1000):
