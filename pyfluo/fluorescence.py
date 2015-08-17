@@ -5,7 +5,7 @@ import warnings
 from util import sliding_window as sw
 from util import ProgressBar
 
-def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_minimum=True, pad_mode='edge', in_place=False, prog_bar=True):
+def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_minimum=True, pad_mode='edge', in_place=False, return_f0=False, prog_bar=True):
     """Compute delta-f-over-f
 
     Computes the percentile-based delta-f-over-f along the 0th axis of the supplied data.
@@ -57,8 +57,11 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, subtract_mi
         if prog_bar:    pbar.update(idx)
     f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
     if prog_bar:    pbar.finish()
-
-    return (data-f0)/f0
+    
+    if return_f0:
+        return ( (data-f0)/f0, f0 )
+    else:
+        return (data-f0)/f0
 
 def computeDFF_AG(self,secsWindow=5,quantilMin=8,subtract_minimum=False,squared_F=True):
     """ 
