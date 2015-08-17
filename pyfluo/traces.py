@@ -58,7 +58,7 @@ class Trace(TSBase):
         new_obj.data = (self-omin)/(omax-omin) * (newmax-newmin) + newmin
         return new_obj
 
-    def plot(self, stacked=True, subtract_minimum=True, cmap=pl.cm.jet, **kwargs):
+    def plot(self, stacked=True, subtract_minimum=False, cmap=pl.cm.jet, **kwargs):
         """Plot the data
         
         Parameters
