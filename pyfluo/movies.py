@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.ndimage.interpolation import zoom as szoom
 from roi import ROI, select_roi
-from images.tiff import Tiff
+from images import Tiff, AVI
 from traces import Trace
 from motion import motion_correct, apply_motion_correction
 import pylab as pl
@@ -39,7 +39,10 @@ class Movie(TSBase):
         if type(data) == Tiff:
             data = data.data.copy()
         elif type(data) == str:
-            data = Tiff(data).data
+            if '.tif' in data:
+                data = Tiff(data).data
+            elif '.avi' in data:
+                data = AVI(data).data
         return super(Movie, cls).__new__(cls, data, _ndim=[3], **kwargs)
     def project(self, axis=0, method=np.mean, show=False, roi=None, backend=pl, **kwargs):
         """Flatten/project the movie data across one or many axes
