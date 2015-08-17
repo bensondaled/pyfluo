@@ -105,13 +105,17 @@ class Movie(TSBase):
             flag = pl.isinteractive()
             pl.ioff()
             fig = pl.figure()
-            im = pl.imshow(np.zeros(self[0].shape), cmap=pl.cm.Greys_r, vmin=np.min(self), vmax=np.max(self))
+            to_play = self.resize(scale)
+            minn,maxx = to_play.min(),to_play.max()
+            to_play = contrast * (to_play-minn)/(maxx-minn)
+            to_play[to_play>1.0] = 1.0 #clips; this should become a parameter
+            im = pl.imshow(np.zeros(self[0].shape), cmap=pl.cm.Greys_r, vmin=np.min(to_play), vmax=np.max(to_play))
             self._idx = 0
             def func(*args):
                 self._idx += 1
-                if self._idx>=len(self):
+                if self._idx>=len(to_play):
                     return None
-                im.set_array(self[self._idx])
+                im.set_array(to_play[self._idx])
                 return im,
             
             ani = animation.FuncAnimation(fig, func, interval=1./fpms, blit=False, repeat=loop, **kwargs)
