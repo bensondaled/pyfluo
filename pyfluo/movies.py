@@ -206,7 +206,7 @@ class Movie(TSBase):
         else:
             raise Exception('factor parameter not understood')
         res = szoom(self, [1]+factor, order=order)
-        res = self.__class__(res)
+        res = self.__class__(res, Ts=self.Ts)
         for ca in self._custom_attrs:
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
