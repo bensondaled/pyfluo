@@ -175,7 +175,7 @@ class Movie(TSBase):
         roi_flat = roi3.reshape((len(roi3),-1))
         self_flat = self.reshape((len(self),-1)).T
         dp = (roi_flat.dot(self_flat)).T
-        return Trace(dp/len(roi_flat), time=self.time, Ts=self.Ts)
+        return Trace(dp/roi_flat.sum(axis=1), time=self.time, Ts=self.Ts)
 
     def motion_correct(self, *params, **kwargs):
         """A convenience method for pyfluo.motion.motion_correct
