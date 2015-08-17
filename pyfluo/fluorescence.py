@@ -20,14 +20,23 @@ def compute_dff(data, percentile=8., window_size=1., step_size=.025, root_f=Fals
         size of window to determine F0, in seconds
     step_size : float
         size of steps used to determine F0, in seconds
+    root_f : bool:
+        normalize by sqrt(f0) as opposed to f0
     subtract_minimum : bool
         substract minimum value from data before computing
     pad_mode : str 
         mode argument for np.pad, used to specify F0 determination at start of data
-
+    in_place : bool
+        perform operation in place on supplied array
+    return_f0 : bool
+        return f0 as second return value
+    prog_bar : bool
+        show progress
+        
     Returns
     -------
     Data of the same shape as input, transformed to DFF
+    F0 (if return_f0==True)
     """
     if not in_place:
         data = data.copy()
