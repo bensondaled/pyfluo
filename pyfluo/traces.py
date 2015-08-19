@@ -90,7 +90,7 @@ class Trace(TSBase):
             d -= d.min(axis=0)
         if stacked and n>1:
             d += np.append(0, np.cumsum(d.max(axis=0))[:-1])
-        ax.plot(self.time, d)
+        ax.plot(self.time, d, **kwargs)
        
         # display trace labels along right
         ax2 = ax.twinx()
