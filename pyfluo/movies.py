@@ -126,7 +126,7 @@ class Movie(TSBase):
             if flag:    pl.ion()
 
         elif backend == cv2:
-            size = tuple(scale*np.array(self.shape)[-1:0:-1])
+            size = tuple((scale*np.array(self.shape)[-1:0:-1]).astype(int))
             minn,maxx = self.min(),self.max()
             def _play_once():
                 to_play = contrast * (self-minn)/(maxx-minn)
