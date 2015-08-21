@@ -81,7 +81,8 @@ class TSBase(np.ndarray):
                 setattr(out, ca, getattr(out, ca, None)[idxi])
         
         return out
-
+    def reset_time(self):
+        self.time = self.time - self.time[0]
     def t2i(self, t):
         #returns the index most closely associated with time t
         return np.argmin(np.abs(self.time - t))
@@ -94,48 +95,3 @@ class TSBase(np.ndarray):
             kwargs['t'] = self.time
         new_data,new_time = sp_resample(self, *args, axis=0, **kwargs)
         return self.__class__(data=new_data, time=new_time)
-
-   # def _take(self, time_range, pad=(0.,0.), reset_time=True, safe=True, output_class=None, take_axis=0):
-   #     """Takes time range *inclusively* on both ends.
-   #     
-   #     """
-   #     
-   #     t1 = time_range[0] - pad[0]
-   #     t2 = time_range[1] + pad[1]
-   #     if t1 > t2:
-   #         t1,t2 = t2,t1
-   #     idx1 = self.time_to_idx(t1, method=round) #np.floor if inclusion of time point is more important than proximity
-   #     idx2 = self.time_to_idx(t2, method=round) #np.ceil if inclusion of time point is more important than proximity
-   #     
-   #     #Safe:
-   #     #purpose: to avoid getting different length results despite identical time ranges, because of rounding errors
-   #     if safe:
-   #         duration = t2-t1
-   #         duration_idx = int(round(self.fs * duration))
-   #         idx2 = idx1 + duration_idx
-   #     #End Safe
-   #             
-   #     t = np.take(self.time, range(idx1,idx2+1), mode='clip')
-   #     if idx1<0:  t[:-idx1] = [t[-idx1]-i*self.Ts for i in range(-idx1,0,-1)]
-   #     if idx2>len(self.time)-1:
-   #         t[-(idx2-(len(self.time)-1)):] = [t[-1]+i*self.Ts for i in range(1, idx2-(len(self.time)-1)+1)]
-   #     if reset_time:  t = t - time_range[0]
-   #     
-   #     data = np.take(self.data, range(idx1,idx2+1), axis=take_axis, mode='clip')
-   #     if idx1<0:  data[...,:-idx1] = None
-   #     if idx2>len(self.time)-1:   data[...,-(idx2-(len(self.time)-1)):] = None
-   #     
-   #     add_start=0
-   #     add_end=0
-   #     if idx1<0:  
-   #         add_start=abs(idx1)
-   #         idx1=0
-   #     if idx2>len(self.info)-1:   
-   #         add_end=idx2-(len(self.info)-1)
-   #         idx2=len(self.info)-1
-   #     info =  self.info[idx1:idx2+1]
-   #     info = [None for i in range(add_start)]+ info +[None for i in range(add_end)]
-   #             
-   #     if output_class==None:
-   #         output_class = self.__class__
-   #     return output_class(data=data, time=t, info=info)
