@@ -98,6 +98,8 @@ class Movie(TSBase):
             package to use for playback (ex. pl or cv2)
 
         During playback, 'q' can be used to quit when playback window has focus
+
+        Many params are not implemented in the matplotlib backend option
             
         """
         if fps==None:
@@ -131,6 +133,7 @@ class Movie(TSBase):
             def _play_once():
                 to_play = contrast * (self-minn)/(maxx-minn)
                 to_play[to_play>1.0] = 1.0 #clips; this should become a parameter
+                to_play[to_play<0.0] = 0.0 #clips; this should become a parameter
                 for idx,fr in enumerate(to_play):
                     fr = cv2.resize(fr,size)
                     if show_time:
