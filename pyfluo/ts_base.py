@@ -66,7 +66,7 @@ class TSBase(np.ndarray):
         if not isinstance(out,TSBase):
             return out
 
-        if self.ndim < max(self._ndim): #changed to max from min
+        if False and self.ndim < max(self._ndim): # this is Falsed out until I rediscover why it was introduced
             pass
         elif self.ndim in self._ndim:
             if type(idx) in (int, float, np.float16, np.float32, np.float64, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64):
@@ -86,6 +86,30 @@ class TSBase(np.ndarray):
     def t2i(self, t):
         #returns the index most closely associated with time t
         return np.argmin(np.abs(self.time - t))
+    def take(self, times, pad=(0,0)):
+        """Extract data from the time series between the times given
+
+        Parameters
+        ----------
+        times : list-like
+            List of time points, ex. [t0, t1]
+            Currently only supports 1-d list like this, TODO: 2d list support
+        pad : list-like
+            time to include before or after times supplied
+
+
+        TODO: 2D times support, add params for edge handling
+
+        Returns
+        -------
+        Extracted data
+        """
+        pad = list(pad)
+        pad[0] = -pad[0]
+        times += pad
+        idxs = map(self.t2i,times)
+        return self[idxs[0]:idxs[1]]
+
     def resample(self, *args, **kwargs):
         """Resample time series object using scipy's resample
 
