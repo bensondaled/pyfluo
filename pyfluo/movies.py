@@ -137,7 +137,7 @@ class Movie(TSBase):
                 for idx,fr in enumerate(to_play):
                     fr = cv2.resize(fr,size)
                     if show_time:
-                        cv2.putText(fr, str(self.time[idx]), (5,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (120,100,80), thickness=3)
+                        cv2.putText(fr, '%0.3f'%(self.time[idx]), (5,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (120,100,80), thickness=3)
                     cv2.imshow('Movie',fr)
                     k=cv2.waitKey(int(1./fpms))
                     if k == ord('q'):
