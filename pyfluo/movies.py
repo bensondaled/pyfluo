@@ -216,3 +216,44 @@ class Movie(TSBase):
         for ca in self._custom_attrs:
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
+
+    def save(self, filename, fmt='mp4', dpi=100):
+        """Save movie for playback in video player
+
+        Note that this function is intended for saving the movie in an avi-like format. Saving for further analysis should be performed using numpy's save functions.
+
+        Parameters
+        ----------
+        filename : str
+            destination file name, without extension
+        fmt : str
+            format to save movie, specified as file extension, ex. 'avi'
+        dpi : int
+            dots per inch
+        """
+        pl_state = pl.isinteractive()
+        pl.ioff()
+
+        save_name = '%s.%s'%(filename, fmt)
+        
+        FFMpegWriter = animation.writers['ffmpeg']
+        writer = FFMpegWriter(fps=int(self.fs))
+
+        minn,maxx = self.min(),self.max()
+
+        fig = pl.figure()
+        ax = fig.add_axes([0,0,1,1])
+        im_data = ax.imshow(np.zeros(self[0].shape), vmin=0, vmax=1, cmap=pl.cm.Greys_r)
+        ax.set_axis_off()
+
+        def get_fr(i):
+            fr = self[i]
+            fr = (fr-minn)/(maxx-minn)
+            im_data.set_data(fr)
+            return im_data,
+
+        ani = animation.FuncAnimation(fig, get_fr, xrange(len(self)), interval=self.Ts*1000, blit=True)
+        ani.save(save_name, dpi=dpi)
+
+        if pl_state:
+            pl.ion()
