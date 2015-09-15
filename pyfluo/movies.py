@@ -217,7 +217,7 @@ class Movie(TSBase):
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
 
-    def save(self, filename, fmt='mp4', dpi=100):
+    def save(self, filename, lib=pl, fmt='mp4', dpi=100, codec=cv2.cv.FOURCC('I','Y','U','V')):
         """Save movie for playback in video player
 
         Note that this function is intended for saving the movie in an avi-like format. Saving for further analysis should be performed using numpy's save functions.
@@ -226,34 +226,51 @@ class Movie(TSBase):
         ----------
         filename : str
             destination file name, without extension
+        lib : module
+            module to use (matplotlib/pylab/cv2)
         fmt : str
             format to save movie, specified as file extension, ex. 'avi'
+            applies only to pylab mode
         dpi : int
             dots per inch
+            applies only to pylab mode
+        codec : int
+            opencv fourcc code, ex. cv2.cv.FOURCC('I','Y','U','V')
+            applies only to opencv mode
         """
-        pl_state = pl.isinteractive()
-        pl.ioff()
+        if lib==pl:
+            pl_state = pl.isinteractive()
+            pl.ioff()
 
-        save_name = '%s.%s'%(filename, fmt)
-        
-        FFMpegWriter = animation.writers['ffmpeg']
-        writer = FFMpegWriter(fps=int(self.fs))
+            save_name = '%s.%s'%(filename, fmt)
+            
+            FFMpegWriter = animation.writers['ffmpeg']
+            writer = FFMpegWriter(fps=int(self.fs))
 
-        minn,maxx = self.min(),self.max()
+            minn,maxx = self.min(),self.max()
 
-        fig = pl.figure()
-        ax = fig.add_axes([0,0,1,1])
-        im_data = ax.imshow(np.zeros(self[0].shape), vmin=0, vmax=1, cmap=pl.cm.Greys_r)
-        ax.set_axis_off()
+            fig = pl.figure()
+            ax = fig.add_axes([0,0,1,1])
+            im_data = ax.imshow(np.zeros(self[0].shape), vmin=0, vmax=1, cmap=pl.cm.Greys_r)
+            ax.set_axis_off()
 
-        def get_fr(i):
-            fr = self[i]
-            fr = (fr-minn)/(maxx-minn)
-            im_data.set_data(fr)
-            return im_data,
+            def get_fr(i):
+                fr = self[i]
+                fr = (fr-minn)/(maxx-minn)
+                im_data.set_data(fr)
+                return im_data,
 
-        ani = animation.FuncAnimation(fig, get_fr, xrange(len(self)), interval=self.Ts*1000, blit=True)
-        ani.save(save_name, dpi=dpi)
+            ani = animation.FuncAnimation(fig, get_fr, xrange(len(self)), interval=self.Ts*1000, blit=True)
+            ani.save(save_name, dpi=dpi)
 
-        if pl_state:
-            pl.ion()
+            if pl_state:
+                pl.ion()
+        elif lib==cv2:
+            minn,maxx = np.min(self),np.max(self)
+            data = 255 * (self-minn)/(maxx-minn)
+            data = data.astype(np.uint8)
+            y,x = data[0].shape
+            vw = cv2.VideoWriter(filename, codec, fps, (x,y), isColor=True)
+            for d in data:
+                vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
+            vw.release()
