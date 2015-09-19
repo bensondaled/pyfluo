@@ -182,7 +182,34 @@ class Movie(TSBase):
         self_flat = self.reshape((len(self),-1)).T
         dp = (roi_flat.dot(self_flat)).T
         return Trace(dp/roi_flat.sum(axis=1), time=self.time, Ts=self.Ts)
-
+        
+        
+        
+    def take_time(self,triggers,time_bef=1,time_aft=1):
+        """
+        Function that extract portion of the movie around specific time points
+        
+        TODO: add checks on the borders of the time sequence (cannot extract portions before the beginning or after the end)
+        
+        Parameters
+        ----------
+        
+        Extract frames aligned to the triggers
+        triggers: list of time points representing the triggers
+        time_bef,time_aft:how much time before the trigger to consider
+        
+        Output
+        ----------  
+        List of Movie aligned to trigger
+        """
+        idxtrigs=[int(self.fs*(tr-self.time[0])) for tr in triggers]
+        idxBefore=int(self.fs*time_bef)
+        idxAfter=int(self.fs*time_aft)
+        mov_out=[Movie(self[idx-idxBefore:idx+idxAfter,:,:],time=range(-idxBefore,idxAfter)/self.fs) for idx in idxtrigs]
+        
+        return mov_out
+            
+        
     def motion_correct(self, *params, **kwargs):
         """A convenience method for pyfluo.motion.motion_correct
 
