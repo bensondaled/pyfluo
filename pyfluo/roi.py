@@ -164,10 +164,10 @@ class ROI(np.ndarray):
         if mode == 'mask':
             mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
             mask *= np.arange(1,len(mask)+1)[...,np.newaxis,np.newaxis]
-            mask = np.sum(mask, axis=0)
+            mask = np.max(mask, axis=0)
             mask[mask==0] = None #so background doesn't steal one color from colormap, offsetting correspondence to all other uses of cmap
 
-            pl.imshow(mask, interpolation='nearest', cmap=cmap, **kwargs)
+            ax.imshow(mask, interpolation='nearest', cmap=cmap, **kwargs)
         
         if mode == 'pts' or labels:
             if self.ndim == 2:

@@ -13,3 +13,4 @@ TODO:
 -roi "reselect"
 -select unspecified number of rois
 -fix ts slicing for this scenario: tr[tr.time<0,:]
+-t2i for multiple values
