@@ -7,7 +7,7 @@ import warnings
 import matplotlib.lines as mlines
 from PIL import Image, ImageDraw
 
-def select_roi(img, n=1, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
+def select_roi(img, n=0, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
     """Select any number of regions of interest (ROI) in the movie.
     
     Parameters
@@ -31,7 +31,10 @@ def select_roi(img, n=1, existing=None, mode='polygon', show_mode='pts', cmap=pl
     -------
     ROI object
     """
-    for q in xrange(n):
+    q = 0
+    while True:
+        if n>0 and q>=n:
+            break
         pl.clf()
         pl.imshow(img, cmap=cmap)
         if existing is not None:
@@ -41,12 +44,15 @@ def select_roi(img, n=1, existing=None, mode='polygon', show_mode='pts', cmap=pl
         elif mode == 'lasso':
             pts = lasso(lasso_strictness)
 
-        if pts is not None:
+        if pts != []:
             new_roi = ROI(pts=pts, shape=img.shape)
             if existing is None:
                 existing = ROI(pts=pts, shape=img.shape)
             else:
                 existing = existing.add(new_roi)
+            q += 1
+        elif pts == []:
+            break
     pl.close()
     return existing
 

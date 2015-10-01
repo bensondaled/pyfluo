@@ -183,18 +183,6 @@ class Movie(TSBase):
         dp = (roi_flat.dot(self_flat)).T
         return Trace(dp/roi_flat.sum(axis=1), time=self.time, Ts=self.Ts)
 
-    def motion_correct(self, *params, **kwargs):
-        """A convenience method for pyfluo.motion.motion_correct
-
-        If unnamed params are supplied, they are taken to be the output of a prior motion correction and are applied to the movies using pyfluo.motion.apply_motion_correction.
-
-        If named kwargs are supplied, they are passed along to pyfluo.motion.correct_motion.
-        """
-        if params:
-            return apply_motion_correction(self, *params)
-        else:
-            return motion_correct(self, **kwargs)
-
     def resize(self, factor, order=0):
         """Resize movie using scipy.ndimage.zoom
         

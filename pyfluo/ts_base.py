@@ -37,7 +37,7 @@ class TSBase(np.ndarray):
         ### info
         obj.info = info
         if obj.info == None:
-            obj.info = [None for _ in xrange(len(obj))]
+            obj.info = np.array([None for _ in xrange(len(obj))])
 
         ### other attributes
         #(none)
@@ -69,7 +69,7 @@ class TSBase(np.ndarray):
         if False and self.ndim < max(self._ndim): # this is Falsed out until I rediscover why it was introduced
             pass
         elif self.ndim in self._ndim:
-            if type(idx) in (int, float, np.float16, np.float32, np.float64, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64):
+            if type(idx) in (int, float, long, np.float16, np.float32, np.float64, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64):
                 return out.view(np.ndarray)
             elif type(idx) == slice:
                 idxi = idx
@@ -85,7 +85,10 @@ class TSBase(np.ndarray):
         self.time = self.time - self.time[0]
     def t2i(self, t):
         #returns the index most closely associated with time t
-        return np.argmin(np.abs(self.time - t))
+        if any([isinstance(t,ty) for ty in [list,tuple,np.ndarray]]):
+            return np.array([np.argmin(np.abs(self.time - ti)) for ti in t])
+        elif type(t) in (int, float, long, np.float16, np.float32, np.float64, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64):
+            return np.argmin(np.abs(self.time - t)) 
     def take(self, times, pad=(0,0)):
         """Extract data from the time series between the times given
 
