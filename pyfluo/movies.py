@@ -205,7 +205,9 @@ class Movie(TSBase):
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
 
-    def save(self, filename, lib=pl, fmt='mp4', dpi=100, codec=cv2.cv.FOURCC('I','Y','U','V')):
+    def save(self, filename, lib=pl, fmt='mp4', dpi=100, codec=cv2.VideoWriter_fourcc('I','Y','U','V')):
+        #OPENCV note: for <3.0, VideoWriter_fourcc should be cv2.cv.FOURCC
+
         """Save movie for playback in video player
 
         Note that this function is intended for saving the movie in an avi-like format. Saving for further analysis should be performed using numpy's save functions.

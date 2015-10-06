@@ -23,9 +23,9 @@ class TSBase(np.ndarray):
             if obj.Ts == None:
                 obj.Ts = 1.
                 warnings.warn('No time information supplied; Ts assigned as 1.0')
-            obj.time = obj.Ts*np.arange(0,len(obj), dtype=np.float32)
+            obj.time = obj.Ts*np.arange(0,len(obj), dtype=np.float64)
         elif not obj.time is None:
-            obj.time = np.asarray(obj.time, dtype=np.float32)
+            obj.time = np.asarray(obj.time, dtype=np.float64)
             if obj.Ts == None:
                 obj.Ts = np.mean(obj.time[1:]-obj.time[:-1])
                 warnings.warn('Sampling interval Ts inferred as mean of time vector intervals.')
