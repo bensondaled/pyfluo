@@ -260,7 +260,7 @@ class Movie(TSBase):
             data = 255 * (self-minn)/(maxx-minn)
             data = data.astype(np.uint8)
             y,x = data[0].shape
-            vw = cv2.VideoWriter(filename, codec, fps, (x,y), isColor=True)
+            vw = cv2.VideoWriter(filename, codec, self.fs, (x,y), isColor=True)
             for d in data:
                 vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
             vw.release()
