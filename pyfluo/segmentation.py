@@ -112,26 +112,6 @@ def ipca_denoise(mov, components=50, batch=1000):
     _, _, clean_vectors = ipca(mov, components, batch)
     return np.reshape(clean_vectors.T, np.shape(mov))
 
-def comp_to_mask(comp, n_std=3):
-    """Convert components (ex. from pyfluo.segmentation.pica) to masks
-
-    Parameters
-    ----------
-    comp : np.ndarray
-        3d array of shape (n,y,x), where n is number of components
-    n_std : float
-        all pixels greater than frame mean plus this many std's will be included in the mask
-
-    Returns
-    -------
-    Masks in form of 3d array of shape (n,y,x)
-
-    """
-    means = np.apply_over_axes(np.mean, comp, [1,2]).squeeze()
-    stds = np.apply_over_axes(np.std, comp, [1,2]).squeeze()
-    masks = (comp.T > means+n_std*stds).T
-    return masks
-
 def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='components'):
     T,h,w=mov.shape
     Y=np.reshape(mov,(T,h*w))
@@ -142,7 +122,7 @@ def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='compon
     space_components = estimator.components.reshape((n_components,h,w))
     return space_components,time_components
         
-def comps_to_roi(comps, n_std=4, sigma=(2,2)):
+def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1]):
         """
         Given the spatial components output of the IPCA_stICA function extract possible regions of interest
         The algorithm estimates the significance of a components by thresholding the components after gaussian smoothing
@@ -155,8 +135,15 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2)):
             number of standard deviations above the mean of the spatial component to be considered signiificant
         sigma : int, list
             parameter for scipy.ndimage.filters.gaussian_filter (i.e. (sigma_y, sigma_x))
+        pixels_thresh : list
+            [minimum number of pixels in an roi to be considered an roi, maximum]
         """        
-        
+
+        if pixels_thresh[1] == -1:
+            pixels_thresh[1] = np.inf
+
+        if comps.ndim == 2:
+            comps = np.array([comps])
         n_comps, width, height=comps.shape
         rowcols=int(np.ceil(np.sqrt(n_comps)))
         
@@ -180,8 +167,9 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2)):
             maskgrouped.append(labeledpos)
             for jj in xrange(1,n+1):
                 tmp_mask=np.asarray(labeledpos==jj)
-                allMasks.append(tmp_mask)
-        return np.array(allMasks), np.array(maskgrouped)
+                if np.sum(tmp_mask) >= pixels_thresh[0] and np.sum(tmp_mask) <= pixels_thresh[1]:
+                    allMasks.append(tmp_mask)
+        return np.array(allMasks)#, np.array(maskgrouped)
 
 def local_correlations(self,eight_neighbours=False):
      # Output:

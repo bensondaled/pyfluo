@@ -6,6 +6,7 @@ import pylab as pl
 import warnings
 import matplotlib.lines as mlines
 from PIL import Image, ImageDraw
+CV_VERSION = int(cv2.__version__[0])
 
 def select_roi(img, n=0, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
     """Select any number of regions of interest (ROI) in the movie.
@@ -90,7 +91,11 @@ class ROI(np.ndarray):
         elif not pts is None:
             pts = np.asarray(pts, dtype=np.int32)
             data = np.zeros(shape, dtype=np.int32)
-            cv2.fillConvexPoly(data, pts, (1,1,1), lineType=cv2.CV_AA)
+            if CV_VERSION == 2:
+                lt = cv2.CV_AA
+            elif CV_VERSION == 3:
+                lt = cv2.LINE_AA
+            cv2.fillConvexPoly(data, pts, (1,1,1), lineType=lt)
         else:
             raise Exception('Insufficient data supplied.')
         obj = np.asarray(data, dtype=ROI.DTYPE).view(cls)
@@ -101,13 +106,17 @@ class ROI(np.ndarray):
         self._compute_pts()
 
     def _compute_pts(self):
+        if CV_VERSION == 2:
+            findContoursResultIdx = 0
+        elif CV_VERSION == 3:
+            findContoursResultIdx = 1
         data = self.copy().view(np.ndarray)
         if self.ndim == 2:
             data = np.array([self])
 
         selfpts = []
         for r in data:
-            pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[0])
+            pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[findContoursResultIdx])
             if len(pts) > 1:
                 pts = np.concatenate(pts)
             pts = pts.squeeze()
@@ -143,7 +152,7 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='pts', labels=True, cmap=pl.cm.jet, **kwargs):
+    def show(self, mode='mask', labels=True, cmap=pl.cm.jet, **kwargs):
         """Display the ROI(s)
         
         Parameters
@@ -173,7 +182,8 @@ class ROI(np.ndarray):
             mask = np.max(mask, axis=0)
             mask[mask==0] = None #so background doesn't steal one color from colormap, offsetting correspondence to all other uses of cmap
 
-            ax.imshow(mask, interpolation='nearest', cmap=cmap, **kwargs)
+            alpha = kwargs.pop('alpha', 0.6)
+            ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
         
         if mode == 'pts' or labels:
             if self.ndim == 2:
@@ -196,6 +206,7 @@ class ROI(np.ndarray):
                 ax.set_xlim( [min([xlim[0], 0]), max([xlim[1], self.shape[-1]])] )
                 ax.set_ylim( [min([ylim[0], pl.ylim()[0]]), max([ylim[1], pl.ylim()[1]])] )
 
+        pl.gcf().canvas.draw()
         if mode == 'mask':
             return mask
 

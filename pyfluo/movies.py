@@ -10,6 +10,7 @@ import pylab as pl
 from matplotlib import animation
 import cv2
 from ts_base import TSBase
+CV_VERSION = int(cv2.__version__[0])
 
 class Movie(TSBase):
     """An object storing n sequential 2d images along with a time vector
@@ -79,7 +80,7 @@ class Movie(TSBase):
                 pl.plot(self.time, pro)
         
         return pro
-    def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, **kwargs):
+    def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, fontsize=1, **kwargs):
         """Play the movie
         
         Parameter
@@ -96,6 +97,8 @@ class Movie(TSBase):
             show time on image
         backend : module 
             package to use for playback (ex. pl or cv2)
+        fontsize : float
+            to display time
 
         During playback, 'q' can be used to quit when playback window has focus
 
@@ -129,6 +132,7 @@ class Movie(TSBase):
 
         elif backend == cv2:
             size = tuple((scale*np.array(self.shape)[-1:0:-1]).astype(int))
+            font_size = scale * fontsize * min(self[0].shape)/250.
             minn,maxx = self.min(),self.max()
             def _play_once():
                 to_play = contrast * (self-minn)/(maxx-minn)
@@ -137,7 +141,7 @@ class Movie(TSBase):
                 for idx,fr in enumerate(to_play):
                     fr = cv2.resize(fr,size)
                     if show_time:
-                        cv2.putText(fr, '%0.3f'%(self.time[idx]), (5,30), cv2.FONT_HERSHEY_SIMPLEX, 1, (120,100,80), thickness=3)
+                        cv2.putText(fr, '%0.3f'%(self.time[idx]), (5,int(30*font_size)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (120,100,80), thickness=1)
                     cv2.imshow('Movie',fr)
                     k=cv2.waitKey(int(1./fpms))
                     if k == ord('q'):
@@ -161,7 +165,7 @@ class Movie(TSBase):
         *args, **kwargs
             those accepted by pyfluo.roi.select_roi
         """
-        zp = self.project(show=False, method=kwargs.pop('projection_method',None))
+        zp = self.project(show=False, method=kwargs.pop('projection_method',np.std))
         return select_roi(zp, *args, **kwargs)
     def extract_by_roi(self, roi, method=np.mean):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied
@@ -205,8 +209,7 @@ class Movie(TSBase):
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
 
-    def save(self, filename, lib=pl, fmt='mp4', dpi=100, codec=cv2.VideoWriter_fourcc('I','Y','U','V')):
-        #OPENCV note: for <3.0, VideoWriter_fourcc should be cv2.cv.FOURCC
+    def save(self, filename, lib=pl, fmt='mp4', dpi=100, codec='IYUV'):
 
         """Save movie for playback in video player
 
@@ -225,7 +228,7 @@ class Movie(TSBase):
             dots per inch
             applies only to pylab mode
         codec : int
-            opencv fourcc code, ex. cv2.cv.FOURCC('I','Y','U','V')
+            opencv fourcc code, as chars to be fed to cv2.FOURCC ex. 'IYUV'
             applies only to opencv mode
         """
         if lib==pl:
@@ -256,6 +259,10 @@ class Movie(TSBase):
             if pl_state:
                 pl.ion()
         elif lib==cv2:
+            if CV_VERSION == 3:
+                codec = cv2.VideoWriter_fourcc(*codec)
+            elif CV_VERSION == 2:
+                codec = cv2.cv.FOURCC(*codec)
             minn,maxx = np.min(self),np.max(self)
             data = 255 * (self-minn)/(maxx-minn)
             data = data.astype(np.uint8)
