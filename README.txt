@@ -8,6 +8,3 @@ A python library for analyzing Ca fluorescence imaging.
 For all info, visit:
 
 http://bensondaled.github.io/pyfluo
-
-TODO:
--roi "reselect"
