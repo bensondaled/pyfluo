@@ -1,5 +1,3 @@
-#TODO: plotting fails when tr is only one trace, due to 2d issues
-
 from ts_base import TSBase
 import numpy as np
 import pylab as pl
@@ -27,6 +25,19 @@ class Trace(TSBase):
     """
     def __new__(cls, data, **kwargs):
         return super(Trace, cls).__new__(cls, data, _ndim=[1,2], **kwargs)
+
+    def take(self, *args, **kwargs):
+        res = super(Trace, self).take(*args, **kwargs)
+
+        # for special case of pulling out multiple segments from a single trace, return a new trace
+        if len(np.unique(map(len,res))) == 1 and all([i.squeeze().ndim==1 for i in res]) and isinstance(res[0],self.__class__):
+            t = res[0].time
+            t -= t[0]
+            Ts = res[0].Ts
+            return self.__class__(np.asarray(res).squeeze().T, time=t.copy(), Ts=Ts)
+
+        else:
+            return res
 
     def as2d(self):
         """Return 2d version of object
