@@ -179,8 +179,18 @@ class TSBase(np.ndarray):
         """Resample time series object using scipy's resample
 
         Parameters are those of scipy.signal.resample, with *num* (number of samples in resampled result) as the only mandatory parameter
+        Difference is that this takes object's time vector into account automatically
+
+        If single param (num) is a float, taken to be multiple for current number of frames.
         """
+        args = list(args)
+        args.reverse()
+        n = args.pop()
+        args.reverse()
+        if type(n) in [float,np.float16,np.float32,np.float64,np.float128]:
+            n = np.round(len(self)*n)
+
         if 't' not in kwargs or kwargs['t']==None:
             kwargs['t'] = self.time
-        new_data,new_time = sp_resample(self, *args, axis=0, **kwargs)
+        new_data,new_time = sp_resample(self, n, *args, axis=0, **kwargs)
         return self.__class__(data=new_data, time=new_time)
