@@ -7,6 +7,41 @@ import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage import label
 from util import display_time_elapsed
+import itertools as it
+
+def grid(data, rows=0.5, cols=0.5):
+    """Generate index slices to split image/movie into grid
+
+    Parameters
+    ----------
+    data : np.ndarray
+        the data over which to find a grid, can be 2d or 3d
+    rows : int, float
+        number of rows in grid. if float, as fraction of data height
+    cols : int, float
+        number of columns in grid. if float, as fraction of data width
+
+    Returns
+    -------
+    Slices corresponding to grid pieces
+    """
+    if data.ndim==3:
+        shape = data[0].shape
+    else:
+        shape = data.shape
+
+    if type(rows) in [float,np.float16,np.float32,np.float64,np.float128]:
+        rows = int(np.round(rows*shape[0]))
+    if type(cols) in [float,np.float16,np.float32,np.float64,np.float128]:
+        cols = int(np.round(cols*shape[1]))
+
+    n_tiles = [rows,cols]
+
+    lims = [np.linspace(0,shape[i],nt+1).astype(int) for i,nt in zip([0,1],n_tiles)]
+    slices = [[slice(*s) for s in zip(lim[:-1],lim[1:])] for lim in lims]
+    slices = list(it.product(*slices))
+
+    return slices
 
 def ipca(mov, components=50, batch=1000):
     # vectorize the images

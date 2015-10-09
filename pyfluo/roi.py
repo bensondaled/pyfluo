@@ -8,7 +8,7 @@ import matplotlib.lines as mlines
 from PIL import Image, ImageDraw
 CV_VERSION = int(cv2.__version__[0])
 
-def select_roi(img, n=0, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
+def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
     """Select any number of regions of interest (ROI) in the movie.
     
     Parameters
@@ -17,6 +17,8 @@ def select_roi(img, n=0, existing=None, mode='polygon', show_mode='pts', cmap=pl
         image over which to select roi
     n : int
         number of ROIs to select
+    ax : matplotlib.Axes
+        axes on which to show and select. If None, defaults to new, if 'current', defaults to current
     existing : pyfluo.ROI
         pre-existing rois to which to add selections
     mode : 'polygon', 'lasso'
@@ -32,23 +34,39 @@ def select_roi(img, n=0, existing=None, mode='polygon', show_mode='pts', cmap=pl
     -------
     ROI object
     """
+    if ax is None and img is None:
+        raise Exception('Image or axes must be supplied to select ROI.')
+
+    if ax == None:
+        fig = pl.figure()
+        ax = fig.add_subplot(111)
+    elif ax == 'current':
+        ax = pl.gca()
+    pl.sca(ax)
+    fig = ax.get_figure()
+
+    if img is not None:
+        shape = img.shape
+    elif ax is not None:
+        shape = [abs(np.diff(ax.get_ylim())), abs(np.diff(ax.get_xlim()))]
+
     q = 0
     while True:
         if n>0 and q>=n:
             break
-        pl.clf()
-        pl.imshow(img, cmap=cmap)
+        if img is not None:
+            ax.imshow(img, cmap=cmap)
         if existing is not None:
             existing.show(mode=show_mode)
         if mode == 'polygon':
-            pts = pl.ginput(0, timeout=0)
+            pts = fig.ginput(0, timeout=0)
         elif mode == 'lasso':
             pts = lasso(lasso_strictness)
 
         if pts != []:
-            new_roi = ROI(pts=pts, shape=img.shape)
+            new_roi = ROI(pts=pts, shape=shape)
             if existing is None:
-                existing = ROI(pts=pts, shape=img.shape)
+                existing = ROI(pts=pts, shape=shape)
             else:
                 existing = existing.add(new_roi)
             q += 1
