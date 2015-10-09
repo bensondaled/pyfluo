@@ -109,7 +109,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False, pro
         
         if callable(template):
             template=template(mov,axis=0)            
-        elif not type(template) == np.ndarray:
+        elif not isinstance(template, np.ndarray):
             raise Exception('template parameter should be an array or function')
         
             
