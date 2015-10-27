@@ -63,13 +63,13 @@
 <tr class="row-even"><td><a class="reference internal" href="#segmentation.pca_ica" title="segmentation.pca_ica"><code class="xref py py-obj docutils literal"><span class="pre">segmentation.pca_ica</span></code></a>(mov[,&nbsp;components,&nbsp;...])</td>
 <td>Perform iterative PCA/ICA ROI extraction</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#segmentation.comp_to_mask" title="segmentation.comp_to_mask"><code class="xref py py-obj docutils literal"><span class="pre">segmentation.comp_to_mask</span></code></a>(comp[,&nbsp;n_std])</td>
-<td>Convert components (ex.</td>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">segmentation.comp_to_mask</span></code></td>
+<td></td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="#motion.correct_motion" title="motion.correct_motion"><code class="xref py py-obj docutils literal"><span class="pre">motion.correct_motion</span></code></a>(mov[,&nbsp;return_vals,&nbsp;crop])</td>
-<td>Performs motion correction using template matching.</td>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">motion.correct_motion</span></code></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="#roi.select_roi" title="roi.select_roi"><code class="xref py py-obj docutils literal"><span class="pre">roi.select_roi</span></code></a>(img[,&nbsp;n,&nbsp;existing,&nbsp;mode,&nbsp;...])</td>
+<tr class="row-odd"><td><a class="reference internal" href="#roi.select_roi" title="roi.select_roi"><code class="xref py py-obj docutils literal"><span class="pre">roi.select_roi</span></code></a>([img,&nbsp;n,&nbsp;ax,&nbsp;existing,&nbsp;mode,&nbsp;...])</td>
 <td>Select any number of regions of interest (ROI) in the movie.</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">io.save</span></code></td>
@@ -84,7 +84,7 @@
 <h2>compute_dff<a class="headerlink" href="#compute-dff" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="fluorescence.compute_dff">
-<code class="descclassname">fluorescence.</code><code class="descname">compute_dff</code><span class="sig-paren">(</span><em>data</em>, <em>percentile=8.0</em>, <em>window_size=1.0</em>, <em>step_size=0.025</em>, <em>subtract_minimum=True</em>, <em>pad_mode='edge'</em><span class="sig-paren">)</span><a class="headerlink" href="#fluorescence.compute_dff" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">fluorescence.</code><code class="descname">compute_dff</code><span class="sig-paren">(</span><em>data</em>, <em>percentile=8.0</em>, <em>window_size=1.0</em>, <em>step_size=None</em>, <em>root_f=False</em>, <em>subtract_minimum=False</em>, <em>pad_mode='edge'</em>, <em>in_place=False</em>, <em>return_f0=False</em>, <em>prog_bar=True</em><span class="sig-paren">)</span><a class="headerlink" href="#fluorescence.compute_dff" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute delta-f-over-f</p>
 <p>Computes the percentile-based delta-f-over-f along the 0th axis of the supplied data.</p>
 <dl class="docutils">
@@ -95,18 +95,27 @@
 <dt>window_size <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
 <dd>size of window to determine F0, in seconds</dd>
 <dt>step_size <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
-<dd>size of steps used to determine F0, in seconds</dd>
+<dd>size of steps used to determine F0, in seconds. Defaults to sampling interval.</dd>
+<dt>root_f <span class="classifier-delimiter">:</span> <span class="classifier">bool:</span></dt>
+<dd>normalize by sqrt(f0) as opposed to f0</dd>
 <dt>subtract_minimum <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
-<dd>substract minimum value from data before computing</dd>
+<dd>subtract minimum value from data before computing</dd>
 <dt>pad_mode <span class="classifier-delimiter">:</span> <span class="classifier">str </span></dt>
 <dd>mode argument for np.pad, used to specify F0 determination at start of data</dd>
+<dt>in_place <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>perform operation in place on supplied array</dd>
+<dt>return_f0 <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>return f0 as second return value</dd>
+<dt>prog_bar <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>show progress</dd>
 </dl>
-<p>Data of the same shape as input, transformed to DFF</p>
+<p>Data of the same shape as input, transformed to DFF
+F0 (if return_f0==True)</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="segmentation.pca_ica">
-<code class="descclassname">segmentation.</code><code class="descname">pca_ica</code><span class="sig-paren">(</span><em>mov</em>, <em>components=50</em>, <em>batch=1000</em>, <em>mu=0.5</em>, <em>ica_func='logcosh'</em><span class="sig-paren">)</span><a class="headerlink" href="#segmentation.pca_ica" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">segmentation.</code><code class="descname">pca_ica</code><span class="sig-paren">(</span><em>mov</em>, <em>components=50</em>, <em>batch=1000</em>, <em>mu=0.5</em>, <em>ica_func='logcosh'</em>, <em>show_status=True</em><span class="sig-paren">)</span><a class="headerlink" href="#segmentation.pca_ica" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform iterative PCA/ICA ROI extraction</p>
 <dl class="docutils">
 <dt>mov <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.Movie</span></dt>
@@ -119,58 +128,23 @@
 <dd>from 0-1. In spatiotemporal ICA, closer to 1 means more weight on spatial</dd>
 <dt>ica_func <span class="classifier-delimiter">:</span> <span class="classifier">str </span></dt>
 <dd>cdf for entropy maximization in ICA</dd>
+<dt>show_status <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>show time elapsed while running</dd>
 </dl>
 <p>Array of shape (n,y,x) where n is number of components, and y,x correspond to shape of mov</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="segmentation.comp_to_mask">
-<code class="descclassname">segmentation.</code><code class="descname">comp_to_mask</code><span class="sig-paren">(</span><em>comp</em>, <em>n_std=3</em><span class="sig-paren">)</span><a class="headerlink" href="#segmentation.comp_to_mask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert components (ex. from pyfluo.segmentation.pica) to masks</p>
-<dl class="docutils">
-<dt>comp <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
-<dd>3d array of shape (n,y,x), where n is number of components</dd>
-<dt>n_std <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
-<dd>all pixels greater than frame mean plus this many std&#8217;s will be included in the mask</dd>
-</dl>
-<p>Masks in form of 3d array of shape (n,y,x)</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="motion.correct_motion">
-<code class="descclassname">motion.</code><code class="descname">correct_motion</code><span class="sig-paren">(</span><em>mov</em>, <em>return_vals=False</em>, <em>crop=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#motion.correct_motion" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs motion correction using template matching.</p>
-<dl class="docutils">
-<dt>mov <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.Movie</span></dt>
-<dd>input movie</dd>
-<dt>return_vals <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
-<dd>return the values (templates, (shifts, correlations)) associated with the correction</dd>
-<dt>crop <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
-<dd>crop movie according to max shifts before returning
-NOTE this needs attention</dd>
-<dt>max_shift <span class="classifier-delimiter">:</span> <span class="classifier">int </span></dt>
-<dd>maximum number of pixels to shift frame on each iteration</dd>
-<dt>sub_pixel <span class="classifier-delimiter">:</span> <span class="classifier">bool </span></dt>
-<dd>perform interpolation to correction motion at a sub-pixel resolution</dd>
-<dt>template_func <span class="classifier-delimiter">:</span> <span class="classifier">def</span></dt>
-<dd>function used to compute template for movie (defaults to np.median)</dd>
-<dt>n_iters <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>number of iterations to run</dd>
-</dl>
-<p>A Movie object in which motion is corrected
-Or, if return_vals: [corrected_movie, values]</p>
-<p>Note that this function is a convenience function for calling compute_motion_correction followed by apply_motion_correction.</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="roi.select_roi">
-<code class="descclassname">roi.</code><code class="descname">select_roi</code><span class="sig-paren">(</span><em>img</em>, <em>n=1</em>, <em>existing=None</em>, <em>mode='lasso'</em>, <em>show_mode='pts'</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>lasso_strictness=1</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.select_roi" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">roi.</code><code class="descname">select_roi</code><span class="sig-paren">(</span><em>img=None</em>, <em>n=0</em>, <em>ax=None</em>, <em>existing=None</em>, <em>mode='polygon'</em>, <em>show_mode='pts'</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>lasso_strictness=1</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.select_roi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select any number of regions of interest (ROI) in the movie.</p>
 <dl class="docutils">
 <dt>img <span class="classifier-delimiter">:</span> <span class="classifier">np.ndarray</span></dt>
 <dd>image over which to select roi</dd>
 <dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>number of ROIs to select</dd>
+<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib.Axes</span></dt>
+<dd>axes on which to show and select. If None, defaults to new, if &#8216;current&#8217;, defaults to current</dd>
 <dt>existing <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.ROI</span></dt>
 <dd>pre-existing rois to which to add selections</dd>
 <dt>mode <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;polygon&#8217;, &#8216;lasso&#8217;</span></dt>

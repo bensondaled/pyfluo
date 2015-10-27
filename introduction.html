@@ -106,18 +106,13 @@
 24
 25
 26
-27
-28
-29
-30
-31
-32</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">pyfluo</span> <span class="kn">import</span> <span class="n">ROI</span><span class="p">,</span> <span class="n">Tiff</span><span class="p">,</span> <span class="n">Movie</span><span class="p">,</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">correct_motion</span><span class="p">,</span> <span class="n">compute_dff</span><span class="p">,</span> <span class="n">pca_ica</span><span class="p">,</span> <span class="n">comp_to_mask</span><span class="p">,</span> <span class="n">save</span>
+27</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">pyfluo</span> <span class="kn">import</span> <span class="n">Movie</span><span class="p">,</span> <span class="n">motion_correct</span><span class="p">,</span> <span class="n">compute_dff</span>
 
 <span class="c"># create a movie from a tiff file</span>
-<span class="n">mov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="s">&#39;/Users/ben/PhD/data/mov.tif&#39;</span><span class="p">,</span> <span class="n">Ts</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+<span class="n">mov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="s">&#39;./mov.tif&#39;</span><span class="p">,</span> <span class="n">Ts</span><span class="o">=</span><span class="mf">0.032</span><span class="p">)</span>
 
 <span class="c"># motion correct the movie</span>
-<span class="n">mov</span> <span class="o">=</span> <span class="n">correct_motion</span><span class="p">(</span><span class="n">mov</span><span class="p">,</span> <span class="n">n_iters</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="c">#or use the convenience method mov.correct_motion</span>
+<span class="n">mov</span> <span class="o">=</span> <span class="n">motion_correct</span><span class="p">(</span><span class="n">mov</span><span class="p">)</span>
 
 <span class="c"># convert the movie to delta f over f</span>
 <span class="n">mov</span> <span class="o">=</span> <span class="n">compute_dff</span><span class="p">(</span><span class="n">mov</span><span class="p">,</span> <span class="n">window_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.100</span><span class="p">)</span>
@@ -126,23 +121,18 @@
 <span class="n">mov</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">contrast</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
 <span class="c"># manually select some ROIs</span>
-<span class="n">roi</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">select_roi</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">roi</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">select_roi</span><span class="p">()</span>
 
-<span class="c"># or alternatively: use PCA/ICA to determine ROIs</span>
-<span class="c">#comp = pca_ica(mov, components=12)</span>
-<span class="c">#roi = ROI(mask=comp_to_mask(comp))</span>
-
-<span class="c"># display the movie with its ROIs</span>
-<span class="n">mov</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">roi</span><span class="o">=</span><span class="n">roi</span><span class="p">)</span>
+<span class="c"># display the movie</span>
+<span class="n">mov</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c"># show rois on top of projection</span>
+<span class="n">roi</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
 <span class="c"># extract traces</span>
 <span class="n">tr</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">extract_by_roi</span><span class="p">(</span><span class="n">roi</span><span class="p">)</span>
 
 <span class="c"># display traces</span>
 <span class="n">tr</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-
-<span class="c"># save the traces</span>
-<span class="n">save</span><span class="p">(</span><span class="s">&#39;my_data&#39;</span><span class="p">,</span> <span class="n">traces</span><span class="o">=</span><span class="n">tr</span><span class="p">)</span>
 </pre></div>
 </td></tr></table></div>
 <p>Shown below are examples of the projected movie (left), and extracted traces (right).</p>

@@ -107,7 +107,7 @@
 
 <dl class="method">
 <dt id="traces.Trace.plot">
-<code class="descname">plot</code><span class="sig-paren">(</span><em>stacked=True</em>, <em>subtract_minimum=True</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#traces.Trace.plot" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot</code><span class="sig-paren">(</span><em>stacked=True</em>, <em>subtract_minimum=False</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#traces.Trace.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the data</p>
 <dl class="docutils">
 <dt>stacked <span class="classifier-delimiter">:</span> <span class="classifier">bool </span></dt>
@@ -148,14 +148,6 @@
 <p>The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0.</p>
 <p>It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.</p>
 <dl class="method">
-<dt id="movies.Movie.correct_motion">
-<code class="descname">correct_motion</code><span class="sig-paren">(</span><em>*params</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.correct_motion" title="Permalink to this definition">¶</a></dt>
-<dd><p>A convenience method for pyfluo.motion.correct_motion</p>
-<p>If unnamed params are supplied, they are taken to be the output of a prior motion correction and are applied to the movies using pyfluo.motion.apply_motion_correction.</p>
-<p>If named kwargs are supplied, they are passed along to pyfluo.motion.correct_motion.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="movies.Movie.extract_by_roi">
 <code class="descname">extract_by_roi</code><span class="sig-paren">(</span><em>roi</em>, <em>method=&lt;function mean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.extract_by_roi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied</p>
@@ -170,7 +162,7 @@
 
 <dl class="method">
 <dt id="movies.Movie.play">
-<code class="descname">play</code><span class="sig-paren">(</span><em>loop=False</em>, <em>fps=None</em>, <em>scale=1</em>, <em>contrast=1.0</em>, <em>show_time=True</em>, <em>backend=&lt;module 'cv2' from '/Users/ben/anaconda/lib/python2.7/site-packages/cv2.so'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
+<code class="descname">play</code><span class="sig-paren">(</span><em>loop=False</em>, <em>fps=None</em>, <em>scale=1</em>, <em>contrast=1.0</em>, <em>show_time=True</em>, <em>backend=&lt;module 'cv2' from '/Users/ben/anaconda/lib/python2.7/site-packages/cv2.so'&gt;</em>, <em>fontsize=1</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
 <dd><p>Play the movie</p>
 <dl class="docutils">
 <dt>loop <span class="classifier-delimiter">:</span> <span class="classifier">bool </span></dt>
@@ -184,14 +176,17 @@
 <dt>show_time <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
 <dd>show time on image</dd>
 <dt>backend <span class="classifier-delimiter">:</span> <span class="classifier">module </span></dt>
-<dd>package to use for playback (ex. pl or cv2). If <em>None</em>, defaults to self.interactive_backend</dd>
+<dd>package to use for playback (ex. pl or cv2)</dd>
+<dt>fontsize <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>to display time</dd>
 </dl>
 <p>During playback, &#8216;q&#8217; can be used to quit when playback window has focus</p>
+<p>Many params are not implemented in the matplotlib backend option</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="movies.Movie.project">
-<code class="descname">project</code><span class="sig-paren">(</span><em>axis=0</em>, <em>method=&lt;function mean&gt;</em>, <em>show=False</em>, <em>roi=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.project" title="Permalink to this definition">¶</a></dt>
+<code class="descname">project</code><span class="sig-paren">(</span><em>axis=0</em>, <em>method=&lt;function mean&gt;</em>, <em>show=False</em>, <em>roi=None</em>, <em>backend=&lt;module 'pylab' from '/Users/ben/anaconda/lib/python2.7/site-packages/pylab.pyc'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.project" title="Permalink to this definition">¶</a></dt>
 <dd><p>Flatten/project the movie data across one or many axes</p>
 <dl class="docutils">
 <dt>axis <span class="classifier-delimiter">:</span> <span class="classifier">int, list</span></dt>
@@ -202,6 +197,8 @@
 <dd>display the result (if 2d, as image; if 1d, as trace)</dd>
 <dt>roi <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.ROI </span></dt>
 <dd>roi to display</dd>
+<dt>backend <span class="classifier-delimiter">:</span> <span class="classifier">module</span></dt>
+<dd>module used for interactive display (only matplotlib currently supported)</dd>
 </dl>
 <p>The projected image</p>
 </dd></dl>
@@ -252,7 +249,7 @@
 
 <dl class="method">
 <dt id="roi.ROI.show">
-<code class="descname">show</code><span class="sig-paren">(</span><em>mode='pts'</em>, <em>labels=True</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.ROI.show" title="Permalink to this definition">¶</a></dt>
+<code class="descname">show</code><span class="sig-paren">(</span><em>mode='mask'</em>, <em>labels=True</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.ROI.show" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the ROI(s)</p>
 <dl class="docutils">
 <dt>mode <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;mask&#8217;, &#8216;pts&#8217;</span></dt>
