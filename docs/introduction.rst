@@ -34,13 +34,13 @@ Here is a quick-start example to get you moving with pyfluo.
 .. code-block:: python
     :linenos:
 
-    from pyfluo import ROI, Tiff, Movie, Trace, correct_motion, compute_dff, pca_ica, comp_to_mask, save
+    from pyfluo import Movie, motion_correct, compute_dff
 
     # create a movie from a tiff file
-    mov = Movie('/Users/ben/PhD/data/mov.tif', Ts=0.03)
+    mov = Movie('./mov.tif', Ts=0.032)
 
     # motion correct the movie
-    mov = correct_motion(mov, n_iters=1) #or use the convenience method mov.correct_motion
+    mov = motion_correct(mov)
 
     # convert the movie to delta f over f
     mov = compute_dff(mov, window_size=1.0, step_size=0.100)
@@ -49,23 +49,18 @@ Here is a quick-start example to get you moving with pyfluo.
     mov.play(fps=30, scale=5, contrast=3)
 
     # manually select some ROIs
-    roi = mov.select_roi(3)
+    roi = mov.select_roi()
 
-    # or alternatively: use PCA/ICA to determine ROIs
-    #comp = pca_ica(mov, components=12)
-    #roi = ROI(mask=comp_to_mask(comp))
-
-    # display the movie with its ROIs
-    mov.project(show=True, roi=roi)
+    # display the movie
+    mov.project(show=True)
+    # show rois on top of projection
+    roi.show()
 
     # extract traces
     tr = mov.extract_by_roi(roi)
 
     # display traces
     tr.plot()
-
-    # save the traces
-    save('my_data', traces=tr)
 
 Shown below are examples of the projected movie (left), and extracted traces (right).
 
