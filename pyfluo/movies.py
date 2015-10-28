@@ -5,7 +5,7 @@ from scipy.ndimage.interpolation import zoom as szoom
 from roi import ROI, select_roi
 from images import Tiff, AVI
 from traces import Trace
-from motion import motion_correct, apply_motion_correction
+from motion import motion_correct
 import pylab as pl
 from matplotlib import animation
 import cv2
@@ -271,3 +271,8 @@ class Movie(TSBase):
             for d in data:
                 vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
             vw.release()
+
+    def motion_correct(self, *args, **kwargs):
+        """Convenience method for pyfluo.motion.motion_correct
+        """
+        return motion_correct(self, *args, **kwargs)
