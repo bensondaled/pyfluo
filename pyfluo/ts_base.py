@@ -2,6 +2,7 @@ import numpy as np
 import pylab as pl
 import cv2, warnings
 from scipy.signal import resample as sp_resample
+import fluorescence
 
 _numeric_types = [int, float, long, np.float16, np.float32, np.float64, np.float128, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
 
@@ -200,3 +201,8 @@ class TSBase(np.ndarray):
             kwargs['t'] = self.time
         new_data,new_time = sp_resample(self, n, *args, axis=0, **kwargs)
         return self.__class__(data=new_data, time=new_time)
+
+    def compute_dff(self, *args, **kwargs):
+        """A convenience method for pyfluo.fluorescence.compute_dff
+        """
+        return fluorescence.compute_dff(self, *args, **kwargs)
