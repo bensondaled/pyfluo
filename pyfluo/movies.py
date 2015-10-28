@@ -75,7 +75,7 @@ class Movie(TSBase):
             if pro.ndim == 2:
                 pl.imshow(pro, cmap=pl.cm.Greys_r, **kwargs)
                 if roi is not None:
-                    roi.show(mode='pts',labels=True)
+                    roi.show()
             elif pro.ndim == 1:
                 pl.plot(self.time, pro)
         

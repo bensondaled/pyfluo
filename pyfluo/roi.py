@@ -33,6 +33,10 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
     Returns
     -------
     ROI object
+
+    Notes
+    -----
+    Select points by clicking, and hit enter to finalize and ROI. Hit enter again to complete selection process.
     """
     if ax is None and img is None:
         raise Exception('Image or axes must be supplied to select ROI.')

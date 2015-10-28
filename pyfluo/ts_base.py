@@ -8,7 +8,7 @@ _numeric_types = [int, float, long, np.float16, np.float32, np.float64, np.float
 
 class TSBase(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['time', 'info', 'Ts', 'fs', '_ndim']
+    _custom_attrs = ['time', 'info', 'Ts', 'fs', '_ndim', '_class_name']
     _custom_attrs_slice = ['time', 'info'] # should all be numpy arrays
     def __new__(cls, data, _ndim=0, class_name='TSBase', time=None, info=None, Ts=None, dtype=np.float32):
         obj = np.asarray(data, dtype=dtype).view(cls)

@@ -1,13 +1,28 @@
-import numpy as np
-from pyfluo import Movie, compute_dff, motion_correct
+import pyfluo as pf
 
-mov = Movie('/Users/ben/phd/data/mov.tif', Ts=0.064)
+# create a movie from a tiff file
+mov = pf.Movie('mov.tif', Ts=0.032)
 
-mov = motion_correct(mov)
+# motion correct the movie
+mov = mov.motion_correct(max_shift=10)
 
-mov = compute_dff(mov, window_size=1.0, step_size=0.100)
+# play the movie
+mov.play(fps=30, scale=5, contrast=3)
 
+# manually select some ROIs
 roi = mov.select_roi()
 
+# display a projection of the movie, with rois on top
+mov.project(show=True, roi=roi)
+
+# extract traces
 tr = mov.extract_by_roi(roi)
-tr.plot()
+
+# convert traces to ∆F/F
+dff = tr.compute_dff(window_size=1.0, step_size=0.100)
+
+# display traces
+dff.plot()
+
+# save everything
+pf.save('my_saved_data', movie=mov, traces=dff)
