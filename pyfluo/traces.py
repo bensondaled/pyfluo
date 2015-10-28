@@ -24,7 +24,7 @@ class Trace(TSBase):
     It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.
     """
     def __new__(cls, data, **kwargs):
-        return super(Trace, cls).__new__(cls, data, _ndim=[1,2], **kwargs)
+        return super(Trace, cls).__new__(cls, data, _ndim=[1,2], class_name='Trace', **kwargs)
 
     def take(self, *args, **kwargs):
         res = super(Trace, self).take(*args, **kwargs)

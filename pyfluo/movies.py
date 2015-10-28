@@ -44,7 +44,7 @@ class Movie(TSBase):
                 data = Tiff(data).data
             elif '.avi' in data:
                 data = AVI(data).data
-        return super(Movie, cls).__new__(cls, data, _ndim=[3], **kwargs)
+        return super(Movie, cls).__new__(cls, data, _ndim=[3], class_name='Movie', **kwargs)
     def project(self, axis=0, method=np.mean, show=False, roi=None, backend=pl, **kwargs):
         """Flatten/project the movie data across one or many axes
         

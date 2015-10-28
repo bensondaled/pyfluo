@@ -1,8 +1,7 @@
 import numpy as np
-import cv2
 import pylab as pl
+import cv2, warnings
 from scipy.signal import resample as sp_resample
-import warnings
 
 _numeric_types = [int, float, long, np.float16, np.float32, np.float64, np.float128, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
 
@@ -10,7 +9,7 @@ class TSBase(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     _custom_attrs = ['time', 'info', 'Ts', 'fs', '_ndim']
     _custom_attrs_slice = ['time', 'info'] # should all be numpy arrays
-    def __new__(cls, data, _ndim=0, time=None, info=None, Ts=None, dtype=np.float32):
+    def __new__(cls, data, _ndim=0, class_name='TSBase', time=None, info=None, Ts=None, dtype=np.float32):
         obj = np.asarray(data, dtype=dtype).view(cls)
       
         ### data
@@ -38,7 +37,7 @@ class TSBase(np.ndarray):
         
         ### info
         obj.info = info
-        if obj.info == None:
+        if obj.info is None:
             obj.info = np.array([None for _ in xrange(len(obj))])
 
         ### other attributes
@@ -47,6 +46,8 @@ class TSBase(np.ndarray):
         ### consistency checks
         assert len(obj) == len(obj.time), 'Data and time vectors are different lengths.'
         assert len(obj) == len(obj.info), 'Data and info vectors are different lengths.'
+
+        obj._class_name = class_name
 
         return obj
 
@@ -88,6 +89,11 @@ class TSBase(np.ndarray):
     def _update(self):
         self.Ts = np.mean(np.diff(self.time))
         self.fs = 1./self.Ts
+    def decompose(self):
+        # used to decompose the object into basic numpy arrays, stored in a structured np array
+        res = np.zeros((1),dtype=[('class','S100'),('data',self.dtype,self.shape),('time',self.time.dtype,self.time.shape),('Ts',type(self.Ts),1),('info',self.info.dtype,self.info.shape)])
+        res[-1] = (self._class_name, np.asarray(self), self.time, self.Ts, self.info)
+        return res
     def reset_time(self):
         self.time = self.time - self.time[0]
     def t2i(self, t):
