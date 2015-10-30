@@ -5,7 +5,6 @@ import cv2
 import pylab as pl
 import warnings
 import matplotlib.lines as mlines
-from PIL import Image, ImageDraw
 CV_VERSION = int(cv2.__version__[0])
 
 def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
@@ -341,7 +340,7 @@ class Lasso(object):
         self.fig.canvas.draw()
 
 def lasso(strictness):
-    print 'Press enter to begin and end.'
+    print('Press enter to begin and end.')
     l = Lasso(strictness)
     return l.pts
 

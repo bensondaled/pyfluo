@@ -1,10 +1,14 @@
 import numpy as np
 import pylab as pl
-import cv2, warnings
+import cv2, warnings, sys
 from scipy.signal import resample as sp_resample
-import fluorescence
+from . import fluorescence
 
-_numeric_types = [int, float, long, np.float16, np.float32, np.float64, np.float128, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
+_pyver = sys.version_info.major
+if _pyver == 3:
+    xrange = range
+
+_numeric_types = [int, float, np.float16, np.float32, np.float64, np.float128, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
 
 class TSBase(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays

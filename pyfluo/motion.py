@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from util import ProgressBar
 
 def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_place=False):  
     """Apply shifts to mov in order to correct motion
@@ -117,9 +116,11 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False, pro
         h,w = template.shape
         
         shifts=[]   # store the amount of shift in each frame
-        if prog_bar:    pbar = ProgressBar(maxval=n_frames_).start()
+        if prog_bar:    
+            pass #pbar = ProgressBar(maxval=n_frames_).start()
         for i,frame in enumerate(mov):
-             if prog_bar:    pbar.update(i)             
+             if prog_bar:    
+                 pass #pbar.update(i)             
              res = cv2.matchTemplate(frame,template,cv2.TM_CCORR_NORMED)
              avg_corr=np.mean(res)
              top_left = cv2.minMaxLoc(res)[3]
@@ -143,5 +144,6 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False, pro
                      
              shifts.append([sh_x_n,sh_y_n,avg_corr]) 
                  
-        if prog_bar:    pbar.finish()         
+        if prog_bar:    
+            pass #pbar.finish()         
         return np.asarray(template), np.asarray(shifts)

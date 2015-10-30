@@ -2,15 +2,20 @@
 
 import numpy as np
 from scipy.ndimage.interpolation import zoom as szoom
-from roi import ROI, select_roi
-from images import Tiff, AVI
-from traces import Trace
-from motion import motion_correct
 import pylab as pl
 from matplotlib import animation
-import cv2
-from ts_base import TSBase
+import cv2, sys
 CV_VERSION = int(cv2.__version__[0])
+
+from .roi import ROI, select_roi
+from .images import Tiff, AVI
+from .traces import Trace
+from .motion import motion_correct
+from .ts_base import TSBase
+
+_pyver = sys.version_info.major
+if _pyver == 3:
+    xrange = range
 
 class Movie(TSBase):
     """An object storing n sequential 2d images along with a time vector

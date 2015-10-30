@@ -1,9 +1,12 @@
 #TODO: choose a df/f method
 
 import numpy as np
-import warnings
-from util import sliding_window as sw
-from util import ProgressBar
+import warnings, sys
+from .util import sliding_window as sw
+
+_pyver = sys.version_info.major
+if _pyver == 3:
+    xrange = range
 
 def compute_dff(data, percentile=8., window_size=1., step_size=None, root_f=False, subtract_minimum=False, pad_mode='edge', in_place=False, return_f0=False, prog_bar=True):
     """Compute delta-f-over-f
@@ -62,13 +65,16 @@ def compute_dff(data, percentile=8., window_size=1., step_size=None, root_f=Fals
     padded = np.pad(data, pad, mode=pad_mode)
 
     out_size = ((len(padded) - window_size) // step_size) + 1
-    if prog_bar:    pbar = ProgressBar(maxval=out_size).start()
+    if prog_bar:
+        pass #pbar = ProgressBar(maxval=out_size).start()
     f0 = []
     for idx,win in enumerate(sw(padded, ws=window_size, ss=step_size)):
         f0.append(np.percentile(win, percentile, axis=0))
-        if prog_bar:    pbar.update(idx)
+        if prog_bar:
+            pass #bar.update(idx)
     f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
-    if prog_bar:    pbar.finish()
+    if prog_bar:
+        pass #bar.finish()
    
     if not root_f:
         bl = f0

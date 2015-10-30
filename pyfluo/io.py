@@ -1,5 +1,5 @@
 import numpy as np
-import ts_base, movies, traces
+from . import ts_base, movies, traces
 Movie = movies.Movie
 Trace = traces.Trace
 TSBase = ts_base.TSBase

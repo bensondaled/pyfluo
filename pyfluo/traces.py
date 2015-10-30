@@ -1,7 +1,11 @@
-from ts_base import TSBase
+from .ts_base import TSBase
 import numpy as np
 import pylab as pl
-import warnings
+import warnings, sys
+
+_pyver = sys.version_info.major
+if _pyver == 3:
+    xrange = range
 
 class Trace(TSBase):
     """An object to hold one or more data vectors along with a single time vector
