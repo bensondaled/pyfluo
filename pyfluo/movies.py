@@ -4,7 +4,7 @@ import numpy as np
 from scipy.ndimage.interpolation import zoom as szoom
 import pylab as pl
 from matplotlib import animation
-import cv2, sys
+import cv2, sys, tifffile
 CV_VERSION = int(cv2.__version__[0])
 
 from .roi import ROI, select_roi
@@ -214,56 +214,31 @@ class Movie(TSBase):
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
 
-    def save(self, filename, lib=pl, fmt='mp4', dpi=100, codec='IYUV'):
+    def save(self, filename, fmt=None, codec='IYUV', fps=None):
 
         """Save movie for playback in video player
 
-        Note that this function is intended for saving the movie in an avi-like format. Saving for further analysis should be performed using numpy's save functions.
+        Note that this function is intended for saving the movie in an avi/tiff-like format. Saving for further analysis should be performed using pyfluo's io functions.
 
         Parameters
         ----------
         filename : str
             destination file name, without extension
-        lib : module
-            module to use (matplotlib/pylab/cv2)
         fmt : str
-            format to save movie, specified as file extension, ex. 'avi'
-            applies only to pylab mode
-        dpi : int
-            dots per inch
-            applies only to pylab mode
+            format to save movie, specified as file extension, ex. 'avi', 'mp4', 'tif'
         codec : int
             opencv fourcc code, as chars to be fed to cv2.FOURCC ex. 'IYUV'
-            applies only to opencv mode
+        fps : int
+            frames per second. Defaults to obj.fs
+            applies to only to formats tht store time info, like avi
         """
-        if lib==pl:
-            pl_state = pl.isinteractive()
-            pl.ioff()
+        if fps == None:
+            fps = self.fs
+        filename += '.'+fmt
 
-            save_name = '%s.%s'%(filename, fmt)
-            
-            FFMpegWriter = animation.writers['ffmpeg']
-            writer = FFMpegWriter(fps=int(self.fs))
-
-            minn,maxx = self.min(),self.max()
-
-            fig = pl.figure()
-            ax = fig.add_axes([0,0,1,1])
-            im_data = ax.imshow(np.zeros(self[0].shape), vmin=0, vmax=1, cmap=pl.cm.Greys_r)
-            ax.set_axis_off()
-
-            def get_fr(i):
-                fr = self[i]
-                fr = (fr-minn)/(maxx-minn)
-                im_data.set_data(fr)
-                return im_data,
-
-            ani = animation.FuncAnimation(fig, get_fr, xrange(len(self)), interval=self.Ts*1000, blit=True)
-            ani.save(save_name, dpi=dpi)
-
-            if pl_state:
-                pl.ion()
-        elif lib==cv2:
+        if fmt in ['tif','tiff']:
+            tifffile.imsave(filename, data=np.asarray(self))
+        elif fmt in ['mp4', 'avi']:
             if CV_VERSION == 3:
                 codec = cv2.VideoWriter_fourcc(*codec)
             elif CV_VERSION == 2:
@@ -272,7 +247,7 @@ class Movie(TSBase):
             data = 255 * (self-minn)/(maxx-minn)
             data = data.astype(np.uint8)
             y,x = data[0].shape
-            vw = cv2.VideoWriter(filename, codec, self.fs, (x,y), isColor=True)
+            vw = cv2.VideoWriter(filename, codec, fps, (x,y), isColor=True)
             for d in data:
                 vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
             vw.release()
