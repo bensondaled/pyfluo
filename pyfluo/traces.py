@@ -53,7 +53,7 @@ class Trace(TSBase):
         else:
             return self
 
-    def normalize(self, minmax=(0., 1.), axis=None):
+    def normalize(self, minmax=(0., 1.), axis=0):
         """Normalize the data
         
         Parameters
@@ -69,9 +69,8 @@ class Trace(TSBase):
         """
         newmin,newmax = minmax
         omin,omax = self.min(axis=axis),self.max(axis=axis)
-        new_obj = self.copy() 
-        new_obj.data = (self-omin)/(omax-omin) * (newmax-newmin) + newmin
-        return new_obj
+        newdata = (self-omin)/(omax-omin) * (newmax-newmin) + newmin
+        return self.__class__(np.asarray(newdata),time=self.time,Ts=self.Ts,info=self.info)
 
     def plot(self, stacked=True, subtract_minimum=False, cmap=pl.cm.jet, **kwargs):
         """Plot the data
