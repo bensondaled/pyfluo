@@ -202,9 +202,9 @@ class Movie(TSBase):
         order : int
             order of interpolation (0=nearest, 1=bilinear, 2=cubic)
         """              
-        if type(factor) in [int,long,float]:
+        if type(factor) in [int,float,np.float16,np.float32,np.float64,np.float128,np.int8,np.int16,np.int32,np.int64]:
             factor = [factor,factor]
-        elif type(factor) in [list,tuple,np.ndarray]:
+        elif any([isinstance(factor,t) for t in [list,tuple,np.ndarray]]):
             factor = list(factor)
         else:
             raise Exception('factor parameter not understood')

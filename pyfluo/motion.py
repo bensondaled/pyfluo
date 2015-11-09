@@ -98,7 +98,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, in_place=False, pro
         mov = mov.astype(np.float32)    
         n_frames_,h_i, w_i = mov.shape
 
-        if type(max_shift) in [int,float,long]:
+        if type(max_shift) in [int,float]:
             ms_h = max_shift
             ms_w = max_shift
         elif type(max_shift) in [tuple, list, np.ndarray]:
