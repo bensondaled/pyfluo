@@ -186,11 +186,14 @@ class Movie(TSBase):
         -------
         Trace object, with multiple columns corresponding to multiple ROIs
         """
-        roi3 = roi.as3d()
-        roi_flat = roi3.reshape((len(roi3),-1))
+        if roi.ndim == 3:
+            flatshape = (len(roi),-1)
+        elif roi.ndim == 2:
+            flatshape = -1
+        roi_flat = roi.reshape(flatshape)
         self_flat = self.reshape((len(self),-1)).T
         dp = (roi_flat.dot(self_flat)).T
-        return Trace(dp/roi_flat.sum(axis=1), time=self.time.copy(), Ts=self.Ts)
+        return Trace(dp/roi_flat.sum(axis=-1), time=self.time.copy(), Ts=self.Ts)
 
     def resize(self, factor, order=0):
         """Resize movie using scipy.ndimage.zoom

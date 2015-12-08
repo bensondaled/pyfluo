@@ -1,8 +1,7 @@
-#TODO: choose a df/f method
-
 import numpy as np
 import warnings, sys
 from .util import sliding_window as sw
+from .util import ProgressBar
 
 _pyver = sys.version_info.major
 if _pyver == 3:
@@ -66,15 +65,15 @@ def compute_dff(data, percentile=8., window_size=1., step_size=None, root_f=Fals
 
     out_size = ((len(padded) - window_size) // step_size) + 1
     if prog_bar:
-        pass #pbar = ProgressBar(maxval=out_size).start()
+        pbar = ProgressBar(maxval=out_size).start()
     f0 = []
     for idx,win in enumerate(sw(padded, ws=window_size, ss=step_size)):
         f0.append(np.percentile(win, percentile, axis=0))
         if prog_bar:
-            pass #bar.update(idx)
+            pbar.update(idx)
     f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
     if prog_bar:
-        pass #bar.finish()
+        pbar.finish()
    
     if not root_f:
         bl = f0
