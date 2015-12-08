@@ -98,7 +98,11 @@ class Trace(TSBase):
         ax = pl.gca()
 
         colors = cmap(np.linspace(0, 1, n))
-        ax.set_color_cycle(colors)
+        if _pyver == 2:
+            ax.set_color_cycle(colors)
+        elif _pyver == 3:
+            from cycler import cycler
+            ax.set_prop_cycle(cycler('c',colors))
 
         if subtract_minimum:
             d -= d.min(axis=0)
