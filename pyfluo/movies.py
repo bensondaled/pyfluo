@@ -4,6 +4,7 @@ import numpy as np
 from scipy.ndimage.interpolation import zoom as szoom
 import pylab as pl
 from matplotlib import animation
+import pandas as pd
 import cv2, sys, tifffile
 CV_VERSION = int(cv2.__version__[0])
 
@@ -172,7 +173,7 @@ class Movie(TSBase):
         """
         zp = self.project(show=False, method=kwargs.pop('projection_method',np.std))
         return select_roi(zp, *args, **kwargs)
-    def extract_by_roi(self, roi, method=np.mean):
+    def extract_by_roi(self, roi, method=np.mean, as_pd=True):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied
         
         Parameters
@@ -181,6 +182,8 @@ class Movie(TSBase):
             the rois over which to extract data
         method : def 
             the function by which to convert the data within an ROI to a single value. Defaults to np.mean
+        as_pd : bool
+            return as pandas object instead of pyfluo
             
         Returns
         -------
@@ -193,7 +196,10 @@ class Movie(TSBase):
         roi_flat = roi.reshape(flatshape)
         self_flat = self.reshape((len(self),-1)).T
         dp = (roi_flat.dot(self_flat)).T
-        return Trace(dp/roi_flat.sum(axis=-1), time=self.time.copy(), Ts=self.Ts)
+        if not as_pd:
+            return Trace(dp/roi_flat.sum(axis=-1), time=self.time.copy(), Ts=self.Ts)
+        elif as_pd:
+            return pd.DataFrame(dp/roi_flat.sum(axis=-1), index=self.time.copy())
 
     def resize(self, factor, order=0):
         """Resize movie using scipy.ndimage.zoom

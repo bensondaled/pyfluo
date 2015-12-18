@@ -64,14 +64,17 @@ def motion_correct(mov, return_vals=False, crop=False, **kwargs):
     #pull out kwargs for apply_motion_correction, all others assumed to be for compute_motion
     in_place = kwargs.pop('in_place', False)
     interpolation = kwargs.pop('interpolation', cv2.INTER_LINEAR)
+    max_shift = kwargs.pop('max_shift', (5,5))
 
-    template,vals = compute_motion(mov, in_place=in_place, **kwargs)
+    template,vals = compute_motion(mov, in_place=in_place, max_shift=max_shift, **kwargs)
     mov_cor = apply_motion_correction(mov, vals[:,:-1], in_place=in_place, interpolation=interpolation)
     if crop:
-        shifts = np.sum(vals,axis=0)[:,:2]
-        maxx,maxy = (shifts.max(axis=0)).astype(int)
-        minx,miny = (shifts.min(axis=0)).astype(int)
-        mov_cor = mov_cor[-miny:-maxy, -minx:-maxx]
+        max_shift = np.array(max_shift)
+        if max_shift.ndim == 0:
+            msy,msx = max_shift,max_shift
+        else:
+            msy,msx = max_shift
+        mov_cor = mov_cor[:, msy:-msy, msx:-msx]
     ret = mov_cor
     if return_vals:
         ret = [mov_cor, params]

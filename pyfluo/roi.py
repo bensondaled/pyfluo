@@ -7,7 +7,7 @@ import warnings
 import matplotlib.lines as mlines
 CV_VERSION = int(cv2.__version__[0])
 
-def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode='pts', cmap=pl.cm.Greys_r, lasso_strictness=1):
+def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode='mask', cmap=pl.cm.Greys_r, lasso_strictness=1):
     """Select any number of regions of interest (ROI) in the movie.
     
     Parameters
@@ -75,6 +75,7 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
             q += 1
         elif pts == []:
             break
+        ax.cla()
     pl.close()
     return existing
 
