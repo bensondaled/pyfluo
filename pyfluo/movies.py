@@ -45,7 +45,7 @@ class Movie(TSBase):
     def __new__(cls, data, **kwargs):
         if type(data) == Tiff:
             data = data.data.copy()
-        elif type(data) == str:
+        elif type(data) in [str,unicode]:
             if '.tif' in data:
                 data = Tiff(data).data
             elif '.avi' in data:
