@@ -53,7 +53,7 @@ def load(file_name):
         with np.load(file_name) as f:
             for k in f:
                 obj = f[k]
-                if 'class' in obj.dtype.names:
+                if obj.dtype.names and 'class' in obj.dtype.names:
                     obj = obj[0]
                     try:
                         dest_class = eval(obj['class'])

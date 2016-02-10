@@ -174,7 +174,7 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='mask', labels=True, cmap=pl.cm.jet, **kwargs):
+    def show(self, mode='mask', labels=True, colors=None, cmap=pl.cm.jet, **kwargs):
         """Display the ROI(s)
         
         Parameters
@@ -183,6 +183,10 @@ class ROI(np.ndarray):
             specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points (those originally selected)
         labels : bool
             display labels over ROIs
+        colors : list-like
+            a list of values indicating the relative colors (example: magnitude) of each roi
+            needs to be fixed for the possibility of this containing values of 0
+            currently buggy for 'pts' mode
         cmap : matplotlib.LinearSegmentedColormap
             color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
         kwargs : dict
@@ -194,18 +198,29 @@ class ROI(np.ndarray):
         """
 
         cmap = cmap
-        colors = cmap(np.linspace(0, 1, len(self)))
+        fig = pl.gcf()
+        #ax = fig.add_subplot(111)
         ax = pl.gca()
         xlim,ylim = pl.xlim(),pl.ylim()
 
+        mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
+        if colors is None:
+            colors = np.arange(1,len(mask)+1)
+            colors_ = np.linspace(0, 1, len(self))
+        else:
+            colors_ = colors
+        colors_ = cmap(colors_)
+
         if mode == 'mask':
-            mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
-            mask *= np.arange(1,len(mask)+1)[...,np.newaxis,np.newaxis]
+            mask *= colors[...,np.newaxis,np.newaxis]
             mask = np.max(mask, axis=0)
             mask[mask==0] = None #so background doesn't steal one color from colormap, offsetting correspondence to all other uses of cmap
 
             alpha = kwargs.pop('alpha', 0.6)
-            ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
+            ims=ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
+            cbar = fig.colorbar(ims)
+            cbar.solids.set_edgecolor("face")
+            pl.draw()
         
         if mode == 'pts' or labels:
             if self.ndim == 2:
@@ -216,11 +231,11 @@ class ROI(np.ndarray):
                 if len(roi)==0:
                     continue
                 if mode == 'pts':
-                    pl.scatter(roi[:,0], roi[:,1], color=colors[idx], marker='|', linewidth=3, **kwargs)
+                    pl.scatter(roi[:,0], roi[:,1], color=colors_[idx], marker='|', linewidth=3, **kwargs)
                 if labels:
                     center = np.mean(roi, axis=0)
                     if mode=='pts':
-                        col = colors[idx]
+                        col = colors_[idx]
                     elif mode=='mask':
                         col = 'gray'
                     pl.text(center[0], center[1], str(idx), color=col, weight='bold')
