@@ -51,6 +51,7 @@
             
   <div class="section" id="about-this-library">
 <h1>About this library<a class="headerlink" href="#about-this-library" title="Permalink to this headline">¶</a></h1>
+<p><strong>* Please note that as of February 2016, I am in the process of updating the library in many ways. The current version is unlikely to install properly without some adjustments, and some features may be broken. I anticipate completing this upgrade by May 2016. *</strong></p>
 <p>The <strong>pyfluo</strong> library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions.</p>
 <p>This project is <a class="reference external" href="https://github.com/bensondaled/pyfluo/">hosted on github</a>.</p>
 <p>Note that <strong>pyfluo</strong> is a work in progress; neither the code nor the documentation is complete. That said, it is already functional for a wide variety of tasks.</p>
@@ -109,32 +110,32 @@
 27
 28</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pyfluo</span> <span class="kn">as</span> <span class="nn">pf</span>
 
-<span class="c"># create a movie from a tiff file</span>
-<span class="n">mov</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span><span class="s">&#39;mov.tif&#39;</span><span class="p">,</span> <span class="n">Ts</span><span class="o">=</span><span class="mf">0.032</span><span class="p">)</span>
+<span class="c1"># create a movie from a tiff file</span>
+<span class="n">mov</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span><span class="s1">&#39;mov.tif&#39;</span><span class="p">,</span> <span class="n">Ts</span><span class="o">=</span><span class="mf">0.032</span><span class="p">)</span>
 
-<span class="c"># motion correct the movie</span>
+<span class="c1"># motion correct the movie</span>
 <span class="n">mov</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">motion_correct</span><span class="p">(</span><span class="n">max_shift</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
-<span class="c"># play the movie</span>
+<span class="c1"># play the movie</span>
 <span class="n">mov</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">contrast</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
-<span class="c"># manually select some ROIs</span>
+<span class="c1"># manually select some ROIs</span>
 <span class="n">roi</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">select_roi</span><span class="p">()</span>
 
-<span class="c"># display a projection of the movie, with rois on top</span>
+<span class="c1"># display a projection of the movie, with rois on top</span>
 <span class="n">mov</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">roi</span><span class="o">=</span><span class="n">roi</span><span class="p">)</span>
 
-<span class="c"># extract traces</span>
+<span class="c1"># extract traces</span>
 <span class="n">tr</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">extract_by_roi</span><span class="p">(</span><span class="n">roi</span><span class="p">)</span>
 
-<span class="c"># convert traces to ∆F/F</span>
+<span class="c1"># convert traces to ∆F/F</span>
 <span class="n">dff</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">compute_dff</span><span class="p">(</span><span class="n">window_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.100</span><span class="p">)</span>
 
-<span class="c"># display traces</span>
+<span class="c1"># display traces</span>
 <span class="n">dff</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
-<span class="c"># save everything</span>
-<span class="n">pf</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;my_saved_data&#39;</span><span class="p">,</span> <span class="n">movie</span><span class="o">=</span><span class="n">mov</span><span class="p">,</span> <span class="n">traces</span><span class="o">=</span><span class="n">dff</span><span class="p">)</span>
+<span class="c1"># save everything</span>
+<span class="n">pf</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;my_saved_data&#39;</span><span class="p">,</span> <span class="n">movie</span><span class="o">=</span><span class="n">mov</span><span class="p">,</span> <span class="n">traces</span><span class="o">=</span><span class="n">dff</span><span class="p">)</span>
 </pre></div>
 </td></tr></table></div>
 <p>Shown below are examples of the projected movie (left), and extracted traces (right).</p>
@@ -211,7 +212,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015, Ben Deverett.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
     </div>
   </body>
 </html>

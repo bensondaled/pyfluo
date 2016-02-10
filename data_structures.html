@@ -94,7 +94,7 @@
 <p>It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.</p>
 <dl class="method">
 <dt id="traces.Trace.normalize">
-<code class="descname">normalize</code><span class="sig-paren">(</span><em>minmax=(0.0</em>, <em>1.0)</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="headerlink" href="#traces.Trace.normalize" title="Permalink to this definition">¶</a></dt>
+<code class="descname">normalize</code><span class="sig-paren">(</span><em>minmax=(0.0</em>, <em>1.0)</em>, <em>axis=0</em><span class="sig-paren">)</span><a class="headerlink" href="#traces.Trace.normalize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Normalize the data</p>
 <dl class="docutils">
 <dt>minmax <span class="classifier-delimiter">:</span> <span class="classifier">list, tuple </span></dt>
@@ -149,20 +149,22 @@
 <p>It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.</p>
 <dl class="method">
 <dt id="movies.Movie.extract_by_roi">
-<code class="descname">extract_by_roi</code><span class="sig-paren">(</span><em>roi</em>, <em>method=&lt;function mean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.extract_by_roi" title="Permalink to this definition">¶</a></dt>
+<code class="descname">extract_by_roi</code><span class="sig-paren">(</span><em>roi</em>, <em>method=&lt;function mean&gt;</em>, <em>as_pd=True</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.extract_by_roi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied</p>
 <dl class="docutils">
 <dt>roi <span class="classifier-delimiter">:</span> <span class="classifier">pyfluo.ROI</span></dt>
 <dd>the rois over which to extract data</dd>
 <dt>method <span class="classifier-delimiter">:</span> <span class="classifier">def </span></dt>
 <dd>the function by which to convert the data within an ROI to a single value. Defaults to np.mean</dd>
+<dt>as_pd <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>return as pandas object instead of pyfluo</dd>
 </dl>
 <p>Trace object, with multiple columns corresponding to multiple ROIs</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="movies.Movie.play">
-<code class="descname">play</code><span class="sig-paren">(</span><em>loop=False</em>, <em>fps=None</em>, <em>scale=1</em>, <em>contrast=1.0</em>, <em>show_time=True</em>, <em>backend=&lt;module 'cv2' from '/Users/ben/anaconda/lib/python2.7/site-packages/cv2.so'&gt;</em>, <em>fontsize=1</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
+<code class="descname">play</code><span class="sig-paren">(</span><em>loop=False</em>, <em>fps=None</em>, <em>scale=1</em>, <em>contrast=1.0</em>, <em>show_time=True</em>, <em>backend=&lt;module 'cv2' from '/Users/ben/anaconda/envs/py35/lib/python3.5/site-packages/cv2.cpython-35m-darwin.so'&gt;</em>, <em>fontsize=1</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.play" title="Permalink to this definition">¶</a></dt>
 <dd><p>Play the movie</p>
 <dl class="docutils">
 <dt>loop <span class="classifier-delimiter">:</span> <span class="classifier">bool </span></dt>
@@ -186,7 +188,7 @@
 
 <dl class="method">
 <dt id="movies.Movie.project">
-<code class="descname">project</code><span class="sig-paren">(</span><em>axis=0</em>, <em>method=&lt;function mean&gt;</em>, <em>show=False</em>, <em>roi=None</em>, <em>backend=&lt;module 'pylab' from '/Users/ben/anaconda/lib/python2.7/site-packages/pylab.pyc'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.project" title="Permalink to this definition">¶</a></dt>
+<code class="descname">project</code><span class="sig-paren">(</span><em>axis=0</em>, <em>method=&lt;function mean&gt;</em>, <em>show=False</em>, <em>roi=None</em>, <em>backend=&lt;module 'pylab' from '/Users/ben/anaconda/envs/py35/lib/python3.5/site-packages/pylab.py'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#movies.Movie.project" title="Permalink to this definition">¶</a></dt>
 <dd><p>Flatten/project the movie data across one or many axes</p>
 <dl class="docutils">
 <dt>axis <span class="classifier-delimiter">:</span> <span class="classifier">int, list</span></dt>
@@ -249,13 +251,17 @@
 
 <dl class="method">
 <dt id="roi.ROI.show">
-<code class="descname">show</code><span class="sig-paren">(</span><em>mode='mask'</em>, <em>labels=True</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.ROI.show" title="Permalink to this definition">¶</a></dt>
+<code class="descname">show</code><span class="sig-paren">(</span><em>mode='mask'</em>, <em>labels=True</em>, <em>colors=None</em>, <em>cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#roi.ROI.show" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the ROI(s)</p>
 <dl class="docutils">
 <dt>mode <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;mask&#8217;, &#8216;pts&#8217;</span></dt>
 <dd>specifies how to display the ROIs. If &#8216;mask&#8217;, displays as filled space. If &#8216;pts&#8217;, displays as outline of points (those originally selected)</dd>
 <dt>labels <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
 <dd>display labels over ROIs</dd>
+<dt>colors <span class="classifier-delimiter">:</span> <span class="classifier">list-like</span></dt>
+<dd>a list of values indicating the relative colors (example: magnitude) of each roi
+needs to be fixed for the possibility of this containing values of 0
+currently buggy for &#8216;pts&#8217; mode</dd>
 <dt>cmap <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib.LinearSegmentedColormap</span></dt>
 <dd>color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map</dd>
 <dt>kwargs <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
@@ -332,7 +338,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015, Ben Deverett.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
     </div>
   </body>
 </html>
