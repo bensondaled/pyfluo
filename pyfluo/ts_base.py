@@ -2,7 +2,7 @@ import numpy as np
 import pylab as pl
 import cv2, warnings, sys
 from scipy.signal import resample as sp_resample
-from . import fluorescence
+import fluorescence
 
 _pyver = sys.version_info.major
 if _pyver == 3:

@@ -1,7 +1,7 @@
 import numpy as np
 import warnings, sys
-from .util import sliding_window as sw
-from .util import ProgressBar
+from util import sliding_window as sw
+from util import ProgressBar
 
 _pyver = sys.version_info.major
 if _pyver == 3:
