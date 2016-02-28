@@ -1,5 +1,5 @@
 # External imports
-import numpy as np, pylab as pl, matplotlib.lines as mlines
+import numpy as np, pylab as pl, matplotlib.lines as mlines, pandas as pd
 import cv2, warnings
 # Internal imports
 from .config import *
@@ -76,100 +76,86 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
     pl.close()
     return existing
 
-class ROI(np.ndarray):
-    """An object storing ROI information for 1 or more ROIs
-
-    Parameters
-    ----------
-    mask : np.ndarray
-        a 2d boolean mask where True indicates interior of ROI
-    pts : list, np.ndarray
-        a list of points defining the border of ROI
-    shape : list, tuple
-        shape of the mask
-
-    There are 2 ways to define an ROI:
-    (1) Supply a mask
-    (2) Supply both pts and shape
-
-    In either case, the ROI object automatically resolves both the mask and points
-
+class ROI(pd.DataFrame):
+    """ROI object
     """
-    __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    DTYPE = bool
-    _custom_attrs = ['pts']
-    _custom_attrs_slice = ['pts']
-    def __new__(cls, mask=None, pts=None, shape=None):
-        if np.any(mask) and np.any(pts):
-            warnings.warn('Both mask and points supplied. Mask will be used by default.')
-        elif np.any(pts) and shape==None:
-            raise Exception('Shape is required to define using points.')
 
-        if not mask is None:
-            data = mask
-        elif not pts is None:
-            pts = np.asarray(pts, dtype=np.int32)
-            data = np.zeros(shape, dtype=np.int32)
-            if CV_VERSION == 2:
-                lt = cv2.CV_AA
-            elif CV_VERSION == 3:
-                lt = cv2.LINE_AA
-            cv2.fillConvexPoly(data, pts, (1,1,1), lineType=lt)
+    _metadata = ['pts', 'frame_shape']
+    _metadata_defaults = [None, None]
+
+    def __init__(self, mask, *args, **kwargs):
+
+        # Set custom fields
+        for md,dmd in zip(self._metadata, self._metadata_defaults):
+            setattr(self, md, kwargs.pop(md, dmd))
+
+        # Assess data type
+        if isinstance(mask, np.ndarray) and mask.ndim==2:
+            mask = np.array([mask])
+        elif isinstance(mask, ROI):
+            return mask
         else:
-            raise Exception('Insufficient data supplied.')
-        obj = np.asarray(data, dtype=ROI.DTYPE).view(cls)
-        assert obj.ndim in [2,3]
-        
-        return obj
-    def __init__(self, *args, **kwargs):
-        self._compute_pts()
+            pass
+            #raise Exception('Mask data type not recognized.')
+       
+        # Set/adjust frame shape
+        if self.frame_shape is None:
+            self.frame_shape = np.asarray(mask.shape[1:])
+        else:
+            self.frame_shape = np.asarray(self.frame_shape)
 
-    def _compute_pts(self):
+        # If data ends up in 3d array form, flatten
+        if isinstance(mask, np.ndarray) and mask.ndim==3:
+            mask = mask.reshape([mask.shape[0], -1])
+
+        # Init object
+        super(ROI, self).__init__(mask, *args, **kwargs)
+
+    @staticmethod
+    def pts_to_mask(pts, shape):
+        pts = np.asarray(pts, dtype=np.int32)
+        mask = np.zeros(shape, dtype=np.int32)
+        if CV_VERSION == 2:
+            lt = cv2.CV_AA
+        elif CV_VERSION == 3:
+            lt = cv2.LINE_AA
+        cv2.fillConvexPoly(mask, pts, (1,1,1), lineType=lt)
+        return mask
+
+    @staticmethod
+    def mask_to_pts(mask):
         if CV_VERSION == 2:
             findContoursResultIdx = 0
         elif CV_VERSION == 3:
             findContoursResultIdx = 1
-        data = self.copy().view(np.ndarray)
-        if self.ndim == 2:
-            data = np.array([self])
 
-        selfpts = []
-        for r in data:
+        if isinstance(mask, ROI):
+            mask = mask.as_3d()
+
+        pts_all = []
+        for r in mask:
             pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[findContoursResultIdx])
             if len(pts) > 1:
                 pts = np.concatenate(pts)
             pts = pts.squeeze()
-            selfpts.append(pts)
-        self.pts = np.asarray(selfpts).squeeze()
+            pts_all.append(pts)
+        return np.asarray(pts_all).squeeze()
 
-    def add(self, roi):
-        """Add an ROI to the ROI object
+    @classmethod
+    def from_pts(cls, pts, shape):
+        mask = ROI.pts_to_mask(pts, shape)
+        return cls(mask)
 
-        Parameters
-        ----------
-        roi : pyfluo.ROI, np.ndarray
-            the ROI to be added
+    @property
+    def _constructor(self):
+        return ROI
+    
+    @property
+    def _constructor_sliced(self):
+        return pd.Series
 
-        Returns
-        -------
-        ROI object containing old and new ROIs
-        """
-        roi = np.asarray(roi, dtype=ROI.DTYPE)
-        if self.ndim == 2 and roi.ndim == 2:
-            result = np.rollaxis(np.dstack([self,roi]), -1)
-        elif self.ndim == 3:
-            if roi.ndim == 2:
-                to_add = roi[np.newaxis,...]
-            elif roi.ndim == 3:
-                to_add = roi
-            else:
-                raise Exception('Supplied ROI to add has improper dimensions.')
-            result = np.concatenate([self,to_add])
-        else:
-            raise Exception('ROI could not be added. Dimension issues.')
-        result = result.astype(ROI.DTYPE)
-        result._compute_pts()
-        return result
+    def as_3d(self):
+        return np.asarray(self).reshape([len(self)]+list(self.frame_shape))
 
     def show(self, mode='mask', labels=True, colors=None, cmap=pl.cm.jet, **kwargs):
         """Display the ROI(s)
@@ -196,11 +182,10 @@ class ROI(np.ndarray):
 
         cmap = cmap
         fig = pl.gcf()
-        #ax = fig.add_subplot(111)
         ax = pl.gca()
         xlim,ylim = pl.xlim(),pl.ylim()
 
-        mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
+        mask = self.as_3d().copy().view(np.ndarray).astype(np.float32)
         if colors is None:
             colors = np.arange(1,len(mask)+1)
             colors_ = np.linspace(0, 1, len(self))
@@ -244,40 +229,7 @@ class ROI(np.ndarray):
         if mode == 'mask':
             return mask
 
-    def as3d(self):
-        """Return 3d version of object
 
-        Useful because the object can in principle be 2d or 3d
-        """
-        if self.ndim == 2:
-            return np.rollaxis(np.atleast_3d(self),-1)
-        else:
-            return self
-   
-    ### Special methods
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
 
-        for ca in ROI._custom_attrs:
-            setattr(self, ca, getattr(obj, ca, None))
-
-    # Commenting this out until I encounter a scenario where it proves necessary
-    #def __array_wrap__(self, out, context=None):
-    #    out._compute_pts()
-    #    return np.ndarray.__array_wrap__(self, out, context)
-
-    def __getslice__(self,start,stop):
-        #classic bug fix
-        return self.__getitem__(slice(start,stop))
-
-    def __getitem__(self, idx):
-        out = super(ROI,self).__getitem__(idx)
-        if not isinstance(out, ROI):
-            return out
-        if self.ndim == 2: #no mods when slicing a single roi
-            pass
-        elif self.ndim == 3: #multiple rois: need associated pts
-            for ca in ROI._custom_attrs_slice:
-                setattr(out, ca, getattr(out, ca, None)[idx])
-        return out
+if __name__ == '__main__':
+    roi = ROI(np.random.random([10,200,200]).astype(bool))

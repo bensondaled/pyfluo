@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from util import ProgressBar
+from .util import ProgressBar
 
 def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_place=False):  
     """Apply shifts to mov in order to correct motion

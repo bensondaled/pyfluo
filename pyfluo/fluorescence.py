@@ -1,13 +1,21 @@
-import numpy as np
+import numpy as np, pandas as pd
 import warnings, sys
-from util import sliding_window as sw
-from util import ProgressBar
 
-_pyver = sys.version_info.major
-if _pyver == 3:
-    xrange = range
+from .util import sliding_window as sw
+from .util import ProgressBar
+from .config import *
 
-def compute_dff(data, percentile=8., window_size=1., step_size=None, root_f=False, subtract_minimum=False, pad_mode='edge', in_place=False, return_f0=False, prog_bar=True):
+def compute_dff(data, percentile=8., window=1.):
+    # TODO: incorporate option for 3d np array (using old method, pandas breaks down for this)
+
+    _window = np.round(window / data.Ts)
+    def f_dff(x):
+        f0 = np.percentile(x, percentile)
+        return (x[-1]-f0)/f0
+    dff = pd.rolling_apply(data, _window, f_dff, min_periods=1)
+    return dff
+
+def compute_dff_old(data, percentile=8., window_size=1., step_size=None, root_f=False, subtract_minimum=False, pad_mode='edge', in_place=False, return_f0=False, prog_bar=True):
     """Compute delta-f-over-f
 
     Computes the percentile-based delta-f-over-f along the 0th axis of the supplied data.

@@ -2,19 +2,18 @@ import numpy as np
 import pylab as pl
 import cv2, warnings, sys
 from scipy.signal import resample as sp_resample
-import fluorescence
+from . import fluorescence
 
 _pyver = sys.version_info.major
 if _pyver == 3:
     xrange = range
 
-_numeric_types = [int, float, np.float16, np.float32, np.float64, np.float128, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
 
 class TSBase(np.ndarray):
-    __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['time', 'info', 'Ts', 'fs', '_ndim', '_class_name']
-    _custom_attrs_slice = ['time', 'info'] # should all be numpy arrays
-    def __new__(cls, data, _ndim=0, class_name='TSBase', time=None, info=None, Ts=None, dtype=np.float32):
+    __array_priority__ = 1.
+    _custom_attrs = ['Ts']
+
+    def __new__(cls, data, _ndim=0, Ts=None, dtype=np.float32):
         obj = np.asarray(data, dtype=dtype).view(cls)
       
         ### data
@@ -40,20 +39,6 @@ class TSBase(np.ndarray):
                     warnings.warn('Sampling interval does not match time vector. This may affect future operations.')
         obj.fs = 1./obj.Ts
         
-        ### info
-        obj.info = info
-        if obj.info is None:
-            obj.info = np.array([None for _ in xrange(len(obj))])
-
-        ### other attributes
-        #(none)
-
-        ### consistency checks
-        assert len(obj) == len(obj.time), 'Data and time vectors are different lengths.'
-        assert len(obj) == len(obj.info), 'Data and info vectors are different lengths.'
-
-        obj._class_name = class_name
-
         return obj
 
     def __array_finalize__(self, obj):
@@ -91,122 +76,4 @@ class TSBase(np.ndarray):
 
         out._update() 
         return out
-    def _update(self):
-        self.Ts = np.mean(np.diff(self.time))
-        self.fs = 1./self.Ts
-    def decompose(self):
-        # used to decompose the object into basic numpy arrays, stored in a structured np array
-        res = np.zeros((1),dtype=[('class','S100'),('data',self.dtype,self.shape),('time',self.time.dtype,self.time.shape),('Ts',type(self.Ts),1),('info',self.info.dtype,self.info.shape)])
-        res[-1] = (self._class_name, np.asarray(self), self.time, self.Ts, self.info)
-        return res
-    def reset_time(self):
-        self.time = self.time - self.time[0]
-    def t2i(self, t):
-        #returns the index most closely associated with time t
-        if any([isinstance(t,ty) for ty in [list,tuple,np.ndarray]]):
-            t = np.asarray(t)
-            end_shape = t.shape
-            tt = t.flatten()
-            idxs = np.array([np.argmin(np.abs(self.time - ti)) for ti in tt]).reshape(end_shape)
-            return idxs
-        elif type(t) in _numeric_types:
-            return np.argmin(np.abs(self.time - t)) 
-    def take(self, times, duration=None, step=1, pad=(0,0), enforce_duration=True, as_copy=True):
-        """Extract data from the time series between the times given
-
-        Parameters
-        ----------
-        times : list-like
-            list of time points, ex. [t0, t1]
-            or [t0_0, t0_1, t0_2...] if duration is specified
-        duration : list-like, number
-            value or list of durations associated with start times in *times*
-            if single value, taken to be same for all start times
-        step : int
-            step for slices
-        pad : list-like, number
-            time to include before or after times supplied
-            single number is used on both ends
-        enforce_duration : bool
-            when single duration given, enforce that every slice is the same size, by using object's fs instead of time vector
-        as_copy: bool
-            return the taken slices as copies
-
-        Returns
-        -------
-        Extracted data
-
-        Example
-        -------
-        Suppose you have a list of event times
-        event_times = [0.6,1.2,3.5...]
-        and you want to extract the 3 seconds after each time, with a 0.1s pad
-        result = trace.take(event_times, durations=3.0, pad=0.1)
-        """
-        times = np.asarray(times)
-        replace_t1_flag = False
-
-        if duration is None:
-            if times.ndim == 1:
-                times = np.array([times])
-            assert times.ndim == 2, 'times must be 2-item time boundaries unless durations are specified'
-            assert times.shape[1] == 2, 'times must be 2-item boundaries unless durations are specified'
-        elif duration is not None:
-            duration = np.asarray(duration)
-            if times.ndim == 0:
-                times = np.array([times])
-                assert duration.ndim == 0, 'More durations than times supplied'
-            assert times.ndim == 1, 'times must be 1-item start times when durations are specified'
-            assert ((duration.ndim==0) or (len(duration)==len(times))), 'duration must be single value or same number of values as times'
-            if duration.ndim == 0:
-                if enforce_duration:
-                    replace_t1_flag = True
-                duration = np.repeat(duration, len(times))
-            times = np.array([times,times+duration]).T
-
-        pad = np.asarray(pad)
-        if pad.ndim == 0:
-            pad = np.array([pad,pad])
-        pad[0] = -pad[0]
-        times += pad
-
-        idxs = self.t2i(times)
-        if replace_t1_flag:
-            idxs[:,1] = idxs[:,0] + duration*self.fs
-
-        slices = [slice(i0,i1,step) for i0,i1 in idxs]
-        sliced = [self[sl] for sl in slices]
-        if as_copy:
-            sliced = [i.copy() for i in sliced]
-
-        if len(sliced)==1:
-            res = sliced[0]
-        else:
-            res = sliced
-
-        return res
-
-    def resample(self, *args, **kwargs):
-        """Resample time series object using scipy's resample
-
-        Parameters are those of scipy.signal.resample, with *num* (number of samples in resampled result) as the only mandatory parameter
-        Difference is that this takes object's time vector into account automatically
-
-        If single param (num) is a float, taken to be multiple for current number of frames.
-        """
-        args = list(args)
-        args.reverse()
-        n = args.pop()
-        args.reverse()
-        if type(n) in [float,np.float16,np.float32,np.float64,np.float128]:
-            n = np.round(len(self)*n)
-
-        if 't' not in kwargs or kwargs['t']==None:
-            kwargs['t'] = self.time
-        new_data,new_time = sp_resample(self, n, *args, axis=0, **kwargs)
-        return self.__class__(data=new_data, time=new_time)
-
-    def compute_dff(self, *args, **kwargs):
-        """A convenience method for pyfluo.fluorescence.compute_dff
-        """
-        return fluorescence.compute_dff(self, *args, **kwargs)
+    

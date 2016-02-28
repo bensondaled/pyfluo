@@ -1,8 +1,6 @@
 import numpy as np
-import ts_base, movies, traces
+from . import movies
 Movie = movies.Movie
-Trace = traces.Trace
-TSBase = ts_base.TSBase
 
 def save(file_name, **items):
     """Save any number of objects in the current workspace into a single file

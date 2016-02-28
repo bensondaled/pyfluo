@@ -1,4 +1,3 @@
-from ts_base import TSBase
 import numpy as np
 import pylab as pl
 import warnings, sys

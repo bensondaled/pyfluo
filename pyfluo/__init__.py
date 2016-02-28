@@ -1,5 +1,5 @@
 from .movies import Movie
-from .traces import Trace
+from .series import Series
 from .roi import ROI, select_roi
 from .io import save, load
 from .fluorescence import compute_dff
