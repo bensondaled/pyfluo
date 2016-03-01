@@ -13,29 +13,23 @@ class Movie(np.ndarray):
 
     Parameters
     ----------
-    data : np.ndarray, str, pyfluo.Tiff 
+    data : np.ndarray, str, pyfluo.Tiff, pyfluo.AVI
         input data, see below
-    time : [optional] np.ndarray, list
-        time vector with n elements
     Ts : [optional] float
         sampling period
-    info : [optional] list, np.ndarray
-        info vector with n elements
 
     Input data can be supplied in multiple ways:
     (1) as a numpy array of shape (n,y,x)
-    (2) a string corresopnding to a file path to a tiff
-    (3) a pyfluo.Tiff object
+    (2) a string corresponding to a file path to a tiff/avi
+    (3) a pyfluo.Tiff/AVI object
 
     The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0. 
-
-    It should be noted that error checking with regard to the time vector is still under progress. All tested operations are functional, but thorough testing has not yet been performed.
     """
 
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     _custom_attrs = ['Ts']
     
-    def __new__(cls, data, Ts=1, dtype=np.float32):
+    def __new__(cls, data, Ts=1, dtype=np.uint16):
         
         if isinstance(data, Tiff) or isinstance(data, AVI):
             data = data.data.copy()

@@ -135,7 +135,7 @@ class ROI(np.ndarray):
 
         selfpts = []
         for r in data:
-            pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[findContoursResultIdx])
+            pts = np.array(cv2.findContours(r.astype(np.uint8), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)[findContoursResultIdx])
             if len(pts) > 1:
                 pts = np.concatenate(pts)
             pts = pts.squeeze()
@@ -215,8 +215,6 @@ class ROI(np.ndarray):
 
             alpha = kwargs.pop('alpha', 0.6)
             ims=ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
-            cbar = fig.colorbar(ims)
-            cbar.solids.set_edgecolor("face")
             pl.draw()
         
         if mode == 'pts' or labels:

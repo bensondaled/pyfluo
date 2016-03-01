@@ -6,7 +6,6 @@ sklNMF = NMF
 import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage import label
-from .util import display_time_elapsed
 import itertools as it
 
 _pyver = sys.version_info.major

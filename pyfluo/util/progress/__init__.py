@@ -1,2 +1,2 @@
-from .progress import *
+from .progress import Progress
 from .progressbar import *
