@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from .util import ProgressBar, Progress
+from .config import *
 
 def motion_correct(mov, compute_kwargs, apply_kwargs):
     """Perform motion correction using template matching.
@@ -17,7 +18,7 @@ def motion_correct(mov, compute_kwargs, apply_kwargs):
     return mov_cor,template,vals
 
 
-def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_place=False):  
+def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=False, in_place=False):  
     """Apply shifts to mov in order to correct motion
 
     Parameters
@@ -28,6 +29,10 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_plac
         obtained from the function compute_motion, list of [x_shift, y_shift] for each frame. if more than 2 columns, assumes first 2 are the desired ones
     interpolation : def
         interpolation flag for cv2.warpAffine, defaults to cv2.INTER_LINEAR
+    crop : bool / int
+        whether to crop image to borders of correction. if True, crops to maximum adjustments. if int, crops that number of pixels off all sides
+    in_place : bool
+        in place
 
     This supports the correction of single frames as well, given a single shift
     """
@@ -49,6 +54,18 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, in_plac
         sh_x_n, sh_y_n = shifts[i]
         M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n]])                 
         mov[i] = cv2.warpAffine(frame,M,(w,h),flags=interpolation)
+
+    if crop:
+        if crop == True:
+            ymax = min([0, min(shifts[:,0])]) or None
+            xmax = min([0, min(shifts[:,1])]) or None
+            ymin = max(shifts[:,0])
+            xmin = max(shifts[:,1])
+        elif any([isinstance(crop, dt) for dt in PF_numeric_types]):
+            ymax,xmax = -crop,-crop
+            ymin,xmin = crop,crop
+        mov = mov[:, ymin:ymax, xmin:xmax]
+
     return mov.squeeze()
 
 def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, verbose=True):
