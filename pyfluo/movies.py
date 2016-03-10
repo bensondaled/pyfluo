@@ -29,7 +29,7 @@ class Movie(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     _custom_attrs = ['Ts']
     
-    def __new__(cls, data, Ts=1, dtype=np.uint16):
+    def __new__(cls, data, Ts=1):
         
         if isinstance(data, Tiff) or isinstance(data, AVI):
             data = data.data.copy()
@@ -41,7 +41,7 @@ class Movie(np.ndarray):
     
         if not isinstance(data, np.ndarray):
             data = np.asarray(data)
-        obj = data.astype(dtype).view(cls)
+        obj = data.view(cls)
         obj.Ts = Ts
 
         return obj
@@ -94,11 +94,11 @@ class Movie(np.ndarray):
         loop : bool 
             repeat playback upon finishing
         fps : float
-            playback rate in frames per second. Defaults to object's fs attribute
+            playback rate in frames per second. Defaults to 1/Ts
         scale : float 
             scaling factor to resize playback images
         contrast : float
-            scaling factor for pixel values
+            scaling factor for pixel values (clips so as to produce contrast)
         show_time : bool
             show time on image
         backend : module 
@@ -106,16 +106,16 @@ class Movie(np.ndarray):
         fontsize : float
             to display time
 
-        During playback, 'q' can be used to quit when playback window has focus
-        Other controls:
+        Playback controls (window must have focus):
             'f' : faster
             's' : slower
             'p' : pause / continue
             'r' : reverse
             '=' : zoom in
             '-' : zoom out
+            'q' : quit
 
-        Many params are not implemented in the matplotlib backend option
+        Note: many params are not implemented in the matplotlib backend option
             
         """
         if fps==None:
@@ -145,7 +145,8 @@ class Movie(np.ndarray):
 
         elif backend == cv2:
             title = 'p / q / f / s / r / = / -'
-            minn,maxx = self.min(),self.max()
+            if contrast != 1.0: # for speed
+                minn,maxx = self.min(),self.max()
         
             current_idx = 0
             wait = 1./fpms
@@ -156,12 +157,13 @@ class Movie(np.ndarray):
 
                     # get frame
                     size = tuple((scale*np.array(self.shape)[-1:0:-1]).astype(int))
-                    font_size = scale * fontsize * min(self[0].shape)/250.
+                    font_size = scale * fontsize * min(self[0].shape)/450.
                     t = self.Ts*current_idx
                     fr = self[current_idx]
-                    fr = contrast * (fr-minn)/(maxx-minn)
-                    fr[fr>1.0] = 1.0
-                    fr[fr<0.0] = 0.0
+                    if contrast != 1.0: # for speed
+                        fr = contrast * (fr-minn)/(maxx-minn)
+                        fr[fr>1.0] = 1.0
+                        fr[fr<0.0] = 0.0
                     fr = cv2.resize(fr,size)
                     if show_time:
                         cv2.putText(fr, '{:0.3f}'.format(t), (5,int(30*font_size)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (120,100,80), thickness=1)

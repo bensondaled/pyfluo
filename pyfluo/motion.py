@@ -18,7 +18,7 @@ def motion_correct(mov, compute_kwargs, apply_kwargs):
     return mov_cor,template,vals
 
 
-def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=False, in_place=False):  
+def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=False, in_place=False, verbose=True):
     """Apply shifts to mov in order to correct motion
 
     Parameters
@@ -33,6 +33,8 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
         whether to crop image to borders of correction. if True, crops to maximum adjustments. if int, crops that number of pixels off all sides
     in_place : bool
         in place
+    verbose : bool
+        display progress
 
     This supports the correction of single frames as well, given a single shift
     """
@@ -50,10 +52,17 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
     assert shifts.ndim==2 and shifts.shape[1]==2
 
     t,h,w=mov.shape
+    if verbose:
+        pbar = ProgressBar(maxval=len(mov)).start()
     for i,frame in enumerate(mov):
         sh_x_n, sh_y_n = shifts[i]
         M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n]])                 
         mov[i] = cv2.warpAffine(frame,M,(w,h),flags=interpolation)
+        if verbose:
+            pbar.update(i)
+
+    if verbose:
+        pbar.finish()
 
     if crop:
         if crop == True:
@@ -68,7 +77,7 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
 
     return mov.squeeze()
 
-def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, verbose=True):
+def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, resample=True, verbose=True):
         """Compute template, shifts, and correlations associated with template-matching-based motion correction
 
         Parameters
@@ -81,6 +90,8 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
             if array, template to be used. if function, that used to compute template (defaults to np.median)
         template_matching_method : opencv constant
             method parameter for cv2.matchTemplate
+        resample : bool
+            if movie has more than 10^8 pixels, randomly resample to find template
         verbose : bool
             show progress details, defaults to True
         
@@ -107,10 +118,14 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
        
         # Parse/generate template
         if callable(template):
+            if resample and np.product(mov.shape)>1e8:
+                resamp = np.random.choice(np.arange(len(mov)), replace=False, size=np.floor(1e8/np.product(mov.shape[1:])))
+            else:
+                resamp = ...
             if verbose:
                 print('Computing template:', flush=True)
             with Progress(verbose=verbose):
-                template=template(mov,axis=0)            
+                template=template(mov[resamp],axis=0)            
         elif not isinstance(template, np.ndarray):
             raise Exception('Template parameter should be an array or function')
         template = template.astype(np.float32)
