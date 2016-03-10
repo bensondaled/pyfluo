@@ -1,5 +1,5 @@
 # External imports
-import pandas as pd, numpy as np
+import pandas as pd, numpy as np, matplotlib.pyplot as pl
 import warnings, cv2
 
 # Internal imports
@@ -30,6 +30,10 @@ class Series(pd.DataFrame):
         return pd.Series
 
     def plot(self, *args, gap=0.1, **kwargs):
+
+        # Overwrite default cmap
+        if 'cmap' not in kwargs:
+            kwargs['cmap'] = pl.cm.viridis
 
         # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
         stacked = kwargs.pop('stacked', False)

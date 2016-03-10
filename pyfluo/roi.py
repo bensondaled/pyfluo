@@ -171,7 +171,7 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='mask', labels=True, colors=None, cmap=pl.cm.jet, **kwargs):
+    def show(self, mode='mask', labels=True, colors=None, cmap=pl.cm.viridis, **kwargs):
         """Display the ROI(s)
         
         Parameters
