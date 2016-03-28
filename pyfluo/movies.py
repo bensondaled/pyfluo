@@ -4,7 +4,7 @@ from matplotlib import animation
 import cv2, sys, tifffile, operator
 
 from .roi import ROI, select_roi
-from .images import Tiff, AVI
+from .images import Tiff, AVI, HDF5
 from .series import Series
 from .config import *
 
@@ -20,8 +20,8 @@ class Movie(np.ndarray):
 
     Input data can be supplied in multiple ways:
     (1) as a numpy array of shape (n,y,x)
-    (2) a string corresponding to a file path to a tiff/avi
-    (3) a pyfluo.Tiff/AVI object
+    (2) a string corresponding to a file path to a tiff/avi/hdf5
+    (3) a pyfluo.Tiff/AVI/hdf5 object
 
     The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0. 
     """
@@ -31,13 +31,15 @@ class Movie(np.ndarray):
     
     def __new__(cls, data, Ts=1):
         
-        if isinstance(data, Tiff) or isinstance(data, AVI):
+        if isinstance(data, Tiff) or isinstance(data, AVI) or isinstance(data, HDF5):
             data = data.data.copy()
         elif any([isinstance(data,st) for st in PF_str_types]):
             if data.endswith('.tif'):
                 data = Tiff(data).data
             elif data.endswith('.avi'):
                 data = AVI(data).data
+            elif data.endswith('.h5') or data.endswith('.hdf5'):
+                data = HDF5(data).data
     
         if not isinstance(data, np.ndarray):
             data = np.asarray(data)
