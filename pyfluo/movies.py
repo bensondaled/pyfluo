@@ -39,7 +39,9 @@ class Movie(np.ndarray):
             elif data.endswith('.avi'):
                 data = AVI(data).data
             elif data.endswith('.h5') or data.endswith('.hdf5'):
-                data = HDF5(data).data
+                h = HDF5(data)
+                data = h.data
+                Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
     
         if not isinstance(data, np.ndarray):
             data = np.asarray(data)
