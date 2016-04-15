@@ -21,13 +21,13 @@ class HDF5(object):
     -----
     Currently assumes greyscale images, using only 1 of 3 channels when loading
     """
-    def __init__(self, file_path, pbar=True):
+    def __init__(self, file_path, reslice=slice(None,None)):
         self.file_path = file_path
         vc = h5py.File(self.file_path, 'r')
 
         try:
-            mov = vc['mov']
-            ts = vc['ts']
+            mov = vc['mov'][reslice]
+            ts = vc['ts'][reslice]
         except:
             raise Exception('\'mov\' and/or \'ts\' fields not found in HDF5 file.')
 

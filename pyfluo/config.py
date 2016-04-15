@@ -10,7 +10,7 @@ if _pyver == 3:
     PF_str_types = [str]
 elif _pyver == 2:
     PF_str_types = [str, unicode]
-PF_numeric_types = [int, float, np.float16, np.float32, np.float64, np.float128, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
+PF_numeric_types = [int, float] + np.sctypes['float'] + np.sctypes['int'] + np.sctypes['uint']
 
 # User settings
 def _parse_settings(stgs):

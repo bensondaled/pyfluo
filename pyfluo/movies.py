@@ -29,17 +29,17 @@ class Movie(np.ndarray):
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
     _custom_attrs = ['Ts']
     
-    def __new__(cls, data, Ts=1):
+    def __new__(cls, data, Ts=1, **kwargs):
         
         if isinstance(data, Tiff) or isinstance(data, AVI) or isinstance(data, HDF5):
             data = data.data.copy()
         elif any([isinstance(data,st) for st in PF_str_types]):
             if data.endswith('.tif'):
-                data = Tiff(data).data
+                data = Tiff(data, **kwargs).data
             elif data.endswith('.avi'):
-                data = AVI(data).data
+                data = AVI(data, **kwargs).data
             elif data.endswith('.h5') or data.endswith('.hdf5'):
-                h = HDF5(data)
+                h = HDF5(data, **kwargs)
                 data = h.data
                 Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
     
