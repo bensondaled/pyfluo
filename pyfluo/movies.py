@@ -20,8 +20,8 @@ class Movie(np.ndarray):
 
     Input data can be supplied in multiple ways:
     (1) as a numpy array of shape (n,y,x)
-    (2) a string corresponding to a file path to a tiff/avi/hdf5
-    (3) a pyfluo.Tiff/AVI/hdf5 object
+    (2) a string [or list thereof] corresponding to a file path to a tiff/avi/hdf5
+    (3) a pyfluo.Tiff/AVI/hdf5 object [or list thereof]
 
     The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0. 
     """
@@ -33,15 +33,32 @@ class Movie(np.ndarray):
         
         if isinstance(data, Tiff) or isinstance(data, AVI) or isinstance(data, HDF5):
             data = data.data.copy()
+        elif isinstance(data, list) and (isinstance(data[0], Tiff) or isinstance(data[0], AVI) or isinstance(data[0], HDF5)):
+            data = np.concatenate([d.data.copy() for d in data])
         elif any([isinstance(data,st) for st in PF_str_types]):
             if data.endswith('.tif'):
-                data = Tiff(data, **kwargs).data
+                t = Tiff(data, **kwargs)
+                data = t.data
+                Ts = t.Ts or Ts
             elif data.endswith('.avi'):
                 data = AVI(data, **kwargs).data
             elif data.endswith('.h5') or data.endswith('.hdf5'):
                 h = HDF5(data, **kwargs)
                 data = h.data
                 Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
+        elif isinstance(data, list) and any([isinstance(data[0],st) for st in PF_str_types]):
+            if data[0].endswith('.tif'):
+                t = Tiff(data, **kwargs)
+                data = t.data
+                Ts = t.Ts or Ts
+            elif data[0].endswith('.avi'):
+                data = [AVI(d, **kwargs).data for d in data]
+                data = np.concatenate(data)
+            elif data[0].endswith('.h5') or data.endswith('.hdf5'):
+                h = [HDF5(d, **kwargs) for d in data]
+                data = [hi.data for hi in h]
+                Ts = h[0].Ts #overwrites any supplied Ts with hdf5 file's stored time info, and assumes all multiple files have uniform Ts, for now
+                data = np.concatenate(data)
     
         if not isinstance(data, np.ndarray):
             data = np.asarray(data)
@@ -90,7 +107,7 @@ class Movie(np.ndarray):
                     roi.show()
         
         return pro
-    def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, fontsize=1, **kwargs):
+    def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, fontsize=1, rolling_mean=1, **kwargs):
         """Play the movie
         
         Parameter
@@ -109,6 +126,8 @@ class Movie(np.ndarray):
             package to use for playback (ex. pl or cv2)
         fontsize : float
             to display time
+        rolling_mean : int
+            number of frames to avg in display
 
         Playback controls (window must have focus):
             'f' : faster
@@ -149,8 +168,7 @@ class Movie(np.ndarray):
 
         elif backend == cv2:
             title = 'p / q / f / s / r / = / -'
-            if contrast != 1.0: # for speed
-                minn,maxx = self.min(),self.max()
+            minn,maxx = self.min(),self.max()
         
             current_idx = 0
             wait = 1./fpms
@@ -163,11 +181,10 @@ class Movie(np.ndarray):
                     size = tuple((scale*np.array(self.shape)[-1:0:-1]).astype(int))
                     font_size = scale * fontsize * min(self[0].shape)/450.
                     t = self.Ts*current_idx
-                    fr = self[current_idx]
-                    if contrast != 1.0: # for speed
-                        fr = contrast * (fr-minn)/(maxx-minn)
-                        fr[fr>1.0] = 1.0
-                        fr[fr<0.0] = 0.0
+                    fr = self[current_idx:current_idx+rolling_mean].mean(axis=0)
+                    fr = contrast * (fr-minn)/(maxx-minn)
+                    fr[fr>1.0] = 1.0
+                    fr[fr<0.0] = 0.0
                     fr = cv2.resize(fr,size)
                     if show_time:
                         cv2.putText(fr, '{:0.3f}'.format(t), (5,int(30*font_size)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (120,100,80), thickness=1)
@@ -175,8 +192,8 @@ class Movie(np.ndarray):
                     
                     # update indices
                     opfunc = [operator.add, operator.sub][oper_idx]
-                    current_idx = opfunc(current_idx, 1)
-                    if current_idx == len(self):
+                    current_idx = opfunc(current_idx, rolling_mean)
+                    if current_idx >= len(self):
                         if not loop:
                             break
                         elif loop:
@@ -214,30 +231,28 @@ class Movie(np.ndarray):
         """
         zp = self.project(show=False, method=kwargs.pop('projection_method',np.std))
         return select_roi(zp, *args, **kwargs)
-    def extract(self, roi, method=np.mean, as_pd=True):
+    def extract(self, roi):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied
         
         Parameters
         ----------
         roi : pyfluo.ROI
             the rois over which to extract data
-        method : def 
-            the function by which to convert the data within an ROI to a single value. Defaults to np.mean
-        as_pd : bool
-            return as pandas object instead of pyfluo
-            
+        
         Returns
         -------
         Trace object, with multiple columns corresponding to multiple ROIs
         """
         if roi.ndim == 3:
             flatshape = (len(roi),-1)
+            roi_norm = roi / roi.sum(axis=(1,2))[:,None,None]
         elif roi.ndim == 2:
             flatshape = -1
-        roi_flat = roi.reshape(flatshape)
+            roi_norm = roi / roi.sum()
+        roi_norm = roi_norm.reshape(flatshape)
         self_flat = self.reshape((len(self),-1)).T
-        dp = (roi_flat.dot(self_flat)).T
-        trace = dp/roi_flat.sum(axis=-1)
+        dp = (roi_norm.dot(self_flat)).T
+        trace = dp
         
         return Series(trace, index=self.Ts*np.arange(len(self)), Ts=self.Ts)
 

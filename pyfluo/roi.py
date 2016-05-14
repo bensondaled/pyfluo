@@ -171,13 +171,18 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='mask', labels=True, colors=None, cmap=pl.cm.viridis, **kwargs):
+    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=2), **kwargs):
         """Display the ROI(s)
+
+        NEEDS FIXING
+        TODO: adjust how masks are coloured such that the image itself is RGB and doesn't need a colormap to depend on
         
         Parameters
         ----------
-        mode : 'mask', 'pts'
-            specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points (those originally selected)
+        mode : 'mask', 'pts', 'contours'
+            specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points. If 'contour', draws contours around rois
+            mask and contours can be used together, ex. 'mask,contours'
+            **contours and pts currently under construction
         labels : bool
             display labels over ROIs
         colors : list-like
@@ -186,6 +191,8 @@ class ROI(np.ndarray):
             currently buggy for 'pts' mode
         cmap : matplotlib.LinearSegmentedColormap
             color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
+        contours_kwargs : dict
+            for cv2.drawContours
         kwargs : dict
             any arguments accepted by matplotlib.imshow
 
@@ -208,14 +215,25 @@ class ROI(np.ndarray):
             colors_ = colors
         colors_ = cmap(colors_)
 
-        if mode == 'mask':
+        if 'contours' in mode:
+            base = np.zeros(mask.shape[1:]+(4,))
+            for i,p in enumerate(self.pts):
+                cv2.drawContours(base, [p], -1, colors_[i], **contours_kwargs)
+            base[...,-1] = (base.sum(axis=-1)!=0).astype(float)
+            ims=ax.imshow(base, interpolation='nearest', **kwargs)
+            pl.draw()
+
+        if 'mask' in mode:
             mask *= colors[...,np.newaxis,np.newaxis]
             mask = np.max(mask, axis=0)
             mask[mask==0] = None #so background doesn't steal one color from colormap, offsetting correspondence to all other uses of cmap
 
             alpha = kwargs.pop('alpha', 0.6)
+
+            #cv2.drawContours(mask, self.pts, -1, (255,255,255), **contours_kwargs)
             ims=ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
             pl.draw()
+
         
         if mode == 'pts' or labels:
             if self.ndim == 2:

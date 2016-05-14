@@ -7,10 +7,7 @@ import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage import label
 import itertools as it
-
-_pyver = sys.version_info.major
-if _pyver == 3:
-    xrange = range
+from .util import ProgressBar, Progress
 
 def grid(data, rows=0.5, cols=0.5):
     """Generate index slices to split image/movie into grid
@@ -75,7 +72,7 @@ def ipca(mov, components=50, batch=1000):
 
     return eigenseries, eigenframes, proj_frame_vectors        
    
-def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh', show_status=True):
+def pca_ica(mov, components=50, batch=10000, mu=0.5, ica_func='logcosh', verbose=True):
     """Perform iterative PCA/ICA ROI extraction
 
     Parameters
@@ -90,7 +87,7 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh', show_sta
         from 0-1. In spatiotemporal ICA, closer to 1 means more weight on spatial
     ica_func : str 
         cdf for entropy maximization in ICA
-    show_status : bool
+    verbose : bool
         show time elapsed while running
 
     Returns
@@ -98,11 +95,8 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh', show_sta
     Array of shape (n,y,x) where n is number of components, and y,x correspond to shape of mov
 
     """
-    if show_status:
-        p = mup.Process(target=display_time_elapsed)
-        p.start()
-
-    eigenseries, eigenframes,_proj = ipca(mov, components, batch)
+    with Progress(msg='PCA', verbose=verbose):
+        eigenseries, eigenframes,_proj = ipca(mov, components, batch)
     # normalize the series
 
     frame_scale = mu / np.max(eigenframes)
@@ -117,38 +111,19 @@ def pca_ica(mov, components=50, batch=1000, mu=0.5, ica_func='logcosh', show_sta
     # and compute ICA on them
 
     eigenstuff = np.concatenate([n_eigenframes, n_eigenseries])
+    
+    with Progress(msg='ICA', verbose=verbose):
 
-    ica = FastICA(n_components=components, fun=ica_func)
-    joint_ics = ica.fit_transform(eigenstuff)
+        ica = FastICA(n_components=components, fun=ica_func)
+        joint_ics = ica.fit_transform(eigenstuff)
 
     # extract the independent frames
     num_frames, h, w = mov.shape
     frame_size = h * w
     ind_frames = joint_ics[:frame_size, :]
     ind_frames = np.reshape(ind_frames.T, (components, h, w))
-    
-    if show_status:  p.terminate()
-    
+        
     return ind_frames  
-
-def ipca_denoise(mov, components=50, batch=1000):
-    """Denoise a movie using IPCA
-
-    Parameters
-    ----------
-    mov : pyfluo.Movie
-        input movie
-    components : int
-        number of components for IPCA
-    batch : int:
-        batch argument for IPCA
-
-    Returns
-    -------
-    clean_vectors : np.ndarray
-    """
-    _, _, clean_vectors = ipca(mov, components, batch)
-    return np.reshape(clean_vectors.T, np.shape(mov))
 
 def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='components'):
     T,h,w=mov.shape
@@ -160,7 +135,7 @@ def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='compon
     space_components = estimator.components.reshape((n_components,h,w))
     return space_components,time_components
         
-def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1]):
+def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], verbose=True):
         """
         Given the spatial components output of the IPCA_stICA function extract possible regions of interest
         The algorithm estimates the significance of a components by thresholding the components after gaussian smoothing
@@ -170,11 +145,13 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1]):
         comps : np.ndarray 
             spatial components
         n_std : float 
-            number of standard deviations above the mean of the spatial component to be considered signiificant
+            number of (median-estimated) standard deviations above the median of the spatial component to be considered significant
         sigma : int, list
             parameter for scipy.ndimage.filters.gaussian_filter (i.e. (sigma_y, sigma_x))
         pixels_thresh : list
             [minimum number of pixels in an roi to be considered an roi, maximum]
+        verbose : bool
+            show status
         """        
 
         if pixels_thresh[1] == -1:
@@ -182,32 +159,30 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1]):
 
         if comps.ndim == 2:
             comps = np.array([comps])
-        n_comps, width, height=comps.shape
-        rowcols=int(np.ceil(np.sqrt(n_comps)))
+        n_comps, width, height = comps.shape
         
-        allMasks = []
-        maskgrouped = []
+        all_masks = []
+        if verbose:
+            pbar = ProgressBar(maxval=len(comps)).start()
         for k,comp in enumerate(comps):
-            comp = gaussian_filter(comp, sigma)
+            if sigma:
+                comp = gaussian_filter(comp, sigma)
             
-            maxc = np.percentile(comp,99)
-            minc = np.percentile(comp,1)
-            q75, q25 = np.percentile(comp, [75 ,25])
-            iqr = q75 - q25
-            minCompValuePos=np.median(comp)+n_std*iqr/1.35  
-            minCompValueNeg=np.median(comp)-n_std*iqr/1.35            
+            iqr = np.diff(np.percentile(comp, [25 ,75]))
+            thresh_from_median = n_std * iqr / 1.35
+            sig_pixels = np.abs(comp-np.median(comp)) >= thresh_from_median
 
-            # got both positive and negative large magnitude pixels
-            compabspos=comp*(comp>minCompValuePos)-comp*(comp<minCompValueNeg)
+            lab, n = label(sig_pixels, np.ones((3,3)))
+            all_masks += [np.asarray(lab==l) for l in np.unique(lab) if l>0 and np.sum(lab==l)>=pixels_thresh[0] and np.sum(lab==l)<=pixels_thresh[1]]
 
-            #height, width = compabs.shape
-            labeledpos, n = label(compabspos>0, np.ones((3,3)))
-            maskgrouped.append(labeledpos)
-            for jj in xrange(1,n+1):
-                tmp_mask=np.asarray(labeledpos==jj)
-                if np.sum(tmp_mask) >= pixels_thresh[0] and np.sum(tmp_mask) <= pixels_thresh[1]:
-                    allMasks.append(tmp_mask)
-        return np.array(allMasks)#, np.array(maskgrouped)
+            if verbose:
+                pbar.update(k)
+        if verbose:
+            pbar.finish()
+
+        all_masks = np.array(all_masks)
+       
+        return all_masks
 
 def local_correlations(self,eight_neighbours=False):
      # Output:
@@ -259,38 +234,3 @@ def local_correlations(self,eight_neighbours=False):
 
      return rho
      
-def partition_fov_kmeans(self,tradeoff_weight=.5,fx=.25,fy=.25,n_clusters=4,max_iter=500):
-    """ 
-    Partition the FOV in clusters that are grouping pixels close in space and in mutual correlation
-                    
-    Parameters
-    ------------------------------
-    tradeoff_weight:between 0 and 1 will weight the contributions of distance and correlation in the overall metric
-    fx,fy: downsampling factor to apply to the movie 
-    n_clusters,max_iter: KMeans algorithm parameters
-    
-    Outputs
-    -------------------------------
-    fovs:array 2D encoding the partitions of the FOV
-    mcoef: matric of pairwise correlation coefficients
-    distanceMatrix: matrix of picel distances
-    
-    Example
-    
-    """
-    m1=self.copy()
-    m1.resize(fx,fy)
-    T,h,w=m1.mov.shape
-    Y=np.reshape(m1.mov,(T,h*w))
-    mcoef=np.corrcoef(Y.T)
-    idxA,idxB =  np.meshgrid(range(w),range(h))
-    coordmat=np.vstack((idxA.flatten(),idxB.flatten()))
-    distanceMatrix=euclidean_distances(coordmat.T)
-    distanceMatrix=distanceMatrix/np.max(distanceMatrix)
-    estim=KMeans(n_clusters=n_clusters,max_iter=max_iter)
-    kk=estim.fit(tradeoff_weight*mcoef-(1-tradeoff_weight)*distanceMatrix)
-    labs=kk.labels_
-    fovs=np.reshape(labs,(h,w))
-    fovs=cv2.resize(np.uint8(fovs),(w,h),1/fx,1/fy,interpolation=cv2.INTER_NEAREST)
-    return np.uint8(fovs), mcoef, distanceMatrix
-   

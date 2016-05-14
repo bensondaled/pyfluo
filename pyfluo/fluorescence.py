@@ -11,6 +11,6 @@ def compute_dff(data, percentile=8., window=1.):
     def f_dff(x):
         f0 = np.percentile(x, percentile)
         return (x[-1]-f0)/f0
-    dff = pd.rolling_apply(data, _window, f_dff, min_periods=1)
+    dff = pd.rolling_apply(data, window=_window, func=f_dff, min_periods=1)
     return dff
 

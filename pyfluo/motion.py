@@ -3,7 +3,7 @@ import cv2
 from .util import ProgressBar, Progress
 from .config import *
 
-def motion_correct(mov, compute_kwargs, apply_kwargs):
+def motion_correct(mov, compute_kwargs={}, apply_kwargs={}):
     """Perform motion correction using template matching.
    
     Returns
@@ -53,6 +53,7 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
 
     t,h,w=mov.shape
     if verbose:
+        print('Applying shifts:')
         pbar = ProgressBar(maxval=len(mov)).start()
     for i,frame in enumerate(mov):
         sh_x_n, sh_y_n = shifts[i]
@@ -66,18 +67,19 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
 
     if crop:
         if crop == True:
-            ymax = min([0, min(shifts[:,0])]) or None
-            xmax = min([0, min(shifts[:,1])]) or None
-            ymin = max(shifts[:,0])
-            xmin = max(shifts[:,1])
+            ymax = int(min([0, min(shifts[:,0])]) or None)
+            xmax = int(min([0, min(shifts[:,1])]) or None)
+            ymin = int(max(shifts[:,0]))
+            xmin = int(max(shifts[:,1]))
         elif any([isinstance(crop, dt) for dt in PF_numeric_types]):
+            crop = int(crop)
             ymax,xmax = -crop,-crop
             ymin,xmin = crop,crop
         mov = mov[:, ymin:ymax, xmin:xmax]
 
     return mov.squeeze()
 
-def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, resample=True, verbose=True):
+def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, resample=5, verbose=True):
         """Compute template, shifts, and correlations associated with template-matching-based motion correction
 
         Parameters
@@ -90,8 +92,8 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
             if array, template to be used. if function, that used to compute template (defaults to np.median)
         template_matching_method : opencv constant
             method parameter for cv2.matchTemplate
-        resample : bool
-            if movie has more than 10^8 pixels, randomly resample to find template
+        resample : int
+            avg every n frames before computing template
         verbose : bool
             show progress details, defaults to True
         
@@ -118,14 +120,12 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
        
         # Parse/generate template
         if callable(template):
-            if resample and np.product(mov.shape)>1e8:
-                resamp = np.random.choice(np.arange(len(mov)), replace=False, size=np.floor(1e8/np.product(mov.shape[1:])))
+            if resample>1:
+                movr = np.array([np.mean(mov[i*resample:i*resample+resample], axis=0) for i in np.arange(0,len(mov)//resample)]) 
             else:
-                resamp = ...
-            if verbose:
-                print('Computing template:', flush=True)
-            with Progress(verbose=verbose):
-                template=template(mov[resamp],axis=0)            
+                movr = mov
+            with Progress(msg='Computing template', verbose=verbose):
+                template=template(movr,axis=0)            
         elif not isinstance(template, np.ndarray):
             raise Exception('Template parameter should be an array or function')
         template = template.astype(np.float32)
