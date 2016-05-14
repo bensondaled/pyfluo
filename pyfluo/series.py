@@ -44,6 +44,7 @@ class Series(pd.DataFrame):
             to_plot = to_plot + to_add
         else:
             to_plot = self
+        kwargs['legend'] = kwargs.get('legend', False)
 
         super(Series, to_plot).plot(*args, **kwargs)
 
