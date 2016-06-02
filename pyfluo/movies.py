@@ -1,7 +1,7 @@
 import numpy as np, pylab as pl, pandas as pd
 from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
-import cv2, sys, tifffile, operator
+import cv2, sys, tifffile, operator, os
 
 from .roi import ROI, select_roi
 from .images import Tiff, AVI, HDF5
@@ -27,19 +27,26 @@ class Movie(np.ndarray):
     """
 
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['Ts']
+    _custom_attrs = ['Ts', 'tiff_tags', 'i2c', 'filename']
     
     def __new__(cls, data, Ts=1, **kwargs):
-        
+       
+        tiff_tags = None
+        filename = ''
+        i2c = None
+
         if isinstance(data, Tiff) or isinstance(data, AVI) or isinstance(data, HDF5):
             data = data.data.copy()
         elif isinstance(data, list) and (isinstance(data[0], Tiff) or isinstance(data[0], AVI) or isinstance(data[0], HDF5)):
             data = np.concatenate([d.data.copy() for d in data])
         elif any([isinstance(data,st) for st in PF_str_types]):
+            filename = os.path.splitext(os.path.split(data)[-1])[0]
             if data.endswith('.tif'):
                 t = Tiff(data, **kwargs)
                 data = t.data
                 Ts = t.Ts or Ts
+                tiff_tags = t.tiff_tags
+                i2c = t.i2c
             elif data.endswith('.avi'):
                 data = AVI(data, **kwargs).data
             elif data.endswith('.h5') or data.endswith('.hdf5'):
@@ -64,6 +71,9 @@ class Movie(np.ndarray):
             data = np.asarray(data)
         obj = data.view(cls)
         obj.Ts = Ts
+        obj.tiff_tags = tiff_tags 
+        obj.i2c = i2c
+        obj.filename = filename
 
         return obj
 
@@ -316,7 +326,3 @@ class Movie(np.ndarray):
                 vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
             vw.release()
 
-    def motion_correct(self, *args, **kwargs):
-        """Convenience method for pyfluo.motion.motion_correct
-        """
-        return motion_correct(self, *args, **kwargs)

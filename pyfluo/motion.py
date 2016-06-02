@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+import cv2, h5py
 from .util import ProgressBar, Progress
 from .config import *
 
@@ -17,6 +17,15 @@ def motion_correct(mov, compute_kwargs={}, apply_kwargs={}):
     mov_cor = apply_motion_correction(mov, vals, **apply_kwargs)
     return mov_cor,template,vals
 
+def retrieve_motion_correction_data(datafile, filename):
+    with h5py.File(datafile) as mc: 
+        shifts_local = np.asarray(mc[filename]['shifts'])
+        shifts_global = np.asarray(mc['global_shifts'])   
+        global_names = mc['global_shifts'].attrs['filenames']
+    global_names = [i.decode('UTF8') for i in global_names]
+    shift_global = shifts_global[global_names.index(filename)]
+    shifts = (shifts_local+shift_global)[:,:2]
+    return shifts
 
 def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=False, in_place=False, verbose=True):
     """Apply shifts to mov in order to correct motion
@@ -41,13 +50,17 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
     if not in_place:
         mov=mov.copy()
 
-    if shifts.dtype.names:
-        shifts = shifts[['y_shift','x_shift']].view((float, 2))
-
     if mov.ndim==2:
         mov = mov[None,...]
+
+    if type(shifts) in [str] and mov.filename:
+        shifts = retrieve_motion_correction_data(shifts, mov.filename)
+
     if shifts.ndim==1:
         shifts = shifts[None,...]
+
+    if shifts.ndim==2 and shifts.shape[1]==3:
+        shifts = shifts[:,:2]
 
     assert shifts.ndim==2 and shifts.shape[1]==2
 
@@ -79,7 +92,7 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
 
     return mov.squeeze()
 
-def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, resample=5, verbose=True):
+def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, resample=4, verbose=True):
         """Compute template, shifts, and correlations associated with template-matching-based motion correction
 
         Parameters
@@ -102,7 +115,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
         template: np.ndarray
             the template used
         shifts : np.ndarray
-            one row per frame, see array's dtype for details
+            one row per frame, (y, x, metric)
         """
       
         # Parse movie
@@ -132,7 +145,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
         template=template[ms_h:h_i-ms_h,ms_w:w_i-ms_w]
         h,w = template.shape
         
-        vals = np.zeros(n_frames, dtype=[('y_shift',np.float),('x_shift',np.float),('metric',np.float)])
+        vals = np.zeros([n_frames,3])
         if verbose:    
             print('Computing shifts:', flush=True)
             pbar = ProgressBar(maxval=n_frames).start()
@@ -162,7 +175,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
                 sh_x_n = -(sh_x - ms_h)
                 sh_y_n = -(sh_y - ms_w)
                     
-            vals[i] = (sh_x_n, sh_y_n, avg_metric)
+            vals[i,:] = [sh_x_n, sh_y_n, avg_metric]
                 
         if verbose: 
             pbar.finish()         

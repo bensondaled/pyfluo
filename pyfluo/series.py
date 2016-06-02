@@ -48,6 +48,13 @@ class Series(pd.DataFrame):
 
         super(Series, to_plot).plot(*args, **kwargs)
 
+    def heat(self, **kwargs):
+        x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
+        y = np.arange(self.shape[1]+1)
+        res = pl.pcolormesh(x, y, self.T, **kwargs)
+        pl.hlines(y, x[0], x[-1], color='w')
+        return res
+
 if __name__ == '__main__':
     pass
 
