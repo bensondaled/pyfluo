@@ -141,8 +141,8 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
                 template=template(movr,axis=0)            
         elif not isinstance(template, np.ndarray):
             raise Exception('Template parameter should be an array or function')
-        template = template.astype(np.float32)
-        template=template[ms_h:h_i-ms_h,ms_w:w_i-ms_w]
+        template_uncropped = template.astype(np.float32)
+        template=template_uncropped[ms_h:h_i-ms_h,ms_w:w_i-ms_w]
         h,w = template.shape
         
         vals = np.zeros([n_frames,3])
@@ -180,4 +180,4 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
         if verbose: 
             pbar.finish()         
 
-        return template, vals
+        return template_uncropped, vals

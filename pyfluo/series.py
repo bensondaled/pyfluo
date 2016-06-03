@@ -10,16 +10,19 @@ class Series(pd.DataFrame):
     """
 
     _metadata = ['Ts']
-    _metadata_defaults = [1.0]
 
     def __init__(self, data, *args, **kwargs):
 
-        # Set custom fields
-        for md,dmd in zip(self._metadata, self._metadata_defaults):
-            setattr(self, md, kwargs.pop(md, dmd))
+        Ts = kwargs.pop('Ts', None)
 
         # Init object
         super(Series, self).__init__(data, *args, **kwargs)
+
+        if hasattr(self, 'Ts'):
+            self.set_index(self.Ts*np.arange(len(self)), inplace=True)
+        elif Ts is not None:
+            self.Ts = Ts
+            self.set_index(self.Ts*np.arange(len(self)), inplace=True)
 
     @property
     def _constructor(self):
@@ -48,11 +51,17 @@ class Series(pd.DataFrame):
 
         super(Series, to_plot).plot(*args, **kwargs)
 
-    def heat(self, **kwargs):
+    def heat(self, color_id_map=pl.cm.viridis, **kwargs):
         x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
-        y = np.arange(self.shape[1]+1)
+        true_y = np.arange(self.shape[1])
+        y = np.arange(self.shape[1]+1)-0.5
         res = pl.pcolormesh(x, y, self.T, **kwargs)
         pl.hlines(y, x[0], x[-1], color='w')
+        pl.xlim([x[0], x[-1]])
+        pl.ylim([y[0], y[-1]])
+        pl.yticks(true_y, [str(int(i)) for i in true_y], ha='right')
+        for i,c in zip(pl.gca().get_yticklabels(), color_id_map(np.linspace(0,1,self.shape[1]))):
+            i.set_color(c)
         return res
 
 if __name__ == '__main__':
