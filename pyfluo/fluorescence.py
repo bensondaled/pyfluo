@@ -1,33 +1,36 @@
 import numpy as np, pandas as pd
+from scipy.stats.mstats import mode
 import warnings, sys
 
 from .util import ProgressBar
 from .util import sliding_window
 from .config import *
 
-def compute_dff(data, percentile=8., window_size=1., step_size=None, method='pd', pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, percentile=5., window_size=7., step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
     method: 'pd' / 'np'
     """
+    Ts = Ts or data.Ts
 
     if not any([isinstance(data, p) for p in [pd.Series, pd.DataFrame]]):
         method = 'np'
 
     if method=='pd':
-        _window = int(np.round(window_size / data.Ts))
+        _window = int(np.round(window_size / Ts))
         def f_dff(x):
-            f0 = np.percentile(x, percentile)
-            return f0
+            #xmode,_ = mode(x, axis=0)
+            #return xmode[0]
+            return np.percentile(x, percentile)
         f0 = data.rolling(window=_window, min_periods=1).apply(func=f_dff)
         dff = (data-f0)/f0
         return dff
     
     elif method=='np':
         if step_size == None:
-            step_size = data.Ts
+            step_size = Ts
 
-        window_size = int(window_size/data.Ts)
-        step_size = int(step_size/data.Ts)
+        window_size = int(window_size/Ts)
+        step_size = int(step_size/Ts)
 
         if window_size<1:
             warnings.warn('Requested a window size smaller than sampling interval. Using sampling interval.')
@@ -46,7 +49,8 @@ def compute_dff(data, percentile=8., window_size=1., step_size=None, method='pd'
             pbar = ProgressBar(maxval=out_size).start()
         f0 = []
         for idx,win in enumerate(sliding_window(padded, ws=window_size, ss=step_size)):
-            f0.append(np.percentile(win, percentile, axis=0))
+            #f0.append(np.percentile(win, percentile, axis=0))
+            f0.append(mode(win, axis=0))
             if verbose:
                 pbar.update(idx)
         f0 = np.repeat(f0, step_size, axis=0)[:len(data)]

@@ -32,7 +32,7 @@ class Group():
         if not os.path.exists(self.grp_path):
             self = Group.from_raw(self.name, in_path=self.data_path, out_path=self.data_path)
 
-        self.tif_files = [o for o in os.listdir(self.grp_path) if o.endswith('.tif')]
+        self.tif_files = sorted([o for o in os.listdir(self.grp_path) if o.endswith('.tif')])
         self.tif_names = [os.path.splitext(o)[0] for o in self.tif_files]
         self.tif_paths = [os.path.join(self.grp_path, fn) for fn in self.tif_files]
 
@@ -42,7 +42,8 @@ class Group():
     @property
     def example(self):
         if self._loaded_example is None:
-            self._loaded_example = Movie(self.tif_paths[0])
+            ex = Movie(self.tif_paths[0])
+            self._loaded_example = apply_motion_correction(ex, self.mc_path)
         return self._loaded_example
 
     def extract_metadata(self, recache=False):
@@ -159,29 +160,52 @@ class Group():
                     del od['dff']
         return roi
 
-    def get_dff(self):
+    def get_dff(self, redo_raw=False, redo_dff=False):
         with h5py.File(self.otherdata_path) as od:
             if not 'roi' in od:
                 self.get_roi()
 
-            if 'dff' in od:
-                dff_grp = od['dff']
+            if 'raw' in od:
+                raw_grp = od['raw']
             else:
-                dff_grp = od.create_group('dff')
-                roi = ROI(np.asarray(od['roi']))
-                for filepath,filename in zip(self.tif_paths, self.tif_names):
-                    print(filepath)
+                raw_grp = od.create_group('raw')
+
+            roi = ROI(np.asarray(od['roi']))
+            for filepath,filename in zip(self.tif_paths, self.tif_names):
+                if (not redo_raw) and filename in raw_grp:
+                    continue
+                print('Extracting raw from {}'.format(filepath))
+                
+                # clear existing if necessary
+                if filename in raw_grp and redo_raw:
+                    del raw_grp[filename]
+
+                if filename not in raw_grp:
                     mov = apply_motion_correction(Movie(filepath), self.mc_path)
                     tr = mov.extract(roi)
-                    dff = compute_dff(tr, window_size=2.0)
-                    dff_grp.create_dataset(filename, data=np.asarray(dff))
+                    raw_grp.create_dataset(filename, data=np.asarray(tr))
+            
+            if ('dff' not in od) or redo_dff:
+                # clear if necessary:
+                if 'dff' in od:
+                    del od['dff']
+                dff = []
+                print ('Computing DFF...')
+                for fn in self.tif_names:
+                    print(fn)
+                    r = Series(np.asarray(od['raw'][fn]), Ts=self.Ts)
+                    d = np.asarray(compute_dff(r))
+                    dff.append(d)
+                od.create_dataset('dff', data=np.concatenate(dff))
+            else:
+                dff = np.asarray(od['dff'])
 
-            dff = [np.asarray(dff_grp[k]) for k in dff_grp]
-        return Series(np.concatenate(dff))
+            raw = [np.asarray(raw_grp[k]) for k in raw_grp]
+        return Series(dff, Ts=self.Ts), Series(np.concatenate(raw), Ts=self.Ts)
 
     def project(self):
         with h5py.File(self.mc_path) as mc_file:
             gt = np.asarray(mc_file['global_template'])
         pl.imshow(gt, cmap=pl.cm.Greys_r)
         roi = self.get_roi()
-        roi.show()
+        roi.show(labels=True)

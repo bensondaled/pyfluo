@@ -219,6 +219,9 @@ class ROI(np.ndarray):
             base = np.zeros(mask.shape[1:]+(4,))
             for i,p in enumerate(self.pts):
                 cv2.drawContours(base, [p], -1, colors_[i], **contours_kwargs)
+                if labels:
+                    center = p.mean(axis=0)
+                    pl.text(center[0], center[1], str(i), color='white', weight='bold')
             base[...,-1] = (base.sum(axis=-1)!=0).astype(float)
             ims=ax.imshow(base, interpolation='nearest', **kwargs)
             pl.draw()
@@ -235,7 +238,7 @@ class ROI(np.ndarray):
             pl.draw()
 
         
-        if mode == 'pts' or labels:
+        if mode == 'pts':
             if self.ndim == 2:
                 pts = [self.pts]
             else:

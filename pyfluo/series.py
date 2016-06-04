@@ -23,14 +23,42 @@ class Series(pd.DataFrame):
         elif Ts is not None:
             self.Ts = Ts
             self.set_index(self.Ts*np.arange(len(self)), inplace=True)
+        else:
+            self.Ts = 1.0
+
+    def _wrapped_pandas_method(self, mtd, *args, **kwargs):
+        val = getattr(super(Series, self), mtd)(*args, **kwargs)
+        if isinstance(val, pd.Series) or isinstance(val, Series):
+            val.__class__ = Series
+            for name in self._metadata:
+                setattr(val, name, getattr(self, name))
+        return val
+
+    def __add__(self, arg):
+        return self._wrapped_pandas_method('__add__', arg)
+    def __radd__(self, arg):
+        return self._wrapped_pandas_method('__radd__', arg)
+    def __sub__(self, arg):
+        return self._wrapped_pandas_method('__sub__', arg)
+    def __rsub__(self, arg):
+        return self._wrapped_pandas_method('__rsub__', arg)
+    def __div__(self, arg):
+        return self._wrapped_pandas_method('__div__', arg)
+    def __rdiv__(self, arg):
+        return self._wrapped_pandas_method('__rdiv__', arg)
+    def __mul__(self, arg):
+        return self._wrapped_pandas_method('__mul__', arg)
+    def __rmul__(self, arg):
+        return self._wrapped_pandas_method('__rmul__', arg)
 
     @property
     def _constructor(self):
         return Series
     
-    @property
-    def _constructor_sliced(self):
-        return pd.Series
+    def __finalize__(self, other, method=None, **kwargs):
+        for name in self._metadata:
+            object.__setattr__(self, name, getattr(other, name, None))
+        return self
 
     def plot(self, *args, gap=0.1, **kwargs):
 
@@ -51,16 +79,25 @@ class Series(pd.DataFrame):
 
         super(Series, to_plot).plot(*args, **kwargs)
 
-    def heat(self, color_id_map=pl.cm.viridis, **kwargs):
+    def heat(self, order=None, color_id_map=pl.cm.viridis, ax=None, **kwargs):
+        if ax is None:
+            ax = pl.gca()
+        if order is None:
+            order = np.arange(self.shape[1])
         x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
         true_y = np.arange(self.shape[1])
         y = np.arange(self.shape[1]+1)-0.5
-        res = pl.pcolormesh(x, y, self.T, **kwargs)
-        pl.hlines(y, x[0], x[-1], color='w')
-        pl.xlim([x[0], x[-1]])
-        pl.ylim([y[0], y[-1]])
-        pl.yticks(true_y, [str(int(i)) for i in true_y], ha='right')
-        for i,c in zip(pl.gca().get_yticklabels(), color_id_map(np.linspace(0,1,self.shape[1]))):
+        ylab = [str(int(i)) for i in true_y[order]]
+        ycolors = color_id_map(np.linspace(0,1,self.shape[1]))[order]
+
+        res = ax.pcolormesh(x, y, self.T.iloc[order,:], **kwargs)
+
+        ax.hlines(y, x[0], x[-1], color='w')
+        ax.set_xlim([x[0], x[-1]])
+        ax.set_ylim([y[0], y[-1]])
+        ax.set_yticks(true_y)
+        ax.set_yticklabels(ylab, ha='right')
+        for i,c in zip(ax.get_yticklabels(), ycolors):
             i.set_color(c)
         return res
 
