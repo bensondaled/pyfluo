@@ -171,28 +171,31 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=2), ax=None, **kwargs):
+    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=2), ax=None, show=True, **kwargs):
         """Display the ROI(s)
-
-        NEEDS FIXING
         TODO: adjust how masks are coloured such that the image itself is RGB and doesn't need a colormap to depend on
         
         Parameters
         ----------
-        mode : 'mask', 'pts', 'contours'
-            specifies how to display the ROIs. If 'mask', displays as filled space. If 'pts', displays as outline of points. If 'contour', draws contours around rois
+        mode : 'mask', 'contours'
+            specifies how to display the ROIs. If 'mask', displays as filled space. If 'contour', draws contours around rois
             mask and contours can be used together, ex. 'mask,contours'
-            **contours and pts currently under construction
+            **contours currently under construction
         labels : bool
             display labels over ROIs
         colors : list-like
             a list of values indicating the relative colors (example: magnitude) of each roi
+            or a float in which case all will be a single color
             needs to be fixed for the possibility of this containing values of 0
             currently buggy for 'pts' mode
         cmap : matplotlib.LinearSegmentedColormap
             color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
         contours_kwargs : dict
             for cv2.drawContours
+        ax : mpl.axes
+            ax to show, defaults to gca
+        show : bool
+            display image (if False, just returns displayed image)
         kwargs : dict
             any arguments accepted by matplotlib.imshow
 
@@ -202,27 +205,35 @@ class ROI(np.ndarray):
         """
 
         cmap = cmap
-        if ax is None:
+        if ax is None and show:
             ax = pl.gca()
-        xlim,ylim = ax.get_xlim(),ax.get_ylim()
+            xlim,ylim = ax.get_xlim(),ax.get_ylim()
 
         mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
         if colors is None:
             colors = np.arange(1,len(mask)+1)
-            colors_ = np.linspace(0, 1, len(self))
+            colors_ = np.linspace(0, 1, len(mask))
+        elif type(colors) in PF_numeric_types:
+            colors_ = np.array([colors for i in mask])
         else:
             colors_ = colors
         colors_ = cmap(colors_)
 
+        if self.ndim==2:
+            pts = [self.pts]
+        else:
+            pts = self.pts
+
         if 'contours' in mode:
             base = np.zeros(mask.shape[1:]+(4,))
-            for i,p in enumerate(self.pts):
+            for i,p in enumerate(pts):
                 cv2.drawContours(base, [p], -1, colors_[i], **contours_kwargs)
                 if labels:
                     center = p.mean(axis=0)
                     ax.text(center[0], center[1], str(i), color='white', weight='bold')
             base[...,-1] = (base.sum(axis=-1)!=0).astype(float)
-            ims=ax.imshow(base, interpolation='nearest', **kwargs)
+            if show:
+                ims=ax.imshow(base, interpolation='nearest', **kwargs)
             #pl.draw()
 
         if 'mask' in mode:
@@ -233,34 +244,16 @@ class ROI(np.ndarray):
             alpha = kwargs.pop('alpha', 0.6)
 
             #cv2.drawContours(mask, self.pts, -1, (255,255,255), **contours_kwargs)
-            ims=ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
+            if show:
+                ims=ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
             pl.draw()
 
-        
-        if mode == 'pts':
-            if self.ndim == 2:
-                pts = [self.pts]
-            else:
-                pts = self.pts
-            for idx,roi in enumerate(pts):
-                if len(roi)==0:
-                    continue
-                if mode == 'pts':
-                    pl.scatter(roi[:,0], roi[:,1], color=colors_[idx], marker='|', linewidth=3, **kwargs)
-                if labels:
-                    center = np.mean(roi, axis=0)
-                    if mode=='pts':
-                        col = colors_[idx]
-                    elif mode=='mask':
-                        col = 'gray'
-                    pl.text(center[0], center[1], str(idx), color=col, weight='bold')
-            if mode == 'pts':
-                ax.set_xlim( [min([xlim[0], 0]), max([xlim[1], self.shape[-1]])] )
-                ax.set_ylim( [min([ylim[0], pl.ylim()[0]]), max([ylim[1], pl.ylim()[1]])] )
-
-        ax.figure.canvas.draw()
+        if show:
+            ax.figure.canvas.draw()
         if mode == 'mask':
             return mask
+        elif mode == 'contours':
+            return base
 
     def as3d(self):
         """Return 3d version of object

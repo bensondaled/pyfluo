@@ -277,12 +277,14 @@ class Group():
             chunks = [mov[fi[0]:fi[1],yslice,xslice] for fi in frame_idxs]
         return np.squeeze(chunks)
 
-    def project(self, roi=True, ax=None):
+    def project(self, roi=True, ax=None, show=True):
         if ax is None:
             ax = pl.gca()
         with h5py.File(self.mc_path) as mc_file:
             gt = np.asarray(mc_file['global_template'])
-        ax.imshow(gt, cmap=pl.cm.Greys_r)
-        if roi:
+        if show:
+            ax.imshow(gt, cmap=pl.cm.Greys_r)
+        if roi and show:
             roi = self.get_roi()
             roi.show(labels=True, ax=ax)
+        return gt
