@@ -171,7 +171,7 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=2), **kwargs):
+    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=2), ax=None, **kwargs):
         """Display the ROI(s)
 
         NEEDS FIXING
@@ -202,10 +202,9 @@ class ROI(np.ndarray):
         """
 
         cmap = cmap
-        fig = pl.gcf()
-        #ax = fig.add_subplot(111)
-        ax = pl.gca()
-        xlim,ylim = pl.xlim(),pl.ylim()
+        if ax is None:
+            ax = pl.gca()
+        xlim,ylim = ax.get_xlim(),ax.get_ylim()
 
         mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
         if colors is None:
@@ -221,10 +220,10 @@ class ROI(np.ndarray):
                 cv2.drawContours(base, [p], -1, colors_[i], **contours_kwargs)
                 if labels:
                     center = p.mean(axis=0)
-                    pl.text(center[0], center[1], str(i), color='white', weight='bold')
+                    ax.text(center[0], center[1], str(i), color='white', weight='bold')
             base[...,-1] = (base.sum(axis=-1)!=0).astype(float)
             ims=ax.imshow(base, interpolation='nearest', **kwargs)
-            pl.draw()
+            #pl.draw()
 
         if 'mask' in mode:
             mask *= colors[...,np.newaxis,np.newaxis]
@@ -259,7 +258,7 @@ class ROI(np.ndarray):
                 ax.set_xlim( [min([xlim[0], 0]), max([xlim[1], self.shape[-1]])] )
                 ax.set_ylim( [min([ylim[0], pl.ylim()[0]]), max([ylim[1], pl.ylim()[1]])] )
 
-        pl.gcf().canvas.draw()
+        ax.figure.canvas.draw()
         if mode == 'mask':
             return mask
 

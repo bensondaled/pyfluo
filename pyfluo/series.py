@@ -65,6 +65,7 @@ class Series(pd.DataFrame):
         # Overwrite default cmap
         if 'cmap' not in kwargs:
             kwargs['cmap'] = pl.cm.viridis
+        kwargs['legend'] = kwargs.get('legend', False)
 
         # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
         stacked = kwargs.pop('stacked', False)
@@ -73,11 +74,18 @@ class Series(pd.DataFrame):
             tops = (to_plot.max(axis=0)).cumsum()
             to_add = pd.Series(0).append( tops[:-1] ).reset_index(drop=True) + gap*np.arange(to_plot.shape[1])
             to_plot = to_plot + to_add
+            yticks = np.asarray(to_plot.mean(axis=0))
+            yticklab = [str(i) for i in np.arange(self.shape[1])]
         else:
             to_plot = self
-        kwargs['legend'] = kwargs.get('legend', False)
 
-        super(Series, to_plot).plot(*args, **kwargs)
+        ax = super(Series, to_plot).plot(*args, **kwargs)
+        
+        if stacked:
+            ax.set_yticks(yticks)
+            ax.set_yticklabels(yticklab)
+
+        return ax
 
     def heat(self, order=None, color_id_map=pl.cm.viridis, ax=None, **kwargs):
         if ax is None:
