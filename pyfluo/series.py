@@ -87,11 +87,13 @@ class Series(pd.DataFrame):
 
         return ax
 
-    def heat(self, order=None, color_id_map=pl.cm.viridis, ax=None, **kwargs):
+    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, **kwargs):
         if ax is None:
             ax = pl.gca()
         if order is None:
             order = np.arange(self.shape[1])
+        if 'cmap' not in kwargs:
+            kwargs['cmap'] = pl.cm.jet
         x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
         true_y = np.arange(self.shape[1])
         y = np.arange(self.shape[1]+1)-0.5
@@ -103,10 +105,11 @@ class Series(pd.DataFrame):
         ax.hlines(y, x[0], x[-1], color='w')
         ax.set_xlim([x[0], x[-1]])
         ax.set_ylim([y[0], y[-1]])
-        ax.set_yticks(true_y)
-        ax.set_yticklabels(ylab, ha='right')
-        for i,c in zip(ax.get_yticklabels(), ycolors):
-            i.set_color(c)
+        if labels:
+            ax.set_yticks(true_y)
+            ax.set_yticklabels(ylab, ha='right')
+            for i,c in zip(ax.get_yticklabels(), ycolors):
+                i.set_color(c)
         return res
 
 if __name__ == '__main__':

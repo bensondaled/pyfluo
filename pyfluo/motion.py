@@ -1,7 +1,14 @@
 import numpy as np
-import cv2, h5py
+import h5py, warnings
 from .util import ProgressBar, Progress
 from .config import *
+try:
+    import cv2
+except:
+    cv2 = None
+    from skimage import transform as sktf
+    from skimage.feature import match_template
+    warnings.warn('cv2 not detected, will attempt to use alternative packages.')
 
 def motion_correct(mov, compute_kwargs={}, apply_kwargs={}):
     """Perform motion correction using template matching.
@@ -22,12 +29,13 @@ def retrieve_motion_correction_data(datafile, filename):
         shifts_local = np.asarray(mc[filename]['shifts'])
         shifts_global = np.asarray(mc['global_shifts'])   
         global_names = mc['global_shifts'].attrs['filenames']
+        maxshift = mc.attrs['max_shift']
     global_names = [i.decode('UTF8') for i in global_names]
     shift_global = shifts_global[global_names.index(filename)]
     shifts = (shifts_local+shift_global)[:,:2]
-    return shifts
+    return shifts, maxshift
 
-def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=False, in_place=False, verbose=True):
+def apply_motion_correction(mov, shifts, interpolation=None, crop=None, in_place=False, verbose=True):
     """Apply shifts to mov in order to correct motion
 
     Parameters
@@ -47,6 +55,9 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
 
     This supports the correction of single frames as well, given a single shift
     """
+    if interpolation is None and cv2 is not None:
+        interpolation = cv2.INTER_LINEAR
+
     if not in_place:
         mov=mov.copy()
 
@@ -54,7 +65,9 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
         mov = mov[None,...]
 
     if type(shifts) in [str] and mov.filename:
-        shifts = retrieve_motion_correction_data(shifts, mov.filename)
+        shifts,crop_ = retrieve_motion_correction_data(shifts, mov.filename)
+        if crop is None:
+            crop = crop_
 
     if shifts.ndim==1:
         shifts = shifts[None,...]
@@ -70,8 +83,13 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
         pbar = ProgressBar(maxval=len(mov)).start()
     for i,frame in enumerate(mov):
         sh_x_n, sh_y_n = shifts[i]
-        M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n]])                 
-        mov[i] = cv2.warpAffine(frame,M,(w,h),flags=interpolation)
+        if cv2 is not None:
+            M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n]])                 
+            mov[i] = cv2.warpAffine(frame,M,(w,h),flags=interpolation)
+        elif cv2 is None:
+            M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n],[0,0,1]])  
+            transform = sktf.AffineTransform(matrix=M)
+            mov[i] = sktf.warp(frame, transform)
         if verbose:
             pbar.update(i)
 
@@ -92,7 +110,7 @@ def apply_motion_correction(mov, shifts, interpolation=cv2.INTER_LINEAR, crop=Fa
 
     return mov.squeeze()
 
-def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=cv2.TM_CCORR_NORMED, resample=4, verbose=True):
+def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=None, resample=4, verbose=True):
         """Compute template, shifts, and correlations associated with template-matching-based motion correction
 
         Parameters
@@ -117,6 +135,8 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
         shifts : np.ndarray
             one row per frame, (y, x, metric)
         """
+        if template_matching_method is None and cv2 is not None:
+            template_matching_method = cv2.TM_CCORR_NORMED
       
         # Parse movie
         mov = mov.astype(np.float32)    
@@ -155,9 +175,15 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
             if verbose: 
                  pbar.update(i)             
 
-            res = cv2.matchTemplate(frame, template, template_matching_method)
-            avg_metric = np.mean(res)
-            top_left = cv2.minMaxLoc(res)[3]
+            if cv2 is not None:
+                res = cv2.matchTemplate(frame, template, template_matching_method)
+                avg_metric = np.mean(res)
+                top_left = cv2.minMaxLoc(res)[3]
+            elif cv2 is None:
+                res = match_template(frame, template)
+                avg_metric = np.mean(res)
+                top_left = np.unravel_index(np.argmax(res), res.shape)
+
             sh_y,sh_x = top_left
             bottom_right = (top_left[0] + w, top_left[1] + h)
         

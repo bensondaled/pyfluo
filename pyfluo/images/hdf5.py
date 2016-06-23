@@ -27,9 +27,13 @@ class HDF5(object):
 
         try:
             mov = vc['mov'][reslice]
-            ts = vc['ts'][reslice]
         except:
             raise Exception('\'mov\' and/or \'ts\' fields not found in HDF5 file.')
+
+        try:
+            ts = vc['ts'][reslice]
+        except:
+            ts = np.arange(len(mov))
 
         ts = np.asarray(ts)
         if ts.ndim == 2:

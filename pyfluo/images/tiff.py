@@ -66,8 +66,13 @@ class Tiff(object):
                 self.data = tf.asarray()
             else:
                 self.data = None
-            self.Ts = self._extract_Ts(tf)
-            self.i2c = extract_i2c(tf)
+
+            try:
+                self.Ts = self._extract_Ts(tf)
+                self.i2c = extract_i2c(tf)
+            except:
+                self.Ts = None
+                self.i2c = None
             self.tf_obj = tf
         elif any([isinstance(file_path, t) for t in [np.ndarray,list]]):
             tfs = [tifffile.TiffFile(f, **kwargs) for f in self.file_path if f.endswith('.tif')]

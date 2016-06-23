@@ -6,7 +6,7 @@ from .util import ProgressBar
 from .util import sliding_window
 from .config import *
 
-def compute_dff(data, percentile=5., window_size=7., step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, percentile=5., window_size=3., step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
     method: 'pd' / 'np'
     """

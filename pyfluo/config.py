@@ -12,6 +12,7 @@ elif _pyver == 2:
     PF_str_types = [str, unicode]
 PF_numeric_types = [int, float] + np.sctypes['float'] + np.sctypes['int'] + np.sctypes['uint']
 
+"""
 # User settings
 def _parse_settings(stgs):
     stgs = stgs.split('\n')
@@ -32,3 +33,4 @@ with open(_rc, 'r') as _f:
     _settings = _f.read()
 _settings = _parse_settings(_settings)
 globals().update(_settings)
+"""
