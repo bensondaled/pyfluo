@@ -60,22 +60,29 @@ class Series(pd.DataFrame):
             object.__setattr__(self, name, getattr(other, name, None))
         return self
 
-    def plot(self, *args, gap=0.1, **kwargs):
+    def plot(self, *args, gap=0.1, order=None, **kwargs):
 
-        # Overwrite default cmap
-        if 'cmap' not in kwargs:
-            kwargs['cmap'] = pl.cm.viridis
+        cmap = kwargs.pop('cmap',pl.cm.viridis)
         kwargs['legend'] = kwargs.get('legend', False)
+        
+        if order is None:
+            order = np.arange(self.shape[1])
+        
+        ycolors = cmap(np.linspace(0,1,self.shape[1]))[order]
+        if 'color' not in kwargs:
+            kwargs['color'] = ycolors
 
         # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
         stacked = kwargs.pop('stacked', False)
         if stacked:
-            to_plot = self - self.min(axis=0)
+            to_plot = self.T.iloc[order,:].T
+            to_plot = to_plot - to_plot.min(axis=0)
             tops = (to_plot.max(axis=0)).cumsum()
             to_add = pd.Series(0).append( tops[:-1] ).reset_index(drop=True) + gap*np.arange(to_plot.shape[1])
+            to_add.index = to_plot.columns
             to_plot = to_plot + to_add
             yticks = np.asarray(to_plot.mean(axis=0))
-            yticklab = [str(i) for i in np.arange(self.shape[1])]
+            yticklab = np.array([str(i) for i in np.arange(self.shape[1])])[order]
         else:
             to_plot = self
 
@@ -83,7 +90,9 @@ class Series(pd.DataFrame):
         
         if stacked:
             ax.set_yticks(yticks)
-            ax.set_yticklabels(yticklab)
+            ax.set_yticklabels(yticklab, ha='right')
+            for i,c in zip(ax.get_yticklabels(), ycolors):
+                i.set_color(c)
 
         return ax
 
