@@ -11,4 +11,4 @@ else:
     from .images.tiff import Tiff
     from .segmentation import pca_ica, comps_to_roi
     from .motion import motion_correct
-    from .groups import Group
+    from .data import Data

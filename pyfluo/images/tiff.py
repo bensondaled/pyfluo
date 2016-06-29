@@ -88,7 +88,7 @@ class Tiff(object):
 
             i2c = fast_i2c(tif.pages).dropna()
             i2c.ix[:,'name'] = self.name
-            i2c.ix[:,'idx'] = i2c.index
+            i2c.ix[:,'frame_idx'] = i2c.index
             i2c.reset_index(drop=True, inplace=True)
 
         return data,metadata,i2c,pagedata
@@ -134,8 +134,13 @@ class TiffGroup(object):
             with Elapsed('Storing metadata...', verbose=verbose):
                 with pd.HDFStore(self.hdf_path) as h:
                     h.put('si_data', pd.Series(t.si_data))
-                    h.append('info', t.metadata)
-                    h.append('i2c', t.i2c)
+                    info = t.metadata
+                    info.index = idx
+                    h.append('info', info)
+                    i2c = t.i2c
+                    i2c.reset_index(inplace=True, drop=True)
+                    i2c.ix[:,'file_idx'] = idx
+                    h.append('i2c', i2c)
 
             # store data
             with Elapsed('Storing data...', verbose=verbose):
