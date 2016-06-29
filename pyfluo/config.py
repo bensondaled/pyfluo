@@ -1,4 +1,10 @@
-import sys, cv2, os, numpy as np
+import sys, os, warnings, numpy as np
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+    warnings.warn('cv2 not detected, expect strange behaviours.')
 
 # Versions
 _pyver = sys.version_info.major

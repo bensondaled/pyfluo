@@ -1,13 +1,15 @@
 import numpy as np
 import pylab as pl
-import cv2, sys
+import sys
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
 import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage import label
 import itertools as it
+
 from .util import ProgressBar, Progress
+from .config import cv2
 
 def grid(data, rows=0.5, cols=0.5):
     """Generate index slices to split image/movie into grid

@@ -1,7 +1,7 @@
 import numpy as np, pylab as pl, pandas as pd
 from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
-import cv2, sys, tifffile, operator, os, threading
+import sys, tifffile, operator, os, threading
 
 from .roi import ROI, select_roi
 from .images import Tiff, AVI, HDF5

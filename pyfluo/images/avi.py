@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+from ..config import cv2
 from ..util import ProgressBar
 
 class AVI(object):
