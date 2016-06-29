@@ -1,6 +1,6 @@
 # External imports
 import numpy as np, pylab as pl, matplotlib.lines as mlines
-import cv2, warnings
+import warnings
 # Internal imports
 from .config import *
 
