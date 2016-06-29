@@ -94,11 +94,13 @@ class Tiff(object):
         return data,metadata,i2c,pagedata
 
 class TiffGroup(object):
-    def __init__(self, files):
+    def __init__(self, files, sort=True):
 
         self._files_orig = files
         files = glob.glob(files)
         files = [f for f in files if f.endswith('.tif')]
+        if sort:
+            files = sorted(files)
 
         # filenames
         self.file_paths = [os.path.abspath(f) for f in files]
