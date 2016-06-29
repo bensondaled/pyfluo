@@ -8,7 +8,8 @@ except ImportError:
 
 # Versions
 _pyver = sys.version_info.major
-CV_VERSION = int(cv2.__version__[0])
+if cv2:
+    CV_VERSION = int(cv2.__version__[0])
 
 # Types
 if _pyver == 3:
