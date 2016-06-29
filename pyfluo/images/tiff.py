@@ -98,6 +98,7 @@ class TiffGroup(object):
 
         self._files_orig = files
         files = glob.glob(files)
+        files = [f for f in files if f.endswith('.tif')]
 
         # filenames
         self.file_paths = [os.path.abspath(f) for f in files]
