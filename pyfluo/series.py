@@ -1,6 +1,6 @@
 # External imports
 import pandas as pd, numpy as np, matplotlib.pyplot as pl
-import warnings, cv2
+import warnings
 
 # Internal imports
 from .config import *
