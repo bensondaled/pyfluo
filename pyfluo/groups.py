@@ -4,12 +4,14 @@ import pandas as pd
 from .config import *
 from .motion import compute_motion, apply_motion_correction
 from .movies import Movie
-from .fluorescence import compute_dff
+from .fluorescence import compute_dff, detect_transients
 from .images import Tiff
 from .roi import select_roi, ROI
 from .series import Series
 
 class Group():
+    #TODO: needs MAJOR overhaul, since I adjusted Tiff and Movie. This will be a far less involved class, just handling manipulations and analysis of already-processed groups
+    # Thinking I should rename it to Data, and its role will be to handle all data related to some images, as opposed to Movie which is specifically for in-memory movies
     """
     Stores a set of tif-derived data with associated metadata and computations.
     """
@@ -93,7 +95,7 @@ class Group():
         assert self.tifs_available, 'Tif files are not present in group directory; merge cannot be made.'
 
         with h5py.File(self.mov_path) as movfile:
-            ds = movfile.create_dataset('mov', (self.shapes.z.sum(),self.y,self.x), compression='gzip')
+            ds = movfile.create_dataset('mov', (self.shapes.z.sum(),self.y,self.x), compression='gzip', compression_opts=2)
 
             idx = 0
             indices = []
@@ -133,7 +135,7 @@ class Group():
             _i2c_ix = 0
 
             for tp in self.tif_paths:
-                mov = Tiff(tp, load_data=False) 
+                mov = Tiff(tp, load_data=False)
                 expg = mov.tf_obj.pages[0].asarray()
                 shapes.append(dict(filename=mov.filename, z=len(mov), y=expg.shape[0], x=expg.shape[1]))
                 i2c = mov.i2c
@@ -146,8 +148,6 @@ class Group():
 
             # i2c
             i2c = pd.concat(i2cs).dropna()
-            i2c.ix[:,'phase'] = (i2c.data-i2c.data.astype(int)).round(1)*10 
-            i2c.ix[:,'trial'] = i2c.data.astype(int)
 
             # shapes
             shapes = pd.DataFrame(shapes)
@@ -236,6 +236,15 @@ class Group():
 
         out_file.close()
 
+    def get_motion(self):
+        result = []
+        with h5py.File(self.mc_path) as f:
+            for tn in self.tif_names:
+                gr = f[tn]
+                ds = gr['shifts']
+                result.append(np.asarray(ds))
+        return np.concatenate(result)
+
     def get_roi(self, i=None, reselect=False):
         if i is None:
             i = ''
@@ -265,10 +274,11 @@ class Group():
                     od.move('dff', 'dff{}'.format(i))
             od.create_dataset('roi', data=np.asarray(roi))
 
-    def get_dff(self, i=None, redo_raw=False, redo_dff=False, dff_kwargs={}, significant=False):
+    def get_dff(self, i=None, redo_raw=False, redo_dff=False, redo_transients=False, dff_kwargs={}, transient_kwargs={}):
         if i is None:
             i = ''
         dffname = 'dff{}'.format(i)
+        transname = 'transients{}'.format(i)
         rawname = 'raw{}'.format(i)
         roiname = 'roi{}'.format(i)
         with h5py.File(self.otherdata_path) as od:
@@ -301,20 +311,25 @@ class Group():
 
             if (dffname not in od) or redo_dff:
                 # clear if necessary:
-                if dffname in od:
-                    del od[dffname]
                 print ('Computing DFF...')
                 dff = np.asarray(compute_dff(raw, **dff_kwargs))
+                if dffname in od:
+                    del od[dffname]
                 od.create_dataset(dffname, data=dff)
             dff = Series(np.asarray(od[dffname]), Ts=self.Ts)
-   
-        if significant:
-            dff_filt = (dff>dff.mean(axis=0)+2.5*dff.std(axis=0)).astype(bool)
-            dff[dff_filt==False] = 0
 
-        return dff, raw
+            if (transname not in od) or redo_transients:
+                # clear if necessary:
+                print ('Computing transients...')
+                trans = np.asarray(detect_transients(dff, **transient_kwargs))
+                if transname in od:
+                    del od[transname]
+                od.create_dataset(transname, data=trans)
+            trans = Series(np.asarray(od[transname]), Ts=self.Ts)
 
-    def extract_roi_mov(self, roi, frame_idxs, mean=False):
+        return trans, dff, raw
+
+    def extract_roi_mov(self, roi, frame_idxs, mean=False, pad=3):
         # frame_idxs: either 2-tuples, or slices
         if not os.path.exists(self.mov_path):
             raise Exception('Run merge_movs first, this is too slow if you don\'t have hdf5 version stored.')
@@ -328,7 +343,6 @@ class Group():
             roi = np.ones([self.y,self.x])
         args = np.argwhere(roi)
         (ymin,xmin),(ymax,xmax) = args.min(axis=0),args.max(axis=0)
-        pad = 3
         
         with h5py.File(self.mov_path) as movfile:
             mov = movfile['mov']

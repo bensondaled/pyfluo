@@ -9,11 +9,11 @@ from .series import Series
 from .config import *
 
 class Movie(np.ndarray):
-    """An object storing n sequential 2d images along with a time vector
+    """An object for *in-memory* storage of n sequential 2d images along with a sampling rate
 
     Parameters
     ----------
-    data : np.ndarray, str, pyfluo.Tiff, pyfluo.AVI
+    data : array-like, str-like
         input data, see below
     Ts : [optional] float
         sampling period
@@ -21,58 +21,36 @@ class Movie(np.ndarray):
     Input data can be supplied in multiple ways:
     (1) as a numpy array of shape (n,y,x)
     (2) a string [or list thereof] corresponding to a file path to a tiff/avi/hdf5
-    (3) a pyfluo.Tiff/AVI/hdf5 object [or list thereof]
 
     The data in Movie objects is stored following the standard pyfluo convention in which the 0th axis corresponds to time. For example, movie[0] corresponds to the movie frame at time 0. 
     """
 
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['Ts', 'tiff_tags', 'i2c', 'filename']
+    _custom_attrs = ['Ts', 'filename']
     
-    def __new__(cls, data, Ts=1, filename='', **kwargs):
-       
-        tiff_tags = None
-        i2c = None
+    def __new__(cls, data, Ts=1, filename=[], **kwargs):
+        assert any([isinstance(data,lt) for lt in PF_list_types+PF_str_types]), 'Movie data not supplied in proper format.'
 
-        if isinstance(data, Tiff) or isinstance(data, AVI) or isinstance(data, HDF5):
-            data = data.data.copy()
-        elif isinstance(data, list) and (isinstance(data[0], Tiff) or isinstance(data[0], AVI) or isinstance(data[0], HDF5)):
-            data = np.concatenate([d.data.copy() for d in data])
-        elif any([isinstance(data,st) for st in PF_str_types]):
-            if filename == '':
-                filename = os.path.splitext(os.path.split(data)[-1])[0]
-            if data.endswith('.tif'):
-                t = Tiff(data, **kwargs)
-                data = t.data
-                Ts = t.Ts or Ts
-                tiff_tags = t.tiff_tags
-                i2c = t.i2c
-            elif data.endswith('.avi'):
-                data = AVI(data, **kwargs).data
-            elif data.endswith('.h5') or data.endswith('.hdf5'):
-                h = HDF5(data, **kwargs)
+        # if data is filenames
+        if type(data) in PF_str_types:
+            filename = data
+            suf = os.path.splitext(filename)[-1]
+
+            if suf == '.avi':
+                data = AVI(d, **kwargs).data
+            elif suf in ['.h5','.hdf5']:
+                hs = HDF5(d, **kwargs)
                 data = h.data
                 Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
-        elif isinstance(data, list) and any([isinstance(data[0],st) for st in PF_str_types]):
-            if data[0].endswith('.tif'):
-                t = Tiff(data, **kwargs)
-                data = t.data
-                Ts = t.Ts or Ts
-            elif data[0].endswith('.avi'):
-                data = [AVI(d, **kwargs).data for d in data]
-                data = np.concatenate(data)
-            elif data[0].endswith('.h5') or data.endswith('.hdf5'):
-                h = [HDF5(d, **kwargs) for d in data]
-                data = [hi.data for hi in h]
-                Ts = h[0].Ts #overwrites any supplied Ts with hdf5 file's stored time info, and assumes all multiple files have uniform Ts, for now
-                data = np.concatenate(data)
-    
-        if not isinstance(data, np.ndarray):
-            data = np.asarray(data)
+            elif suf in ['.tif','.tiff']:
+                tf = tifffile.TiffFile(data)
+                data = tf.asarray()
+
+        # convert to a np array (either of strings or data itself)
+        data = np.asarray(data)
         obj = data.view(cls)
+
         obj.Ts = Ts
-        obj.tiff_tags = tiff_tags 
-        obj.i2c = i2c
         obj.filename = filename
 
         return obj

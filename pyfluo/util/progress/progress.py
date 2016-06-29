@@ -1,6 +1,18 @@
 import time, sys
 import multiprocessing as mp
 
+class Elapsed():
+    def __init__(self, msg='', verbose=True):
+        self.verbose = verbose
+        self.msg = msg
+    def __enter__(self):
+        if self.verbose:
+            self.t0 = time.time()
+            print(self.msg, end='', flush=True)
+    def __exit__(self, typ, value, traceback):
+        if self.verbose:
+            print('{:0.2f}'.format(time.time()-self.t0), flush=True)
+
 class Progress(mp.Process):
     def __init__(self, msg='', verbose=True):
         super(Progress, self).__init__()

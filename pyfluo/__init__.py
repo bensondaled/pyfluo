@@ -7,7 +7,7 @@ else:
     from .series import Series
     from .roi import ROI, select_roi
     from .io import save, load
-    from .fluorescence import compute_dff
+    from .fluorescence import compute_dff, detect_transients
     from .images.tiff import Tiff
     from .segmentation import pca_ica, comps_to_roi
     from .motion import motion_correct

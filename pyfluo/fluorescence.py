@@ -1,5 +1,6 @@
 import numpy as np, pandas as pd
 from scipy.stats.mstats import mode
+from scipy.ndimage.measurements import label
 import warnings, sys
 
 from .util import ProgressBar
@@ -68,3 +69,49 @@ def compute_dff(data, percentile=5., window_size=3., step_size=None, method='pd'
             return ( ret, f0 )
         else:
             return ret
+
+def detect_transients(sig, main_thresh=0.0001, peak_thresh=1.5, drift_window=10., width_lims=(0.040, 3.00), Ts=None):
+    """
+    TODO: this is not properly implemented, some things will fall through cracks, other will be false positive
+    sig is a 1d signal
+    width_lims in units of sig's Ts
+    """
+
+    Ts = Ts or sig.Ts
+
+    if isinstance(sig, pd.DataFrame):
+        res = sig.apply(detect_transients, axis=0, Ts=Ts)
+        result = sig.copy() # trick to maintain other properties
+        result[:] = res[:]
+        return result
+    
+    wmin,wmax = np.round(np.asarray(width_lims) / Ts).astype(int)
+    dwin = int(np.round(drift_window/Ts))
+
+    sig = pd.Series(np.squeeze(np.asarray(sig)))
+
+    def pin(x):
+        return np.max(x)
+
+    # find significant samples
+    mean_signal = sig.rolling(window=dwin, min_periods=1).mean()
+    thresh1 = mean_signal + main_thresh * sig.std(axis=0)
+    thresh2 = mean_signal + peak_thresh * sig.std(axis=0)
+    above_thresh1 = sig>thresh1
+    peak_hoods = sig.rolling(window=wmax, min_periods=1).apply(pin).values # this step only speeds things up, not necessary
+    potential = (above_thresh1) & (peak_hoods>thresh2)
+
+    # label potential transients
+    labelled,nlab = label(potential.values)
+
+    # width and peak restrictions
+    dummies = np.arange(1,nlab+1)
+    ns_per_label = np.array([np.sum(labelled==l) for l in dummies])
+    peaks_ok = np.array([np.max(sig[labelled==l])>=np.max(thresh2[labelled==l]) for l in dummies])
+    lab_ids = dummies[(ns_per_label>=wmin) & (ns_per_label<=wmax) & (peaks_ok)]
+    valid = pd.Series(labelled).isin(lab_ids).values
+
+    new_sig = np.zeros_like(sig)
+    new_sig[valid] = sig[valid]
+
+    return new_sig

@@ -1,2 +1,2 @@
-from .progress import Progress
+from .progress import Progress, Elapsed
 from .progressbar import *

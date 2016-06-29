@@ -11,6 +11,7 @@ if _pyver == 3:
 elif _pyver == 2:
     PF_str_types = [str, unicode]
 PF_numeric_types = [int, float] + np.sctypes['float'] + np.sctypes['int'] + np.sctypes['uint']
+PF_list_types = [list, np.ndarray]
 
 """
 # User settings
