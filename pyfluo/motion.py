@@ -1,5 +1,6 @@
+from __future__ import print_function
 import numpy as np
-import h5py, warnings
+import h5py, warnings, sys
 from .util import ProgressBar, Progress
 from .config import *
 try:
@@ -167,7 +168,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
         
         vals = np.zeros([n_frames,3])
         if verbose:    
-            print('Computing shifts:', flush=True)
+            print('Computing shifts:'); sys.stdout.flush()
             pbar = ProgressBar(maxval=n_frames).start()
 
         for i,frame in enumerate(mov):

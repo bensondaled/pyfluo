@@ -1,4 +1,5 @@
-import os, h5py, warnings
+from __future__ import print_function
+import os, h5py, warnings, sys
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 
@@ -26,7 +27,10 @@ class Data():
             self.i2c = h.i2c
             self._has_motion_correction = 'motion' in h
         self.Ts = self.info.iloc[0].Ts
-        assert (self.info.Ts==self.Ts).all(), 'Sampling periods do not match.'
+        if not (self.info.Ts==self.Ts).all():
+            warnings.warn('Sampling periods do not match. This class currently doesn\'t support this. Will replace Ts\'s with mean of Ts\'s.')
+            print(self.info)
+            self.info.Ts = np.mean(self.info.Ts)
 
     def __getitem__(self, idx):
         with h5py.File(self.data_file, 'r') as h:
@@ -97,7 +101,7 @@ class Data():
             size = sli.stop-sli.start
 
             if verbose:
-                print('Chunk {}/{}: frames {}:{}'.format(idx+1,n_chunks,sli.start,sli.stop), flush=True)
+                print('Chunk {}/{}: frames {}:{}'.format(idx+1,n_chunks,sli.start,sli.stop)); sys.stdout.flush()
             chunk = Movie(self[sli])
             templ,vals = compute_motion(chunk, **compute_kwargs)
 

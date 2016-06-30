@@ -60,7 +60,11 @@ class Series(pd.DataFrame):
             object.__setattr__(self, name, getattr(other, name, None))
         return self
 
-    def plot(self, *args, gap=0.1, order=None, **kwargs):
+    def plot(self, *args, **kwargs):
+
+        # dirtier kwargs for python2 support:
+        gap = kwargs.pop('gap', 0.1)
+        order = kwargs.pop('order', None)
 
         cmap = kwargs.pop('cmap',pl.cm.viridis)
         kwargs['legend'] = kwargs.get('legend', False)

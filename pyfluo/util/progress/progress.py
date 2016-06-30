@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time, sys
 import multiprocessing as mp
 
@@ -8,10 +9,10 @@ class Elapsed():
     def __enter__(self):
         if self.verbose:
             self.t0 = time.time()
-            print(self.msg, end='', flush=True)
+            print(self.msg, end=''); sys.stdout.flush()
     def __exit__(self, typ, value, traceback):
         if self.verbose:
-            print('{:0.2f}'.format(time.time()-self.t0), flush=True)
+            print('{:0.2f}'.format(time.time()-self.t0)); sys.stdout.flush()
 
 class Progress(mp.Process):
     def __init__(self, msg='', verbose=True):

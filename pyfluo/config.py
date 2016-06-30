@@ -1,5 +1,7 @@
+from __future__ import print_function
 import sys, os, warnings, numpy as np
 
+# cv2
 try:
     import cv2
 except ImportError:

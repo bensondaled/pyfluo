@@ -1,7 +1,8 @@
+from __future__ import print_function # for python2
 #from skimage.external import tifffile
 import tifffile #moving away form skimage b/c it's not up to date, check to see if it is by now
 import numpy as np, pandas as pd
-import os, glob, h5py, time
+import os, glob, h5py, time, sys
 
 from ..config import *
 from ..util import Elapsed
@@ -126,7 +127,7 @@ class TiffGroup(object):
         
         for idx in range(self.nfiles):
             if verbose:
-                print('File ({}/{}): {}'.format(idx+1, self.nfiles, self.names[idx]), flush=True)
+                print('File ({}/{}): {}'.format(idx+1, self.nfiles, self.names[idx])); sys.stdout.flush()
 
             t = Tiff(self.file_paths[idx])
 
