@@ -113,7 +113,9 @@ class Data():
         # global correction on template movie
         with h5py.File(self.data_file) as h:
             template_mov = Movie(np.asarray(h['templates'][:-1]))
-        glob_template,glob_vals = compute_motion(template_mov, **compute_kwargs)
+        cka = compute_kwargs.copy()
+        cka.update(resample=1)
+        glob_template,glob_vals = compute_motion(template_mov, **cka)
         with h5py.File(self.data_file) as h:
             h['templates'][-1] = glob_template
         with pd.HDFStore(self.data_file) as h:
