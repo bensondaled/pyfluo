@@ -135,7 +135,7 @@ class TiffGroup(object):
                 with pd.HDFStore(self.hdf_path) as h:
                     h.put('si_data', pd.Series(t.si_data))
                     info = t.metadata
-                    info.index = idx
+                    info.index = [idx]*len(info)
                     h.append('info', info)
                     i2c = t.i2c
                     i2c.reset_index(inplace=True, drop=True)
