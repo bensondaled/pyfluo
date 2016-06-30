@@ -78,7 +78,7 @@ class Data():
         chunk_size : int
             number of frames to include in one local-correction chunk
         """
-        n_chunks = int(np.ceil(len(self)/chunk_size))
+        n_chunks = int(np.ceil(len(self)/float(chunk_size)))
 
         # check for existing datasets
         with pd.HDFStore(self.data_file) as h:
