@@ -69,16 +69,25 @@ class Data():
             file_idx = int(file_idx)
             return np.append(0, self.info.n.cumsum().values)[file_idx] + frame_idx
 
-    def motion_correct(self, chunk_size=1000, compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
+    def motion_correct(self, chunk_size=None, compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
         """
         Corrects motion, first locally in sliding chunks of full dataset, then globally across chunks
 
         Parameters
         ----------
         chunk_size : int
-            number of frames to include in one local-correction chunk
+            number of frames to include in one local-correction chunk. If None, uses sizes of files from which data were derived
         """
-        n_chunks = int(np.ceil(len(self)/float(chunk_size)))
+        if overwrite:
+            self._has_motion_correction = False
+
+        if chunk_size is not None:
+            n_chunks = int(np.ceil(len(self)/float(chunk_size)))
+            slices = [slice(start, min(start+chunk_size, len(self))) for start in range(0, len(self), chunk_size)]
+        elif chunk_size is None:
+            n_chunks = self.n_files
+            borders = np.append(0,self.info.n.cumsum().values)
+            slices = [slice(b0,b1) for b0,b1 in zip(borders[:-1],borders[1:])]
 
         # check for existing datasets
         with pd.HDFStore(self.data_file) as h:
@@ -94,7 +103,6 @@ class Data():
         with h5py.File(self.data_file) as h:
             h.create_dataset('templates', data=np.zeros((n_chunks+1,) + self.shape[1:]))
         
-        slices = [slice(start, min(start+chunk_size, len(self))) for start in range(0, len(self), chunk_size)]
         # iterate through frame chunks, local corrections
         for idx,sli in enumerate(slices):
             sli_full = np.arange(sli.start, sli.stop)
