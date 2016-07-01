@@ -25,6 +25,7 @@ class Data():
             self.n_files = len(h.info)
             self.info = h.info
             self.i2c = h.i2c
+            self.motion = h.motion
             self._has_motion_correction = 'motion' in h
         self.Ts = self.info.iloc[0].Ts
         if not (self.info.Ts==self.Ts).all():

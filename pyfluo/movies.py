@@ -233,10 +233,10 @@ class Movie(np.ndarray):
         """
         if roi.ndim == 3:
             flatshape = (len(roi),-1)
-            roi_norm = roi / roi.sum(axis=(1,2))[:,None,None]
+            roi_norm = roi.astype(float) / roi.sum(axis=(1,2))[:,None,None]
         elif roi.ndim == 2:
             flatshape = -1
-            roi_norm = roi / roi.sum()
+            roi_norm = roi.astype(float) / roi.sum()
         roi_norm = roi_norm.reshape(flatshape)
         self_flat = self.reshape((len(self),-1)).T
         dp = (roi_norm.dot(self_flat)).T
