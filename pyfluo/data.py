@@ -25,8 +25,9 @@ class Data():
             self.n_files = len(h.info)
             self.info = h.info
             self.i2c = h.i2c
-            self.motion = h.motion
             self._has_motion_correction = 'motion' in h
+            if self._has_motion_correction:
+                self.motion = h.motion
         self.Ts = self.info.iloc[0].Ts
         if not (self.info.Ts==self.Ts).all():
             warnings.warn('Sampling periods do not match. This class currently doesn\'t support this. Will replace Ts\'s with mean of Ts\'s.')
