@@ -25,6 +25,7 @@ class Data():
             self.n_files = len(h.info)
             self.info = h.info
             self.i2c = h.i2c
+            self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
             self._has_motion_correction = 'motion' in h
             if self._has_motion_correction:
                 self.motion = h.motion
