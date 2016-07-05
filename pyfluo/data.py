@@ -1,9 +1,12 @@
 from __future__ import print_function
-import os, h5py, warnings, sys
+import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 
 from .movies import Movie
+from .series import Series
+from .roi import ROI
+from .fluorescence import compute_dff
 from .motion import compute_motion, apply_motion_correction
 
 class Data():
@@ -34,6 +37,13 @@ class Data():
             warnings.warn('Sampling periods do not match. This class currently doesn\'t support this. Will replace Ts\'s with mean of Ts\'s.')
             print(self.info)
             self.info.Ts = np.mean(self.info.Ts)
+
+        self._roi = None
+        self._dff, self._tr = None,None
+        self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
+
+    def _batch_framei(self, row):
+        return self.framei(row.frame_idx, row.file_idx)
 
     def __getitem__(self, idx):
         with h5py.File(self.data_file, 'r') as h:
@@ -144,4 +154,103 @@ class Data():
             h.put('motion', mot)
 
     def show(self, show_slice=slice(None,None,100)):
-        pl.imshow(self[show_slice].mean(axis=0))
+        im = self[show_slice].mean(axis=0)
+        pl.imshow(im)
+        return im
+
+    @property
+    def _latest_roi_idx(self):
+        with h5py.File(self.data_file) as f:
+            if 'roi' not in f:
+                return None
+            keys = list(f['roi'].keys())
+            if len(keys)==0:
+                return None
+            matches = [re.match('roi(\d)', s) for s in keys]
+            idxs = [int(m.groups()[0]) for m in matches if m]
+            return max(idxs)
+
+    @property
+    def _next_roi_idx(self):
+        latest_idx = self._latest_roi_idx
+        if latest_idx is None:
+            nex_idx = 0
+        else:
+            nex_idx = latest_idx+1
+        nex = 'roi{}'.format(nex_idx)
+        return nex
+
+    def set_roi(self, roi):
+        with h5py.File(self.data_file) as f:
+            if 'roi' not in f:
+                roigrp = f.create_group('roi')
+            roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi))
+   
+    def get_roi(self, idx=None):
+        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        if idx is None:
+            idx = self._latest_roi_idx
+        if idx is None:
+            return None
+        if self._roi is None:
+            with h5py.File(self.data_file) as f:
+                roigrp = f['roi']
+                self._roi = ROI(roigrp['roi{}'.format(int(idx))])
+        return self._roi
+
+    def get_tr(self, idx=None, batch=6000, verbose=True):
+        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        roi = self.get_roi(idx)
+        if roi is None:
+            return None
+        trname = 'tr{}'.format(idx)
+
+        if self._tr is not None:
+            pass
+
+        elif self._tr is None:
+            with h5py.File(self.data_file) as f:
+                if 'traces' not in f:
+                    grp = f.create_group('traces')
+                elif 'traces' in f:
+                    grp = f['traces']
+
+                if trname in grp:
+                    self._tr = Series(np.asarray(grp[trname]), Ts=self.Ts)
+                elif trname not in grp:
+                    if verbose:
+                        print ('Extracting traces...'); sys.stdout.flush()
+                    all_tr = []
+                    for b in range(0,len(self),batch):
+                        sl = slice(b,min([len(self), b+batch]))
+                        if verbose:
+                            print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self))); sys.stdout.flush()
+                        tr = Movie(self[sl]).extract(roi)
+                        all_tr.append(np.asarray(tr))
+                    self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
+                    grp.create_dataset(trname, data=np.asarray(self._tr))
+
+        return self._tr
+    
+    def get_dff(self, idx=None, verbose=True):
+        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        dffname = 'dff{}'.format(idx)
+
+        if self._dff is not None:
+            pass
+
+        elif self._dff is None:
+            with h5py.File(self.data_file) as f:
+                grp = f['traces']
+
+                if dffname in grp:
+                    self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
+
+                elif dffname not in grp:
+                    tr = self.get_tr(idx)
+                    if tr is None:
+                        return None
+                    self._dff = compute_dff(tr, verbose=verbose)
+                    grp.create_dataset(dffname, data=np.asarray(self._dff))
+
+        return self._dff
