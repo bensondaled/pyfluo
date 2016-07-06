@@ -48,9 +48,16 @@ class Data():
     def __getitem__(self, idx):
         with h5py.File(self.data_file, 'r') as h:
             data = Movie(np.asarray(h['data'][idx]), Ts=self.Ts)
+
+        # likely more cases to account for in future
+        if isinstance(idx, tuple):
+            mc_idx = idx[0]
+        else:
+            mc_idx = idx
+
         if self._has_motion_correction:
             with pd.HDFStore(self.data_file) as h:
-                motion_data = h.motion.iloc[idx][['x','y']].values
+                motion_data = h.motion.iloc[mc_idx][['x','y']].values
             data = apply_motion_correction(data, motion_data, in_place=True, verbose=False)
         else:
             warnings.warn('Note that no motion correction data is present.')

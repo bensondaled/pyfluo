@@ -100,7 +100,7 @@ class Series(pd.DataFrame):
 
         return ax
 
-    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, **kwargs):
+    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, yfontsize=15, **kwargs):
         if ax is None:
             ax = pl.gca()
         if order is None:
@@ -123,6 +123,7 @@ class Series(pd.DataFrame):
             ax.set_yticklabels(ylab, ha='right')
             for i,c in zip(ax.get_yticklabels(), ycolors):
                 i.set_color(c)
+                i.set_fontsize(yfontsize)
         return res
 
 if __name__ == '__main__':
