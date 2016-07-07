@@ -1,9 +1,13 @@
 from __future__ import print_function
-import os, h5py, warnings, sys
+import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 
 from .movies import Movie
+from .series import Series
+from .roi import ROI
+from .fluorescence import compute_dff, detect_transients
+from .segmentation import pca_ica
 from .motion import compute_motion, apply_motion_correction
 
 class Data():
@@ -35,12 +39,24 @@ class Data():
             print(self.info)
             self.info.Ts = np.mean(self.info.Ts)
 
+        self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
+
+    def _batch_framei(self, row):
+        return self.framei(row.frame_idx, row.file_idx)
+
     def __getitem__(self, idx):
         with h5py.File(self.data_file, 'r') as h:
             data = Movie(np.asarray(h['data'][idx]), Ts=self.Ts)
+
+        # likely more cases to account for in future
+        if isinstance(idx, tuple):
+            mc_idx = idx[0]
+        else:
+            mc_idx = idx
+
         if self._has_motion_correction:
             with pd.HDFStore(self.data_file) as h:
-                motion_data = h.motion.iloc[idx][['x','y']].values
+                motion_data = h.motion.iloc[mc_idx][['x','y']].values
             data = apply_motion_correction(data, motion_data, in_place=True, verbose=False)
         else:
             warnings.warn('Note that no motion correction data is present.')
@@ -143,5 +159,156 @@ class Data():
             h.remove('motion')
             h.put('motion', mot)
 
-    def show(self, show_slice=slice(None,None,100)):
-        pl.imshow(self[show_slice].mean(axis=0))
+    def show(self, show_slice=slice(None,None,800)):
+        im = self[show_slice].mean(axis=0)
+        pl.imshow(im)
+        return im
+
+    @property
+    def _latest_roi_idx(self):
+        with h5py.File(self.data_file) as f:
+            if 'roi' not in f:
+                return None
+            keys = list(f['roi'].keys())
+            if len(keys)==0:
+                return None
+            matches = [re.match('roi(\d)', s) for s in keys]
+            idxs = [int(m.groups()[0]) for m in matches if m]
+            return max(idxs)
+
+    @property
+    def _next_roi_idx(self):
+        latest_idx = self._latest_roi_idx
+        if latest_idx is None:
+            nex_idx = 0
+        else:
+            nex_idx = latest_idx+1
+        return nex_idx
+    
+    @property
+    def _latest_segmentation_idx(self):
+        with h5py.File(self.data_file) as f:
+            if 'segmentation' not in f:
+                return None
+            keys = list(f['segmentation'].keys())
+            if len(keys)==0:
+                return None
+            matches = [re.match('segmentation(\d)', s) for s in keys]
+            idxs = [int(m.groups()[0]) for m in matches if m]
+            return max(idxs)
+
+    @property
+    def _next_segmentation_idx(self):
+        latest_idx = self._latest_segmentation_idx
+        if latest_idx is None:
+            nex_idx = 0
+        else:
+            nex_idx = latest_idx+1
+        return nex_idx
+
+    def set_roi(self, roi):
+        with h5py.File(self.data_file) as f:
+            if 'roi' not in f:
+                roigrp = f.create_group('roi')
+            else:
+                roigrp = f['roi']
+            roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi))
+   
+    def get_roi(self, idx=None):
+        if idx is None:
+            idx = self._latest_roi_idx
+        if idx is None:
+            return None
+
+        with h5py.File(self.data_file) as f:
+            roigrp = f['roi']
+            self._roi = ROI(roigrp['roi{}'.format(int(idx))])
+
+        return self._roi
+
+    def get_tr(self, idx=None, batch=6000, verbose=True):
+        if idx is None:
+            idx = self._latest_roi_idx
+
+        roi = self.get_roi(idx)
+        if roi is None:
+            return None
+        trname = 'tr{}'.format(idx)
+
+        with h5py.File(self.data_file) as f:
+            if 'traces' not in f:
+                grp = f.create_group('traces')
+            elif 'traces' in f:
+                grp = f['traces']
+
+            if trname in grp:
+                self._tr = Series(np.asarray(grp[trname]), Ts=self.Ts)
+            elif trname not in grp:
+                if verbose:
+                    print ('Extracting traces...'); sys.stdout.flush()
+                all_tr = []
+                for b in range(0,len(self),batch):
+                    sl = slice(b,min([len(self), b+batch]))
+                    if verbose:
+                        print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self))); sys.stdout.flush()
+                    tr = Movie(self[sl]).extract(roi)
+                    all_tr.append(np.asarray(tr))
+                self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
+                grp.create_dataset(trname, data=np.asarray(self._tr))
+
+        return self._tr
+    
+    def get_dff(self, idx=None, compute_dff_kwargs={}, verbose=True):
+        if idx is None:
+            idx = self._latest_roi_idx
+
+        dffname = 'dff{}'.format(idx)
+
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
+
+            if dffname in grp:
+                self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
+
+            elif dffname not in grp:
+                tr = self.get_tr(idx)
+                if tr is None:
+                    return None
+                self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
+                grp.create_dataset(dffname, data=np.asarray(self._dff))
+
+        return self._dff
+    
+    def get_transients(self, idx=None, detect_transients_kwargs={}):
+        if idx is None:
+            idx = self._latest_roi_idx
+
+        transname = 'transients{}'.format(idx)
+
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
+
+            if transname in grp:
+                self._transients = Series(np.asarray(grp[transname]), Ts=self.Ts)
+
+            elif transname not in grp:
+                dff = self.get_dff(idx)
+                if dff is None:
+                    return None
+                self._transients = detect_transients(dff, **detect_transients_kwargs)
+                grp.create_dataset(transname, data=np.asarray(self._transients))
+
+        return self._transients
+
+    def segment(self, n_frames=12000, downsample=2, **pca_ica_kwargs):
+        ex_mov = self[:n_frames]
+        ex_mov = ex_mov.rolling_mean(downsample)
+        comps = pca_ica(ex_mov, **pca_ica_kwargs)
+        with h5py.File(self.data_file) as h:
+            if 'segmentation' not in h:
+                grp = h.create_group('segmentation')
+            else:
+                grp = h['segmentation']
+            ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps)
+            params = pca_ica_kwargs.update(n_frames=n_frames, downsample=downsample)
+            ds.attrs['params'] = params

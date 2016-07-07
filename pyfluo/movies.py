@@ -43,8 +43,9 @@ class Movie(np.ndarray):
                 data = h.data
                 Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
             elif suf in ['.tif','.tiff']:
-                tf = tifffile.TiffFile(data)
-                data = tf.asarray()
+                tf = Tiff(data)
+                data = tf.data
+                Ts = tf.Ts
 
         # convert to a np array (either of strings or data itself)
         data = np.asarray(data)
@@ -265,6 +266,12 @@ class Movie(np.ndarray):
         for ca in self._custom_attrs:
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
+
+    def rolling_mean(self, n=4):
+        """Downsample movie by taking rolling mean of every n frames
+        """
+        assert len(self)%n == 0, 'Currently does not support n\'s that are not multiples of movie length.'
+        return self.reshape((-1,n,self.shape[1],self.shape[2])).mean(axis=1)
 
     def save(self, filename, fmt=None, codec='IYUV', fps=None):
 

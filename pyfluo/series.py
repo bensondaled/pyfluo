@@ -100,7 +100,10 @@ class Series(pd.DataFrame):
 
         return ax
 
-    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, **kwargs):
+    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, yfontsize=15, hlines=True, **kwargs):
+        """
+        labels: True, False/None, or list of labels, one for each column in data
+        """
         if ax is None:
             ax = pl.gca()
         if order is None:
@@ -110,19 +113,27 @@ class Series(pd.DataFrame):
         x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
         true_y = np.arange(self.shape[1])
         y = np.arange(self.shape[1]+1)-0.5
-        ylab = [str(int(i)) for i in true_y[order]]
+
+        if labels is True:
+            ylab = [str(int(i)) for i in true_y[order]]
+        elif isinstance(labels,list) or isinstance(labels,np.ndarray):
+            ylab = labels
+        elif not labels:
+            ylab = None
         ycolors = color_id_map(np.linspace(0,1,self.shape[1]))[order]
 
         res = ax.pcolormesh(x, y, self.T.iloc[order,:], **kwargs)
 
-        ax.hlines(y, x[0], x[-1], color='w')
+        if hlines:
+            ax.hlines(y, x[0], x[-1], color='w')
         ax.set_xlim([x[0], x[-1]])
         ax.set_ylim([y[0], y[-1]])
-        if labels:
+        if ylab is not None:
             ax.set_yticks(true_y)
             ax.set_yticklabels(ylab, ha='right')
             for i,c in zip(ax.get_yticklabels(), ycolors):
                 i.set_color(c)
+                i.set_fontsize(yfontsize)
         return res
 
 if __name__ == '__main__':

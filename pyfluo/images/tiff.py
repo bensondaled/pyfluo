@@ -69,6 +69,7 @@ class Tiff(object):
         self.name,self.suffix = os.path.splitext(self.filename)
 
         self.data,self.metadata,self.i2c,self.si_data = self._load_data()
+        self.Ts = self.metadata['Ts'].values[0]
     
     def _load_data(self):
         metadata_columns=['name','n','y','x','Ts']
