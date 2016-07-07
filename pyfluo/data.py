@@ -313,4 +313,4 @@ class Data():
                 grp = h['segmentation']
             ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps)
             params = pca_ica_kwargs.update(n_frames=n_frames, downsample=downsample)
-            ds.attrs['params'] = params
+            ds.attrs.update(params)
