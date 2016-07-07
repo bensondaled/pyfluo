@@ -38,8 +38,6 @@ class Data():
             print(self.info)
             self.info.Ts = np.mean(self.info.Ts)
 
-        self._roi = None
-        self._dff, self._tr, self._transients = None,None,None
         self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
 
     def _batch_framei(self, row):
@@ -160,7 +158,7 @@ class Data():
             h.remove('motion')
             h.put('motion', mot)
 
-    def show(self, show_slice=slice(None,None,100)):
+    def show(self, show_slice=slice(None,None,800)):
         im = self[show_slice].mean(axis=0)
         pl.imshow(im)
         return im
@@ -184,103 +182,98 @@ class Data():
             nex_idx = 0
         else:
             nex_idx = latest_idx+1
-        nex = 'roi{}'.format(nex_idx)
-        return nex
+        return nex_idx
 
     def set_roi(self, roi):
         with h5py.File(self.data_file) as f:
             if 'roi' not in f:
                 roigrp = f.create_group('roi')
+            else:
+                roigrp = f['roi']
             roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi))
    
     def get_roi(self, idx=None):
-        # Note that the way I cache precludes me from asking for multiple different indices in same python session
         if idx is None:
             idx = self._latest_roi_idx
         if idx is None:
             return None
-        if self._roi is None:
-            with h5py.File(self.data_file) as f:
-                roigrp = f['roi']
-                self._roi = ROI(roigrp['roi{}'.format(int(idx))])
+
+        with h5py.File(self.data_file) as f:
+            roigrp = f['roi']
+            self._roi = ROI(roigrp['roi{}'.format(int(idx))])
+
         return self._roi
 
     def get_tr(self, idx=None, batch=6000, verbose=True):
-        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        if idx is None:
+            idx = self._latest_roi_idx
+
         roi = self.get_roi(idx)
         if roi is None:
             return None
         trname = 'tr{}'.format(idx)
 
-        if self._tr is not None:
-            pass
+        with h5py.File(self.data_file) as f:
+            if 'traces' not in f:
+                grp = f.create_group('traces')
+            elif 'traces' in f:
+                grp = f['traces']
 
-        elif self._tr is None:
-            with h5py.File(self.data_file) as f:
-                if 'traces' not in f:
-                    grp = f.create_group('traces')
-                elif 'traces' in f:
-                    grp = f['traces']
-
-                if trname in grp:
-                    self._tr = Series(np.asarray(grp[trname]), Ts=self.Ts)
-                elif trname not in grp:
+            if trname in grp:
+                self._tr = Series(np.asarray(grp[trname]), Ts=self.Ts)
+            elif trname not in grp:
+                if verbose:
+                    print ('Extracting traces...'); sys.stdout.flush()
+                all_tr = []
+                for b in range(0,len(self),batch):
+                    sl = slice(b,min([len(self), b+batch]))
                     if verbose:
-                        print ('Extracting traces...'); sys.stdout.flush()
-                    all_tr = []
-                    for b in range(0,len(self),batch):
-                        sl = slice(b,min([len(self), b+batch]))
-                        if verbose:
-                            print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self))); sys.stdout.flush()
-                        tr = Movie(self[sl]).extract(roi)
-                        all_tr.append(np.asarray(tr))
-                    self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
-                    grp.create_dataset(trname, data=np.asarray(self._tr))
+                        print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self))); sys.stdout.flush()
+                    tr = Movie(self[sl]).extract(roi)
+                    all_tr.append(np.asarray(tr))
+                self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
+                grp.create_dataset(trname, data=np.asarray(self._tr))
 
         return self._tr
     
     def get_dff(self, idx=None, compute_dff_kwargs={}, verbose=True):
-        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        if idx is None:
+            idx = self._latest_roi_idx
+
         dffname = 'dff{}'.format(idx)
 
-        if self._dff is not None:
-            pass
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
 
-        elif self._dff is None:
-            with h5py.File(self.data_file) as f:
-                grp = f['traces']
+            if dffname in grp:
+                self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
 
-                if dffname in grp:
-                    self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
-
-                elif dffname not in grp:
-                    tr = self.get_tr(idx)
-                    if tr is None:
-                        return None
-                    self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
-                    grp.create_dataset(dffname, data=np.asarray(self._dff))
+            elif dffname not in grp:
+                tr = self.get_tr(idx)
+                if tr is None:
+                    return None
+                self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
+                grp.create_dataset(dffname, data=np.asarray(self._dff))
 
         return self._dff
     
     def get_transients(self, idx=None, detect_transients_kwargs={}):
-        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        if idx is None:
+            idx = self._latest_roi_idx
+
         transname = 'transients{}'.format(idx)
 
-        if self._transients is not None:
-            pass
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
 
-        elif self._transients is None:
-            with h5py.File(self.data_file) as f:
-                grp = f['traces']
+            if transname in grp:
+                self._transients = Series(np.asarray(grp[transname]), Ts=self.Ts)
 
-                if transname in grp:
-                    self._transients = Series(np.asarray(grp[transname]), Ts=self.Ts)
-
-                elif transname not in grp:
-                    dff = self.get_dff(idx)
-                    if dff is None:
-                        return None
-                    self._transients = detect_transients(dff, **detect_transients_kwargs)
-                    grp.create_dataset(transname, data=np.asarray(self._transients))
+            elif transname not in grp:
+                dff = self.get_dff(idx)
+                if dff is None:
+                    return None
+                self._transients = detect_transients(dff, **detect_transients_kwargs)
+                grp.create_dataset(transname, data=np.asarray(self._transients))
 
         return self._transients

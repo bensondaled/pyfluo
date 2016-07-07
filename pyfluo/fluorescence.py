@@ -8,8 +8,9 @@ from .util import ProgressBar
 from .util import sliding_window
 from .config import *
 
-def compute_dff(data, percentile=5., window_size=3., step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, percentile=5., window_size=60., step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
+    NOTE: currently using median instead of percentile. both suck
     method: 'pd' / 'np'
     """
     Ts = Ts or data.Ts
@@ -23,7 +24,8 @@ def compute_dff(data, percentile=5., window_size=3., step_size=None, method='pd'
             #xmode,_ = mode(x, axis=0)
             #return xmode[0]
             return np.percentile(x, percentile)
-        f0 = data.rolling(window=_window, min_periods=1).apply(func=f_dff)
+        #f0 = data.rolling(window=_window, min_periods=1).apply(func=f_dff)
+        f0 = data.rolling(window=_window, min_periods=1).median()
         dff = (data-f0)/f0
         return Series(dff.values, Ts=Ts)
     

@@ -100,7 +100,7 @@ class Series(pd.DataFrame):
 
         return ax
 
-    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, yfontsize=15, **kwargs):
+    def heat(self, order=None, color_id_map=pl.cm.viridis, labels=True, ax=None, yfontsize=15, hlines=True, **kwargs):
         """
         labels: True, False/None, or list of labels, one for each column in data
         """
@@ -124,7 +124,8 @@ class Series(pd.DataFrame):
 
         res = ax.pcolormesh(x, y, self.T.iloc[order,:], **kwargs)
 
-        ax.hlines(y, x[0], x[-1], color='w')
+        if hlines:
+            ax.hlines(y, x[0], x[-1], color='w')
         ax.set_xlim([x[0], x[-1]])
         ax.set_ylim([y[0], y[-1]])
         if ylab is not None:
