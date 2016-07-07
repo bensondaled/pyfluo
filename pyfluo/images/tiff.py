@@ -109,6 +109,7 @@ class TiffGroup(object):
         self.names = [os.path.splitext(fn)[0] for fn in self.file_names]
         self.nfiles = len(self.names)
         self.common_name = self._determine_common_name()
+        self.hdf_path = os.path.join(self.path, self.common_name+'.h5')
 
     def _determine_common_name(self):
         # currently, just chooses longest common string, where underscore-separated chunks are treated as units
@@ -121,7 +122,6 @@ class TiffGroup(object):
 
     def to_hdf5(self, verbose=True):
 
-        self.hdf_path = os.path.join(self.path, self.common_name+'.h5')
         t0 = time.time()
         
         for idx in range(self.nfiles):
