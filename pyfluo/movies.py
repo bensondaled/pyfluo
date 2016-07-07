@@ -267,6 +267,12 @@ class Movie(np.ndarray):
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
 
+    def rolling_mean(self, n=4):
+        """Downsample movie by taking rolling mean of every n frames
+        """
+        assert len(self)%n == 0, 'Currently does not support n\'s that are not multiples of movie length.'
+        return self.reshape((-1,n,self.shape[1],self.shape[2])).mean(axis=1)
+
     def save(self, filename, fmt=None, codec='IYUV', fps=None):
 
         """Save movie for playback in video player

@@ -7,6 +7,7 @@ from .movies import Movie
 from .series import Series
 from .roi import ROI
 from .fluorescence import compute_dff, detect_transients
+from .segmentation import pca_ica
 from .motion import compute_motion, apply_motion_correction
 
 class Data():
@@ -183,6 +184,27 @@ class Data():
         else:
             nex_idx = latest_idx+1
         return nex_idx
+    
+    @property
+    def _latest_segmentation_idx(self):
+        with h5py.File(self.data_file) as f:
+            if 'segmentation' not in f:
+                return None
+            keys = list(f['segmentation'].keys())
+            if len(keys)==0:
+                return None
+            matches = [re.match('segmentation(\d)', s) for s in keys]
+            idxs = [int(m.groups()[0]) for m in matches if m]
+            return max(idxs)
+
+    @property
+    def _next_segmentation_idx(self):
+        latest_idx = self._latest_segmentation_idx
+        if latest_idx is None:
+            nex_idx = 0
+        else:
+            nex_idx = latest_idx+1
+        return nex_idx
 
     def set_roi(self, roi):
         with h5py.File(self.data_file) as f:
@@ -277,3 +299,16 @@ class Data():
                 grp.create_dataset(transname, data=np.asarray(self._transients))
 
         return self._transients
+
+    def segment(self, n_frames=12000, downsample=2, **pca_ica_kwargs):
+        ex_mov = self[:n_frames]
+        ex_mov = ex_mov.rolling_mean(downsample)
+        comps = pca_ica(ex_mov, **pca_ica_kwargs)
+        with h5py.File(self.data_file) as h:
+            if 'segmentation' not in h:
+                grp = h.create_group('segmentation')
+            else:
+                grp = h['segmentation']
+            ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps)
+            params = pca_ica_kwargs.update(n_frames=n_frames, downsample=downsample)
+            ds.attrs['params'] = params

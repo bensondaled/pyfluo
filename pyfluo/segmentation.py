@@ -74,7 +74,7 @@ def ipca(mov, components=50, batch=1000):
 
     return eigenseries, eigenframes, proj_frame_vectors        
    
-def pca_ica(mov, components=50, batch=10000, mu=0.5, ica_func='logcosh', verbose=True):
+def pca_ica(mov, components=100, batch=10000, mu=0.5, ica_func='logcosh', verbose=True):
     """Perform iterative PCA/ICA ROI extraction
 
     Parameters
