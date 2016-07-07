@@ -6,7 +6,7 @@ import matplotlib.pyplot as pl
 from .movies import Movie
 from .series import Series
 from .roi import ROI
-from .fluorescence import compute_dff
+from .fluorescence import compute_dff, detect_transients
 from .motion import compute_motion, apply_motion_correction
 
 class Data():
@@ -39,7 +39,7 @@ class Data():
             self.info.Ts = np.mean(self.info.Ts)
 
         self._roi = None
-        self._dff, self._tr = None,None
+        self._dff, self._tr, self._transients = None,None,None
         self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
 
     def _batch_framei(self, row):
@@ -239,7 +239,7 @@ class Data():
 
         return self._tr
     
-    def get_dff(self, idx=None, verbose=True):
+    def get_dff(self, idx=None, compute_dff_kwargs={}, verbose=True):
         # Note that the way I cache precludes me from asking for multiple different indices in same python session
         dffname = 'dff{}'.format(idx)
 
@@ -257,7 +257,30 @@ class Data():
                     tr = self.get_tr(idx)
                     if tr is None:
                         return None
-                    self._dff = compute_dff(tr, verbose=verbose)
+                    self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
                     grp.create_dataset(dffname, data=np.asarray(self._dff))
 
         return self._dff
+    
+    def get_transients(self, idx=None, detect_transients_kwargs={}):
+        # Note that the way I cache precludes me from asking for multiple different indices in same python session
+        transname = 'transients{}'.format(idx)
+
+        if self._transients is not None:
+            pass
+
+        elif self._transients is None:
+            with h5py.File(self.data_file) as f:
+                grp = f['traces']
+
+                if transname in grp:
+                    self._transients = Series(np.asarray(grp[transname]), Ts=self.Ts)
+
+                elif transname not in grp:
+                    dff = self.get_dff(idx)
+                    if dff is None:
+                        return None
+                    self._transients = detect_transients(dff, **detect_transients_kwargs)
+                    grp.create_dataset(transname, data=np.asarray(self._transients))
+
+        return self._transients

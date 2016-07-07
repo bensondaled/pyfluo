@@ -3,6 +3,7 @@ from scipy.stats.mstats import mode
 from scipy.ndimage.measurements import label
 import warnings, sys
 
+from .series import Series
 from .util import ProgressBar
 from .util import sliding_window
 from .config import *
@@ -24,7 +25,7 @@ def compute_dff(data, percentile=5., window_size=3., step_size=None, method='pd'
             return np.percentile(x, percentile)
         f0 = data.rolling(window=_window, min_periods=1).apply(func=f_dff)
         dff = (data-f0)/f0
-        return dff
+        return Series(dff.values, Ts=Ts)
     
     elif method=='np':
         if step_size == None:
@@ -70,48 +71,58 @@ def compute_dff(data, percentile=5., window_size=3., step_size=None, method='pd'
         else:
             return ret
 
-def detect_transients(sig, main_thresh=0.0001, peak_thresh=1.5, drift_window=10., width_lims=(0.040, 3.00), Ts=None):
+def detect_transients(sig, baseline_thresh=0.0, peak_thresh=2.5, drift_window=10., width_lims=(0.100, 3.00), Ts=None):
     """
-    TODO: this is not properly implemented, some things will fall through cracks, other will be false positive
-    sig is a 1d signal
     width_lims in units of sig's Ts
+
+    baseline_thresh: how far down the signal must fall, specified as number of std's above or below mean
+    peak_thresh: how high the signal must peak, even if just for 1 frame, also as n std's above mean
+    drift_window: the sliding window to determine local means and stds for above thresholds
     """
 
     Ts = Ts or sig.Ts
 
     if isinstance(sig, pd.DataFrame):
-        res = sig.apply(detect_transients, axis=0, Ts=Ts)
+        res = sig.apply(detect_transients, axis=0, Ts=Ts, baseline_thresh=baseline_thresh, peak_thresh=peak_thresh, drift_window=drift_window, width_lims=width_lims)
         result = sig.copy() # trick to maintain other properties
         result[:] = res[:]
         return result
-    
+
     wmin,wmax = np.round(np.asarray(width_lims) / Ts).astype(int)
     dwin = int(np.round(drift_window/Ts))
 
     sig = pd.Series(np.squeeze(np.asarray(sig)))
+    mean_signal = sig.rolling(window=dwin, min_periods=1).median().values
+    std_signal = sig.rolling(window=dwin, min_periods=1).std().values
 
-    def pin(x):
-        return np.max(x)
+    bl_thresh = mean_signal + baseline_thresh*std_signal
+    pk_thresh = mean_signal + peak_thresh*std_signal
 
-    # find significant samples
-    mean_signal = sig.rolling(window=dwin, min_periods=1).mean()
-    thresh1 = mean_signal + main_thresh * sig.std(axis=0)
-    thresh2 = mean_signal + peak_thresh * sig.std(axis=0)
-    above_thresh1 = sig>thresh1
-    peak_hoods = sig.rolling(window=wmax, min_periods=1).apply(pin).values # this step only speeds things up, not necessary
-    potential = (above_thresh1) & (peak_hoods>thresh2)
+    above = sig>pk_thresh
+    below = sig<=bl_thresh
 
-    # label potential transients
-    labelled,nlab = label(potential.values)
+    labelled,nlab = label(above)
 
-    # width and peak restrictions
-    dummies = np.arange(1,nlab+1)
-    ns_per_label = np.array([np.sum(labelled==l) for l in dummies])
-    peaks_ok = np.array([np.max(sig[labelled==l])>=np.max(thresh2[labelled==l]) for l in dummies])
-    lab_ids = dummies[(ns_per_label>=wmin) & (ns_per_label<=wmax) & (peaks_ok)]
-    valid = pd.Series(labelled).isin(lab_ids).values
+    borders = []
+    for l in np.arange(1,nlab):
+        aw = np.argwhere(labelled==l).T[0]
+        first,last = aw[0],aw[-1]
 
-    new_sig = np.zeros_like(sig)
-    new_sig[valid] = sig[valid]
+        downbefore = np.argwhere(below[:first][::-1])
+        if len(downbefore)==0:
+            continue
+        downbefore = first-np.min(downbefore)
+        
+        downafter = np.argwhere(below[last+1:])
+        if len(downafter)==0:
+            continue
+        downafter = last+1+np.min(downafter)
 
-    return new_sig
+        borders.append((downbefore, downafter))
+
+    ret = np.zeros(sig.shape)
+    for b in borders:
+        if b[1]-b[0]<wmin or b[1]-b[0]>wmax:
+            continue
+        ret[b[0]:b[1]] = sig[b[0]:b[1]]
+    return ret

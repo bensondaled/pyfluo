@@ -43,8 +43,9 @@ class Movie(np.ndarray):
                 data = h.data
                 Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
             elif suf in ['.tif','.tiff']:
-                tf = tifffile.TiffFile(data)
-                data = tf.asarray()
+                tf = Tiff(data)
+                data = tf.data
+                Ts = tf.Ts
 
         # convert to a np array (either of strings or data itself)
         data = np.asarray(data)
