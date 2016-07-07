@@ -159,6 +159,8 @@ class Data():
             h.remove('motion')
             h.put('motion', mot)
 
+        self._has_motion_correction = True
+
     def show(self, show_slice=slice(None,None,800)):
         im = self[show_slice].mean(axis=0)
         pl.imshow(im)
