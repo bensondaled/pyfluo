@@ -1,7 +1,8 @@
 """
 TODO: 
     -add iterations on motion correction
-    -in segmentation, take advantage of IPCA. but preprocessing (mocor, crop, rolling mean) must be done first, so must save to temp file I think
+    -in segmentation, take advantage of IPCA. but preprocessing (mocor, crop, rolling mean) must be done first, so need to implement the use of partial_fit
+        - specifically: edit pcaica fxn to accept a generator, and then call next on it with partial fits until it's done
 """
 
 from __future__ import print_function
