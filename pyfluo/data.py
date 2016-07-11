@@ -1,5 +1,7 @@
 """
-TODO: add iterations on motion correction
+TODO: 
+    -add iterations on motion correction
+    -in segmentation, take advantage of IPCA. but preprocessing (mocor, crop, rolling mean) must be done first, so must save to temp file I think
 """
 
 from __future__ import print_function
