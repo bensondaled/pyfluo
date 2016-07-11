@@ -1,5 +1,6 @@
 import numpy as np
 import pylab as pl
+import networkx as nx
 import sys
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
@@ -10,6 +11,7 @@ import itertools as it
 
 from .util import ProgressBar, Progress
 from .config import cv2
+from .roi import ROI
 
 def grid(data, rows=0.5, cols=0.5):
     """Generate index slices to split image/movie into grid
@@ -185,6 +187,27 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], verbose=True
         all_masks = np.array(all_masks)
        
         return all_masks
+
+def merge_roi(roi, overlap_thresh=0.4):
+    # Attempts to merge regions of interest that have overlap
+    roi_orig = roi.copy()
+    roi = roi.reshape([len(roi), -1]).astype(int)
+
+    norm = np.repeat(roi.sum(axis=1), len(roi)).reshape([len(roi),len(roi)])
+    overlap_oflarger = roi.dot(roi.T) / np.max([norm, norm.T], axis=0) # min or max means as pctg of smaller or larger roi
+    overlap_ofsmaller = roi.dot(roi.T) / np.min([norm, norm.T], axis=0) # min or max means as pctg of smaller or larger roi
+    overlap_oflarger[np.triu_indices_from(overlap_oflarger)] = 0
+    overlap_ofsmaller[np.triu_indices_from(overlap_ofsmaller)] = 0
+
+    merge = np.asarray(np.nonzero( (overlap_oflarger>overlap_thresh) & (overlap_ofsmaller>overlap_thresh) )).T
+    g = nx.Graph()
+    g.add_nodes_from(np.arange(len(overlap_ofsmaller)))
+    g.add_edges_from(merge)
+    merge_grps = list(nx.connected_components(g))
+    roi = np.array([(roi_orig[list(mg)].sum(axis=0))>0 for mg in merge_grps])
+
+    roi = ROI(roi)
+    return roi
 
 def local_correlations(self,eight_neighbours=False):
      # Output:

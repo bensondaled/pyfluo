@@ -1,3 +1,7 @@
+"""
+TODO: add iterations on motion correction
+"""
+
 from __future__ import print_function
 import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
@@ -33,6 +37,10 @@ class Data():
             self._has_motion_correction = 'motion' in h
             if self._has_motion_correction:
                 self.motion = h.motion
+                try:
+                    self.motion_params = h.get_storer('motion').attrs.params
+                except:
+                    self.motion_params = None
         self.Ts = self.info.iloc[0].Ts
         if not (self.info.Ts==self.Ts).all():
             warnings.warn('Sampling periods do not match. This class currently doesn\'t support this. Will replace Ts\'s with mean of Ts\'s.')
@@ -158,6 +166,8 @@ class Data():
             # replace table with added values
             h.remove('motion')
             h.put('motion', mot)
+            compute_kwargs.update(chunk_size=chunk_size)
+            h.get_storer('motion').attrs.params = compute_kwargs
 
         self._has_motion_correction = True
 
@@ -279,6 +289,12 @@ class Data():
                 self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
                 grp.create_dataset(dffname, data=np.asarray(self._dff))
 
+        if self._dff.isnull().values.any():
+            warnings.warn('Null values zeroed out in DFF.')
+            self._dff[self._dff.isnull()] = 0
+        if np.isinf(self._dff).values.any():
+            warnings.warn('Inf values zeroed out in DFF.')
+            self._dff[np.isinf(self._dff)] = 0
         return self._dff
     
     def get_transients(self, idx=None, detect_transients_kwargs={}):
@@ -302,8 +318,11 @@ class Data():
 
         return self._transients
 
-    def segment(self, n_frames=12000, downsample=2, **pca_ica_kwargs):
+    def segment(self, n_frames=12000, downsample=2, crop=True, **pca_ica_kwargs):
         ex_mov = self[:n_frames]
+        if crop:
+            c = self.motion_params['max_shift']
+            ex_mov = ex_mov[:,c:-c,c:-c]
         ex_mov = ex_mov.rolling_mean(downsample)
         comps = pca_ica(ex_mov, **pca_ica_kwargs)
         with h5py.File(self.data_file) as h:

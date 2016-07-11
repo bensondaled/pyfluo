@@ -171,7 +171,7 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=2), ax=None, show=True, **kwargs):
+    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=1), ax=None, show=True, **kwargs):
         """Display the ROI(s)
         TODO: adjust how masks are coloured such that the image itself is RGB and doesn't need a colormap to depend on
         
