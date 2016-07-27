@@ -1,7 +1,7 @@
 import numpy as np
 import pylab as pl
 import networkx as nx
-import sys
+import sys, types
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
 import multiprocessing as mup
@@ -48,40 +48,47 @@ def grid(data, rows=0.5, cols=0.5):
     return slices
 
 def ipca(mov, components=50, batch=1000):
-    # vectorize the images
-    num_frames, h, w = np.shape(mov)
-    frame_size = h * w
-    frame_samples = np.reshape(mov, (num_frames, frame_size)).T
-    
-    # run IPCA to approxiate the SVD
-    
-    ipca_f = IncrementalPCA(n_components=components, batch_size=batch)
-    ipca_f.fit(frame_samples)
-    
-    # construct the reduced version of the movie vectors using only the 
-    # principal component projection
-    
-    proj_frame_vectors = ipca_f.inverse_transform(ipca_f.transform(frame_samples))
+
+    if isinstance(mov, types.GeneratorType):
+        print ('Implement this!')
+        eigenseries,eigenframes,proj_frame_vectors = None,None,None
+
+    elif isinstance(mov, np.ndarray):
+
+        # vectorize the images
+        shape = mov.shape
+        num_frames, h, w = shape
+        frame_samples = np.reshape(mov, (num_frames, w*h)).T
         
-    # get the temporal principal components (pixel time series) and 
-    # associated singular values
-    
-    eigenseries = ipca_f.components_.T
+        # run IPCA to approxiate the SVD
+        
+        ipca_f = IncrementalPCA(n_components=components, batch_size=batch)
+        ipca_f.fit(frame_samples)
+        
+        # construct the reduced version of the movie vectors using only the 
+        # principal component projection
+        
+        proj_frame_vectors = ipca_f.inverse_transform(ipca_f.transform(frame_samples))
+            
+        # get the temporal principal components (pixel time series) and 
+        # associated singular values
+        
+        eigenseries = ipca_f.components_.T
 
-    # the rows of eigenseries are approximately orthogonal
-    # so we can approximately obtain eigenframes by multiplying the 
-    # projected frame matrix by this transpose on the right
-    
-    eigenframes = np.dot(proj_frame_vectors, eigenseries)
+        # the rows of eigenseries are approximately orthogonal
+        # so we can approximately obtain eigenframes by multiplying the 
+        # projected frame matrix by this transpose on the right
+        
+        eigenframes = np.dot(proj_frame_vectors, eigenseries)
 
-    return eigenseries, eigenframes, proj_frame_vectors        
+    return eigenseries, eigenframes, proj_frame_vectors, shape
    
 def pca_ica(mov, components=100, batch=10000, mu=0.5, ica_func='logcosh', verbose=True):
     """Perform iterative PCA/ICA ROI extraction
 
     Parameters
     ----------
-    mov : pyfluo.Movie
+    mov : pyfluo.Movie, generator
         input movie
     components : int
         number of independent components to return
@@ -100,15 +107,16 @@ def pca_ica(mov, components=100, batch=10000, mu=0.5, ica_func='logcosh', verbos
 
     """
     with Progress(msg='PCA', verbose=verbose):
-        eigenseries, eigenframes,_proj = ipca(mov, components, batch)
-    # normalize the series
+        eigenseries, eigenframes,_proj,shape = ipca(mov, components, batch)
 
+    # normalize the frames
     frame_scale = mu / np.max(eigenframes)
-    frame_mean = np.mean(eigenframes, axis = 0)
+    frame_mean = np.mean(eigenframes, axis=0)
     n_eigenframes = frame_scale * (eigenframes - frame_mean)
 
+    # normalize the series
     series_scale = (1-mu) / np.max(eigenframes)
-    series_mean = np.mean(eigenseries, axis = 0)
+    series_mean = np.mean(eigenseries, axis=0)
     n_eigenseries = series_scale * (eigenseries - series_mean)
 
     # build new features from the space/time data
@@ -122,9 +130,8 @@ def pca_ica(mov, components=100, batch=10000, mu=0.5, ica_func='logcosh', verbos
         joint_ics = ica.fit_transform(eigenstuff)
 
     # extract the independent frames
-    num_frames, h, w = mov.shape
-    frame_size = h * w
-    ind_frames = joint_ics[:frame_size, :]
+    num_frames, h, w = shape
+    ind_frames = joint_ics[:w*h, :]
     ind_frames = np.reshape(ind_frames.T, (components, h, w))
         
     return ind_frames  

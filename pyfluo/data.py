@@ -174,7 +174,10 @@ class Data():
 
         self._has_motion_correction = True
 
-    def show(self, show_slice=slice(None,None,800)):
+    def show(self, show_slice=None):
+        if show_slice is None:
+            interval = int(len(self)//200)
+            show_slice = slice(None,None,interval)
         im = self[show_slice].mean(axis=0)
         pl.imshow(im)
         return im
@@ -321,13 +324,32 @@ class Data():
 
         return self._transients
 
-    def segment(self, n_frames=12000, downsample=2, crop=True, **pca_ica_kwargs):
-        ex_mov = self[:n_frames]
+    def gen(self, chunk_size=100, n_frames=None, downsample=None, crop=False):
+        """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
+
+        chunk_size : number of frames to include in one chunk *before* downsampling
+        n_frames : sum of number of total raw frames included in all yields from this iterator
+
+        yielded items will be of length chunk_size//downsample
+        """
+        if n_frames is None:
+            n_frames = len(self)
         if crop:
-            c = self.motion_params['max_shift']
-            ex_mov = ex_mov[:,c:-c,c:-c]
-        ex_mov = ex_mov.rolling_mean(downsample)
-        comps = pca_ica(ex_mov, **pca_ica_kwargs)
+            cr = self.motion_params['max_shift']
+        if downsample in [None,False]:
+            downsample = 1
+
+        nchunks = n_frames//chunk_size
+
+        for idx in range(nchunks):
+            dat = self[idx*chunk_size:idx*chunk_size+chunk_size]
+            if crop:
+                dat = dat[:,cr:-cr,cr:-cr]
+            dat = dat.rolling_mean(downsample)
+            yield dat
+
+    def segment(self, gen_kwargs=dict(n_frames=12000, downsample=2, crop=True), **pca_ica_kwargs):
+        comps = pca_ica(self.gen(), **pca_ica_kwargs)
         with h5py.File(self.data_file) as h:
             if 'segmentation' not in h:
                 grp = h.create_group('segmentation')
