@@ -15,7 +15,7 @@ from .series import Series
 from .roi import ROI
 from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica
-from .motion import compute_motion, apply_motion_correction
+from .motion import motion_correct, apply_motion_correction
 
 class Data():
     """
@@ -35,6 +35,7 @@ class Data():
         with pd.HDFStore(self.data_file) as h:
             self.n_files = len(h.info)
             self.info = h.info
+            self.si_data = h.si_data
             self.i2c = h.i2c
             self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
             self._has_motion_correction = 'motion' in h
@@ -99,7 +100,7 @@ class Data():
             file_idx = int(file_idx)
             return np.append(0, self.info.n.cumsum().values)[file_idx] + frame_idx
 
-    def motion_correct(self, chunk_size=None, compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
+    def motion_correct(self, chunk_size=None, mc_kwargs=dict(max_iters=10, shift_threshold=1.,), compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
         """
         Corrects motion, first locally in sliding chunks of full dataset, then globally across chunks
 
@@ -141,7 +142,7 @@ class Data():
             if verbose:
                 print('Chunk {}/{}: frames {}:{}'.format(idx+1,n_chunks,sli.start,sli.stop)); sys.stdout.flush()
             chunk = Movie(self[sli])
-            templ,vals = compute_motion(chunk, **compute_kwargs)
+            _, templ,vals = motion_correct(chunk, compute_kwargs=compute_kwargs, **mc_kwargs)
 
             # format result
             mot = pd.DataFrame(columns=['chunk','x','y','metric','x_local','y_local'], index=sli_full, dtype=float)
@@ -157,7 +158,7 @@ class Data():
             template_mov = Movie(np.asarray(h['templates'][:-1]))
         cka = compute_kwargs.copy()
         cka.update(resample=1)
-        glob_template,glob_vals = compute_motion(template_mov, **cka)
+        _,glob_template,glob_vals = motion_correct(template_mov, compute_kwargs=cka, **mc_kwargs)
         with h5py.File(self.data_file) as h:
             h['templates'][-1] = glob_template
         with pd.HDFStore(self.data_file) as h:
