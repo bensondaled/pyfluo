@@ -273,7 +273,7 @@ class Movie(np.ndarray):
         assert len(self)%n == 0, 'Currently does not support n\'s that are not multiples of movie length.'
         if n==1:
             return self
-        return self.reshape((-1,n,self.shape[1],self.shape[2])).mean(axis=1)
+        return np.nanmean(self.reshape((-1,n,self.shape[1],self.shape[2])), axis=1)
 
     def save(self, filename, fmt=None, codec='IYUV', fps=None):
 

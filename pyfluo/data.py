@@ -175,13 +175,46 @@ class Data():
 
         self._has_motion_correction = True
 
-    def show(self, show_slice=None):
-        if show_slice is None:
-            interval = int(len(self)//200)
-            show_slice = slice(None,None,interval)
-        im = self[show_slice].mean(axis=0)
+    def show(self):
+        im = self.mean(axis=0)
         pl.imshow(im)
         return im
+
+    def _apply_func(self, func, func_name, axis):
+        """Applies arbitrary function to entire dataset in chunks
+        Importantly, applies to chunks, then applies to result of that
+        This works for functions like max, min, mean, but not all functions
+
+        NOTE: technically mean is slightly wrong here for datasets where chunk size of generator isnt a factor of n frames. the last chunk will be nan-padded but yet its nanmean will be averaged with the rest of the chunks naive to that fact
+        """
+        ax_str = str(axis)
+        if axis is None:
+            ax_str = ''
+        attr_str = '_{}_{}'.format(func_name, ax_str)
+        with h5py.File(self.data_file) as f:
+            if '_data_funcs' not in f:
+                f.create_group('_data_funcs')
+            if attr_str not in f['_data_funcs']:
+                res = [func(chunk, axis=axis) for chunk in self.gen()]
+                res = func(res, axis=0)
+                f['_data_funcs'].create_dataset(attr_str, data=res)
+            else:
+                res = np.asarray(f['_data_funcs'][attr_str])
+        if isinstance(res, np.ndarray) and res.ndim==0:
+            res = float(res)
+        return res
+
+    def max(self, axis=None):
+        return self._apply_func(np.nanmax, axis=axis, func_name='max')
+    def min(self, axis=None):
+        return self._apply_func(np.nanmin, axis=axis, func_name='min')
+    def mean(self, axis=None):
+        return self._apply_func(np.nanmean, axis=axis, func_name='mean')
+
+    def __max__(self):
+        return self.max()
+    def __min__(self):
+        return self.min()
 
     @property
     def _latest_roi_idx(self):
@@ -325,11 +358,12 @@ class Data():
 
         return self._transients
 
-    def gen(self, chunk_size=100, n_frames=None, downsample=None, crop=False):
+    def gen(self, chunk_size=100, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False):
         """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
 
         chunk_size : number of frames to include in one chunk *before* downsampling
         n_frames : sum of number of total raw frames included in all yields from this iterator
+        enforce_chunk_size : bool, if True, nan-pads the last slice if necessary to make equal chunk size
 
         yielded items will be of length chunk_size//downsample
         """
@@ -341,12 +375,22 @@ class Data():
             downsample = 1
 
         nchunks = n_frames//chunk_size
+        remainder = n_frames%chunk_size
 
-        for idx in range(nchunks):
-            dat = self[idx*chunk_size:idx*chunk_size+chunk_size]
+        for idx in range(nchunks+int(remainder>0)):
+            if idx == nchunks:
+                dat = self[idx*chunk_size:]
+                if enforce_chunk_size:
+                    pad_size = chunk_size - len(dat)
+                    dat = np.pad(dat, ((0,pad_size),(0,0),(0,0)), mode='constant', constant_values=(np.nan,))
+            else:
+                dat = self[idx*chunk_size:idx*chunk_size+chunk_size]
+
             if crop:
                 dat = dat[:,cr:-cr,cr:-cr]
+
             dat = dat.rolling_mean(downsample)
+
             yield dat
 
     def segment(self, gen_kwargs=dict(n_frames=12000, downsample=2, crop=True), **pca_ica_kwargs):
