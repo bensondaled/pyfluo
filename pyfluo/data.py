@@ -10,7 +10,7 @@ import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 
-from .movies import Movie
+from .movies import Movie, play_mov
 from .series import Series
 from .roi import ROI
 from .fluorescence import compute_dff, detect_transients
@@ -358,7 +358,7 @@ class Data():
 
         return self._transients
 
-    def gen(self, chunk_size=100, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False):
+    def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False):
         """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
 
         chunk_size : number of frames to include in one chunk *before* downsampling
@@ -403,3 +403,6 @@ class Data():
             ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps)
             pca_ica_kwargs.update(n_frames=n_frames, downsample=downsample, crop=crop)
             ds.attrs.update(pca_ica_kwargs)
+
+    def play(self, **kwargs):
+        play_mov(self, generator_fxn='gen', **kwargs)

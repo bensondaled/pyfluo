@@ -96,117 +96,13 @@ class Movie(np.ndarray):
                     roi.show()
         
         return pro
-    def play(self, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, fontsize=1, rolling_mean=1, **kwargs):
+    def play(self, **kwargs):
         """Play the movie
+
+        For params and details, see pf.movies.play_mov
         
-        Parameter
-        ---------
-        loop : bool 
-            repeat playback upon finishing
-        fps : float
-            playback rate in frames per second. Defaults to 1/Ts
-        scale : float 
-            scaling factor to resize playback images
-        contrast : float
-            scaling factor for pixel values (clips so as to produce contrast)
-        show_time : bool
-            show time on image
-        backend : module 
-            package to use for playback (ex. pl or cv2)
-        fontsize : float
-            to display time
-        rolling_mean : int
-            number of frames to avg in display
-
-        Playback controls (window must have focus):
-            'f' : faster
-            's' : slower
-            'p' : pause / continue
-            'r' : reverse
-            '=' : zoom in
-            '-' : zoom out
-            'q' : quit
-
-        Note: many params are not implemented in the matplotlib backend option
-            
         """
-        if fps==None:
-            fps = 1/self.Ts
-        fpms = fps / 1000.
-
-        if backend == pl:
-            flag = pl.isinteractive()
-            pl.ioff()
-            fig = pl.figure()
-            to_play = self.resize(scale)
-            minn,maxx = to_play.min(),to_play.max()
-            to_play = contrast * (to_play-minn)/(maxx-minn)
-            to_play[to_play>1.0] = 1.0 #clips; this should become a parameter
-            im = pl.imshow(np.zeros(self[0].shape), cmap=pl.cm.Greys_r, vmin=np.min(to_play), vmax=np.max(to_play))
-            self._idx = 0
-            def func(*args):
-                self._idx += 1
-                if self._idx>=len(to_play):
-                    return None
-                im.set_array(to_play[self._idx])
-                return im,
-            
-            ani = animation.FuncAnimation(fig, func, interval=1./fpms, blit=False, repeat=loop, **kwargs)
-            pl.show()
-            if flag:    pl.ion()
-
-        elif backend == cv2:
-            title = 'p / q / f / s / r / = / -'
-            minn,maxx = self.min(),self.max()
-        
-            current_idx = 0
-            wait = 1./fpms
-            paused = False
-            oper_idx = 0 #0: add, 1: subtract
-            while True:
-                if not paused:
-
-                    # get frame
-                    size = tuple((scale*np.array(self.shape)[-1:0:-1]).astype(int))
-                    font_size = scale * fontsize * min(self[0].shape)/450.
-                    t = self.Ts*current_idx
-                    fr = self[current_idx:current_idx+rolling_mean].mean(axis=0)
-                    fr = contrast * (fr-minn)/(maxx-minn)
-                    fr[fr>1.0] = 1.0
-                    fr[fr<0.0] = 0.0
-                    fr = cv2.resize(fr,size)
-                    if show_time:
-                        cv2.putText(fr, '{:0.3f}'.format(t), (5,int(30*font_size)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (120,100,80), thickness=1)
-                    cv2.imshow(title,fr)
-                    
-                    # update indices
-                    opfunc = [operator.add, operator.sub][oper_idx]
-                    current_idx = opfunc(current_idx, rolling_mean)
-                    if current_idx >= len(self):
-                        if not loop:
-                            break
-                        elif loop:
-                            current_idx = 0
-
-                # user input
-                k=cv2.waitKey(int(wait))
-                if k == ord('q'):
-                    break
-                elif k == ord('p'):
-                    paused = not paused
-                elif k == ord('f'):
-                    wait = wait/1.5
-                    wait = max([wait, 1])
-                elif k == ord('s'):
-                    wait = wait*1.5
-                elif k == ord('r'):
-                    oper_idx = int(not oper_idx)
-                elif k == ord('='):
-                    scale = scale * 1.5
-                elif k == ord('-'):
-                    scale = scale / 1.5
-
-            cv2.destroyWindow(title)
+        play_mov(self, **kwargs)
     
     def select_roi(self, *args, **kwargs):
         """A convenience method for pyfluo.roi.select_roi(self.project(), *args, **kwargs)
@@ -273,7 +169,9 @@ class Movie(np.ndarray):
         assert len(self)%n == 0, 'Currently does not support n\'s that are not multiples of movie length.'
         if n==1:
             return self
-        return np.nanmean(self.reshape((-1,n,self.shape[1],self.shape[2])), axis=1)
+        result = np.nanmean(self.reshape((-1,n,self.shape[1],self.shape[2])), axis=1)
+        result.Ts = self.Ts*n
+        return result
 
     def save(self, filename, fmt=None, codec='IYUV', fps=None):
 
@@ -313,3 +211,119 @@ class Movie(np.ndarray):
                 vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
             vw.release()
 
+
+###################
+def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, fontsize=1, rolling_mean=1, generator_fxn=None, **kwargs):
+    """
+    Parameters
+    ----------
+    data : see description
+        any iterable object where the iteration axis represents time and items of the iterable are 2d matrices, and which has the following methods/properties:
+            Ts : sample rate
+            shape : (z,y,x)
+            min() : minimum value
+            max() : maximum value
+    loop : bool 
+        repeat playback upon finishing
+    fps : float
+        playback rate in frames per second. Defaults to 1/Ts
+    scale : float 
+        scaling factor to resize playback images
+    contrast : float
+        scaling factor for pixel values (clips so as to produce contrast)
+    show_time : bool
+        show time on image
+    fontsize : float
+        to display time
+    rolling_mean : int
+        number of frames to avg in display
+    generator_fxn : str
+        name of function to call to retrieve generator for object. if None, object is considered iterable
+
+    Playback controls (window must have focus):
+        'f' : faster
+        's' : slower
+        'p' : pause / continue
+        'r' : reverse
+        '=' : zoom in
+        '-' : zoom out
+        'q' : quit
+
+        
+    """
+    if fps==None:
+        fps = 1/data.Ts
+    fpms = fps / 1000.
+
+    title = 'p / q / f / s / r / = / -'
+    minn,maxx = data.min(),data.max()
+
+    if generator_fxn is not None:
+        gfunc = getattr(data,generator_fxn)
+        dataiter = gfunc()
+    else:
+        gfunc = None
+        dataiter = data
+           
+    global current_idx
+    current_idx = 0
+
+    def fnext(d):
+        global current_idx
+        current_idx += 1
+        try:
+            return next(d)
+        except TypeError:
+            return data[current_idx]
+
+    wait = 1./fpms
+    paused = False
+    oper_idx = 0 #0: add, 1: subtract
+    while True:
+        if not paused:
+
+            # get frame
+            size = tuple((scale*np.array(data.shape)[-1:0:-1]).astype(int))
+            font_size = scale * fontsize * min(data[0].shape)/450.
+            t = data.Ts*current_idx
+
+            fr = np.mean([fnext(dataiter) for k in range(rolling_mean)], axis=0)
+
+            fr = contrast * (fr-minn)/(maxx-minn)
+            fr[fr>1.0] = 1.0
+            fr[fr<0.0] = 0.0
+            fr = cv2.resize(fr,size)
+            if show_time:
+                cv2.putText(fr, '{:0.3f}'.format(t), (5,int(30*font_size)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (120,100,80), thickness=1)
+            cv2.imshow(title,fr)
+            
+            # update indices
+            opfunc = [operator.add, operator.sub][oper_idx]
+            current_idx = opfunc(current_idx, rolling_mean)
+            if current_idx+rolling_mean >= data.shape[0]:
+                if not loop:
+                    break
+                elif loop:
+                    current_idx = 0
+                    if gfunc is not None:
+                        dataiter = gfunc()
+
+        # user input
+        k=cv2.waitKey(int(wait))
+        if k == ord('q'):
+            break
+        elif k == ord('p'):
+            paused = not paused
+        elif k == ord('f'):
+            wait = wait/1.5
+            wait = max([wait, 1])
+        elif k == ord('s'):
+            wait = wait*1.5
+        elif k == ord('r'):
+            oper_idx = int(not oper_idx)
+        elif k == ord('='):
+            scale = scale * 1.5
+        elif k == ord('-'):
+            scale = scale / 1.5
+
+    cv2.destroyWindow(title)
