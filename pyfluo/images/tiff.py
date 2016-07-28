@@ -132,26 +132,24 @@ class TiffGroup(object):
             t = Tiff(self.file_paths[idx])
 
             # store metadata
-            with Elapsed('Storing metadata...', verbose=verbose):
-                with pd.HDFStore(self.hdf_path) as h:
-                    h.put('si_data', pd.Series(t.si_data))
-                    info = t.metadata
-                    info.index = [idx]*len(info)
-                    h.append('info', info)
-                    i2c = t.i2c
-                    i2c.reset_index(inplace=True, drop=True)
-                    i2c.ix[:,'file_idx'] = idx
-                    h.append('i2c', i2c)
+            with pd.HDFStore(self.hdf_path) as h:
+                h.put('si_data', pd.Series(t.si_data))
+                info = t.metadata
+                info.index = [idx]*len(info)
+                h.append('info', info)
+                i2c = t.i2c
+                i2c.reset_index(inplace=True, drop=True)
+                i2c.ix[:,'file_idx'] = idx
+                h.append('i2c', i2c)
 
             # store data
-            with Elapsed('Storing data...', verbose=verbose):
-                with h5py.File(self.hdf_path) as h:
-                    if 'data' not in h:
-                        h.create_dataset('data', data=t.data, maxshape=(None,)+t.data.shape[1:], compression='lzf')
-                    elif 'data' in h:
-                        newshape = (t.data.shape[0]+len(h['data']),) + h['data'].shape[1:]
-                        h['data'].resize(newshape)
-                        h['data'][-len(t.data):] = t.data
+            with h5py.File(self.hdf_path) as h:
+                if 'data' not in h:
+                    h.create_dataset('data', data=t.data, maxshape=(None,)+t.data.shape[1:], compression='lzf')
+                elif 'data' in h:
+                    newshape = (t.data.shape[0]+len(h['data']),) + h['data'].shape[1:]
+                    h['data'].resize(newshape)
+                    h['data'][-len(t.data):] = t.data
 
         if verbose:
             print('{} complete ({:0.2f} sec).'.format(self.common_name, time.time()-t0))
