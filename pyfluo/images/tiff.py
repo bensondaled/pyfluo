@@ -8,6 +8,8 @@ from ..config import *
 from ..util import Elapsed
 
 def fast_i2c(pages, i2c_type=str):
+    if not all (['image_description' in pi.tags for pi in pages]):
+        return None
     ids = [p.tags['image_description'].value.decode('UTF8') for p in pages]
     i0 = [t.index('I2CData = ')+11 for t in ids]
     i1 = [t[i0i:].index('\n') for t,i0i in zip(ids,i0)]
@@ -36,6 +38,8 @@ def val_parse(v):
         else:
             return v
 def si_parse(pg):
+    if 'image_description' not in pg.tags:
+        return {}
     imd = pg.tags['image_description'].value
     if isinstance(imd, bytes):
         imd = imd.decode('UTF8')
@@ -84,13 +88,15 @@ class Tiff(object):
             metadata['name'] = self.name
             metadata['y'] = page.shape[0]
             metadata['x'] = page.shape[1]
-            metadata['Ts'] = 1/pagedata.get('scanimage.SI.hRoiManager.scanFrameRate', None)
+            metadata['Ts'] = 1/pagedata.get('scanimage.SI.hRoiManager.scanFrameRate', 1)
             metadata['n'] = len(tif.pages)
 
-            i2c = fast_i2c(tif.pages).dropna()
-            i2c.ix[:,'name'] = self.name
-            i2c.ix[:,'frame_idx'] = i2c.index
-            i2c.reset_index(drop=True, inplace=True)
+            i2c = fast_i2c(tif.pages)
+            if i2c is not None:
+                i2c = i2c.dropna()
+                i2c.ix[:,'name'] = self.name
+                i2c.ix[:,'frame_idx'] = i2c.index
+                i2c.reset_index(drop=True, inplace=True)
 
         return data,metadata,i2c,pagedata
 

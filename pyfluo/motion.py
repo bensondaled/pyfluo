@@ -11,19 +11,54 @@ except:
     from skimage.feature import match_template
     warnings.warn('cv2 not detected, will attempt to use alternative packages.')
 
-def motion_correct(mov, compute_kwargs={}, apply_kwargs={}):
+def motion_correct(mov, max_iters=10, shift_threshold=1., reslice=slice(None,None), in_place=True, verbose=True, compute_kwargs={}, apply_kwargs={}):
     """Perform motion correction using template matching.
+
+    max_iters : int
+        maximum number of iterations
+    shift_threshold : float
+        absolute max shift value below which to exit
+    reslice : slice
+        used to reslice movie, example: slice(1,None,2) gives every other frame starting from 2nd frame
+    in_place : bool
+        perform on same memory as supplied
+    verbose : bool
+        show status
+    compute_kwargs : dict
+        kwargs for compute_motion_correction
+    apply_kwargs : dict
+        kwargs for apply_motion_correction
    
     Returns
     --------
     corrected movie, template, values
 
-    Note that this function is a convenience function for calling compute_motion_correction followed by apply_motion_correction.
+    Note that this function is a convenience function for calling compute_motion_correction followed by apply_motion_correction, multiple times and combining results
     """
-    
-    template,vals = compute_motion(mov, **compute_kwargs)
-    mov_cor = apply_motion_correction(mov, vals, **apply_kwargs)
-    return mov_cor,template,vals
+    if not in_place:
+        mov = mov.copy()
+    mov = mov[reslice]
+  
+    all_vals = []
+    for it in range(max_iters):
+        if verbose:
+            print('Iteration {}'.format(it)); sys.stdout.flush()
+        template,vals = compute_motion(mov, **compute_kwargs)
+        mov = apply_motion_correction(mov, vals, **apply_kwargs)
+        maxshifts = np.abs(vals[:,[0,1]].max(axis=0))
+        all_vals.append(vals)
+        if verbose:
+            print('Shifts: {}'.format(str(maxshifts))); sys.stdout.flush()
+        if np.all(maxshifts < shift_threshold):
+            break
+
+    # combine values from iterations
+    all_vals = np.array(all_vals)
+    return_vals = np.empty([all_vals.shape[1],all_vals.shape[2]])
+    return_vals[:,[0,1]] = all_vals[:,:,[0,1]].sum(axis=0)
+    return_vals[:,2] = all_vals[:,:,2].mean(axis=0)
+
+    return mov,template,return_vals
 
 def retrieve_motion_correction_data(datafile, filename):
     with h5py.File(datafile) as mc: 

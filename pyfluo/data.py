@@ -1,5 +1,8 @@
 """
-TODO: add iterations on motion correction
+TODO: 
+    -add iterations on motion correction
+    -in segmentation, take advantage of IPCA. but preprocessing (mocor, crop, rolling mean) must be done first, so need to implement the use of partial_fit
+        - specifically: edit pcaica fxn to accept a generator, and then call next on it with partial fits until it's done
 """
 
 from __future__ import print_function
@@ -12,7 +15,7 @@ from .series import Series
 from .roi import ROI
 from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica
-from .motion import compute_motion, apply_motion_correction
+from .motion import motion_correct, apply_motion_correction
 
 class Data():
     """
@@ -32,6 +35,7 @@ class Data():
         with pd.HDFStore(self.data_file) as h:
             self.n_files = len(h.info)
             self.info = h.info
+            self.si_data = h.si_data
             self.i2c = h.i2c
             self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
             self._has_motion_correction = 'motion' in h
@@ -96,7 +100,7 @@ class Data():
             file_idx = int(file_idx)
             return np.append(0, self.info.n.cumsum().values)[file_idx] + frame_idx
 
-    def motion_correct(self, chunk_size=None, compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
+    def motion_correct(self, chunk_size=None, mc_kwargs=dict(max_iters=10, shift_threshold=1.,), compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
         """
         Corrects motion, first locally in sliding chunks of full dataset, then globally across chunks
 
@@ -138,7 +142,7 @@ class Data():
             if verbose:
                 print('Chunk {}/{}: frames {}:{}'.format(idx+1,n_chunks,sli.start,sli.stop)); sys.stdout.flush()
             chunk = Movie(self[sli])
-            templ,vals = compute_motion(chunk, **compute_kwargs)
+            _, templ,vals = motion_correct(chunk, compute_kwargs=compute_kwargs, **mc_kwargs)
 
             # format result
             mot = pd.DataFrame(columns=['chunk','x','y','metric','x_local','y_local'], index=sli_full, dtype=float)
@@ -154,7 +158,7 @@ class Data():
             template_mov = Movie(np.asarray(h['templates'][:-1]))
         cka = compute_kwargs.copy()
         cka.update(resample=1)
-        glob_template,glob_vals = compute_motion(template_mov, **cka)
+        _,glob_template,glob_vals = motion_correct(template_mov, compute_kwargs=cka, **mc_kwargs)
         with h5py.File(self.data_file) as h:
             h['templates'][-1] = glob_template
         with pd.HDFStore(self.data_file) as h:
@@ -171,7 +175,10 @@ class Data():
 
         self._has_motion_correction = True
 
-    def show(self, show_slice=slice(None,None,800)):
+    def show(self, show_slice=None):
+        if show_slice is None:
+            interval = int(len(self)//200)
+            show_slice = slice(None,None,interval)
         im = self[show_slice].mean(axis=0)
         pl.imshow(im)
         return im
@@ -318,13 +325,32 @@ class Data():
 
         return self._transients
 
-    def segment(self, n_frames=12000, downsample=2, crop=True, **pca_ica_kwargs):
-        ex_mov = self[:n_frames]
+    def gen(self, chunk_size=100, n_frames=None, downsample=None, crop=False):
+        """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
+
+        chunk_size : number of frames to include in one chunk *before* downsampling
+        n_frames : sum of number of total raw frames included in all yields from this iterator
+
+        yielded items will be of length chunk_size//downsample
+        """
+        if n_frames is None:
+            n_frames = len(self)
         if crop:
-            c = self.motion_params['max_shift']
-            ex_mov = ex_mov[:,c:-c,c:-c]
-        ex_mov = ex_mov.rolling_mean(downsample)
-        comps = pca_ica(ex_mov, **pca_ica_kwargs)
+            cr = self.motion_params['max_shift']
+        if downsample in [None,False]:
+            downsample = 1
+
+        nchunks = n_frames//chunk_size
+
+        for idx in range(nchunks):
+            dat = self[idx*chunk_size:idx*chunk_size+chunk_size]
+            if crop:
+                dat = dat[:,cr:-cr,cr:-cr]
+            dat = dat.rolling_mean(downsample)
+            yield dat
+
+    def segment(self, gen_kwargs=dict(n_frames=12000, downsample=2, crop=True), **pca_ica_kwargs):
+        comps = pca_ica(self.gen(), **pca_ica_kwargs)
         with h5py.File(self.data_file) as h:
             if 'segmentation' not in h:
                 grp = h.create_group('segmentation')
