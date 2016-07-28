@@ -393,7 +393,7 @@ class Data():
 
             yield dat
 
-    def segment(self, gen_kwargs=dict(chunk_size=800, n_frames=30000, downsample=3, crop=True), **pca_ica_kwargs):
+    def segment(self, gen_kwargs=dict(chunk_size=2700, n_frames=30000, downsample=3, crop=True), **pca_ica_kwargs):
         def dummy_gen():
             return self.gen(**gen_kwargs)
 
