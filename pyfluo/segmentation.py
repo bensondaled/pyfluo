@@ -1,7 +1,7 @@
 import numpy as np
 import pylab as pl
 import networkx as nx
-import sys, types
+import sys, types, time
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
 import multiprocessing as mup
@@ -47,43 +47,82 @@ def grid(data, rows=0.5, cols=0.5):
 
     return slices
 
+def pca_ica(func, n_components=25, mu=0.5, verbose=True):
+    """
+    func is a non-instantiated generator function that yields chunks of frames
+    mu : >0.5 more spatial
+    """
+    
+    ipca = IncrementalPCA(n_components=n_components)
+
+    # iterative pca
+    idx = 1
+    t0 = time.time()
+    for chunk in func():
+        if verbose:
+            print('Chunk #{}, t={:0.3f}'.format(idx,time.time()-t0)); sys.stdout.flush()
+            idx += 1
+        chunk = chunk.reshape([len(chunk), -1])
+        ipca.partial_fit(chunk)
+    if verbose:
+        print('PCA took {:0.2f} seconds.'.format(time.time()-t0)); sys.stdout.flush()
+    comps = ipca.components_
+
+    # reconstruct low-dimensional movie
+    reduced_mov = []
+    for chunk in func():
+        frame_shape = chunk.shape[1:]
+        chunk = chunk.reshape([len(chunk), -1])
+        reduced_mov.append(np.dot(comps, chunk.T))
+    reduced_mov = np.concatenate(reduced_mov, axis=-1).T # t x n matrix
+
+    #eigen_mov = pf.Movie(res.dot(comps).reshape((-1,)+frame_shape)) # not needed
+
+    comps = comps.T
+    ica_space = mu * (comps - comps.mean(axis=0))/comps.max()
+    ica_time = (1.-mu) * (reduced_mov - reduced_mov.mean(axis=0))/reduced_mov.max()
+
+    conc = np.concatenate([ica_space,ica_time])
+
+    with Progress(msg='ICA', verbose=verbose):
+        ica = FastICA(max_iter=2000, tol=0.002)
+        ica_result = ica.fit_transform(conc)
+    
+    output_shape = [len(comps.T), frame_shape[0], frame_shape[1]]
+    final = ica_result[:np.product(frame_shape)].T.reshape(output_shape)
+    return final
+
 def ipca(mov, components=50, batch=1000):
 
-    if isinstance(mov, types.GeneratorType):
-        print ('Implement this!')
-        eigenseries,eigenframes,proj_frame_vectors = None,None,None
+    # vectorize the images
+    shape = mov.shape
+    num_frames, h, w = shape
+    frame_samples = np.reshape(mov, (num_frames, w*h)).T
+    
+    # run IPCA to approxiate the SVD
+    
+    ipca_f = IncrementalPCA(n_components=components, batch_size=batch)
+    ipca_f.fit(frame_samples)
+    
+    # construct the reduced version of the movie vectors using only the 
+    # principal component projection
+    
+    proj_frame_vectors = ipca_f.inverse_transform(ipca_f.transform(frame_samples))
+        
+    # get the temporal principal components (pixel time series) and 
+    # associated singular values
+    
+    eigenseries = ipca_f.components_.T
 
-    elif isinstance(mov, np.ndarray):
-
-        # vectorize the images
-        shape = mov.shape
-        num_frames, h, w = shape
-        frame_samples = np.reshape(mov, (num_frames, w*h)).T
-        
-        # run IPCA to approxiate the SVD
-        
-        ipca_f = IncrementalPCA(n_components=components, batch_size=batch)
-        ipca_f.fit(frame_samples)
-        
-        # construct the reduced version of the movie vectors using only the 
-        # principal component projection
-        
-        proj_frame_vectors = ipca_f.inverse_transform(ipca_f.transform(frame_samples))
-            
-        # get the temporal principal components (pixel time series) and 
-        # associated singular values
-        
-        eigenseries = ipca_f.components_.T
-
-        # the rows of eigenseries are approximately orthogonal
-        # so we can approximately obtain eigenframes by multiplying the 
-        # projected frame matrix by this transpose on the right
-        
-        eigenframes = np.dot(proj_frame_vectors, eigenseries)
+    # the rows of eigenseries are approximately orthogonal
+    # so we can approximately obtain eigenframes by multiplying the 
+    # projected frame matrix by this transpose on the right
+    
+    eigenframes = np.dot(proj_frame_vectors, eigenseries)
 
     return eigenseries, eigenframes, proj_frame_vectors, shape
    
-def pca_ica(mov, components=100, batch=10000, mu=0.5, ica_func='logcosh', verbose=True):
+def pca_ica_old(mov, components=100, batch=10000, mu=0.5, ica_func='logcosh', verbose=True):
     """Perform iterative PCA/ICA ROI extraction
 
     Parameters

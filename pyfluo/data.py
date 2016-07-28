@@ -393,8 +393,11 @@ class Data():
 
             yield dat
 
-    def segment(self, gen_kwargs=dict(n_frames=12000, downsample=2, crop=True), **pca_ica_kwargs):
-        comps = pca_ica(self.gen(), **pca_ica_kwargs)
+    def segment(self, gen_kwargs=dict(chunk_size=800, n_frames=30000, downsample=3, crop=True), **pca_ica_kwargs):
+        def dummy_gen():
+            return self.gen(**gen_kwargs)
+
+        comps = pca_ica(dummy_gen, **pca_ica_kwargs)
         with h5py.File(self.data_file) as h:
             if 'segmentation' not in h:
                 grp = h.create_group('segmentation')

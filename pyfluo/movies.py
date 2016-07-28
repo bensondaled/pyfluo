@@ -165,6 +165,7 @@ class Movie(np.ndarray):
 
     def rolling_mean(self, n=4):
         """Downsample movie by taking rolling mean of every n frames
+        TODO: rename this; it's not really a rolling mean
         """
         assert len(self)%n == 0, 'Currently does not support n\'s that are not multiples of movie length.'
         if n==1:
