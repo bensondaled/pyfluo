@@ -404,7 +404,7 @@ class Data():
             else:
                 grp = h['segmentation']
             ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps)
-            pca_ica_kwargs.update(n_frames=n_frames, downsample=downsample, crop=crop)
+            pca_ica_kwargs.update(gen_kwargs)
             ds.attrs.update(pca_ica_kwargs)
 
     def play(self, **kwargs):
