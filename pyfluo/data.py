@@ -389,7 +389,7 @@ class Data():
             if crop:
                 dat = dat[:,cr:-cr,cr:-cr]
 
-            dat = dat.rolling_mean(downsample)
+            dat = dat.resample(downsample)
 
             yield dat
 

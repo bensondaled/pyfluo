@@ -163,9 +163,8 @@ class Movie(np.ndarray):
             res.__setattr__(ca, self.__getattribute__(ca))
         return res
 
-    def rolling_mean(self, n=4):
-        """Downsample movie by taking rolling mean of every n frames
-        TODO: rename this; it's not really a rolling mean
+    def resample(self, n=4):
+        """Downsample movie by taking mean of every n frames
         """
         if n==1:
             return self

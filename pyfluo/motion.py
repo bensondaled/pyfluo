@@ -189,7 +189,7 @@ def compute_motion(mov, max_shift=(25,25), template=np.median, template_matching
        
         # Parse/generate template
         if callable(template):
-            movr = mov.rolling_mean(resample)
+            movr = mov.resample(resample)
             with Progress(msg='Computing template', verbose=verbose):
                 template=template(movr,axis=0)            
         elif not isinstance(template, np.ndarray):
