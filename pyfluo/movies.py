@@ -167,10 +167,15 @@ class Movie(np.ndarray):
         """Downsample movie by taking rolling mean of every n frames
         TODO: rename this; it's not really a rolling mean
         """
-        assert len(self)%n == 0, 'Currently does not support n\'s that are not multiples of movie length.'
         if n==1:
             return self
-        result = np.nanmean(self.reshape((-1,n,self.shape[1],self.shape[2])), axis=1)
+
+        if len(self)%n == 0:
+            working = self
+        else:
+            working = self[:-(len(self)%n)]
+
+        result = np.nanmean(working.reshape((-1,n,working.shape[1],working.shape[2])), axis=1)
         result.Ts = self.Ts*n
         return result
 
