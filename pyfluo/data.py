@@ -370,7 +370,7 @@ class Data():
         if n_frames is None:
             n_frames = len(self)
         if crop:
-            cr = self.motion_params['max_shift']
+            pass #TODO: find max actual motion and cut by that
         if downsample in [None,False]:
             downsample = 1
 
@@ -387,7 +387,8 @@ class Data():
                 dat = self[idx*chunk_size:idx*chunk_size+chunk_size]
 
             if crop:
-                dat = dat[:,cr:-cr,cr:-cr]
+                pass
+                #dat = dat[:,cr:-cr,cr:-cr]
 
             dat = dat.resample(downsample)
 

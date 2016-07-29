@@ -58,6 +58,8 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
     # iterative pca
     idx = 1
     t0 = time.time()
+    if verbose:
+        print('PCA:'); sys.stdout.flush()
     for chunk in func():
         if verbose:
             print('Chunk #{}, t={:0.3f}'.format(idx,time.time()-t0)); sys.stdout.flush()
@@ -70,7 +72,13 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
 
     # reconstruct low-dimensional movie
     reduced_mov = []
+    if verbose:
+        print('Reconstruct:'); sys.stdout.flush()
+        idx = 1
     for chunk in func():
+        if verbose:
+            print('Chunk #{}'.format(idx)); sys.stdout.flush()
+            idx += 1
         frame_shape = chunk.shape[1:]
         chunk = chunk.reshape([len(chunk), -1])
         reduced_mov.append(np.dot(comps, chunk.T))
