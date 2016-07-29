@@ -146,7 +146,7 @@ def apply_motion_correction(mov, shifts, interpolation=None, crop=None, in_place
 
     return mov.squeeze()
 
-def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_method=None, resample=4, verbose=True):
+def compute_motion(mov, max_shift=(25,25), template=np.median, template_matching_method=None, resample=4, verbose=True):
         """Compute template, shifts, and correlations associated with template-matching-based motion correction
 
         Parameters
@@ -189,10 +189,7 @@ def compute_motion(mov, max_shift=(5,5), template=np.median, template_matching_m
        
         # Parse/generate template
         if callable(template):
-            if resample>1:
-                movr = np.array([np.mean(mov[i*resample:i*resample+resample], axis=0) for i in np.arange(0,len(mov)//resample)]) 
-            else:
-                movr = mov
+            movr = mov.rolling_mean(resample)
             with Progress(msg='Computing template', verbose=verbose):
                 template=template(movr,axis=0)            
         elif not isinstance(template, np.ndarray):
