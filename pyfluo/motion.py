@@ -56,7 +56,7 @@ def motion_correct(mov, max_iters=10, shift_threshold=1., reslice=slice(None,Non
     all_vals = np.array(all_vals)
     return_vals = np.empty([all_vals.shape[1],all_vals.shape[2]])
     return_vals[:,[0,1]] = all_vals[:,:,[0,1]].sum(axis=0)
-    return_vals[:,2] = all_vals[:,:,2].mean(axis=0)
+    return_vals[:,2] = all_vals[-1,:,2]
 
     return mov,template,return_vals
 
