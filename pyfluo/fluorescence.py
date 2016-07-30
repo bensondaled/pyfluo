@@ -8,7 +8,7 @@ from .util import ProgressBar
 from .util import sliding_window
 from .config import *
 
-def compute_dff(data, percentile=5., window_size=60., step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, window_size=2.5, filter_size=.3, step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
     NOTE: currently using median instead of percentile. both suck
     method: 'pd' / 'np'
@@ -20,14 +20,23 @@ def compute_dff(data, percentile=5., window_size=60., step_size=None, method='pd
 
     if method=='pd':
         _window = int(np.round(window_size / Ts))
+        _filt = int(np.round(filter_size / Ts))
+
         def f_dff(x):
-            #xmode,_ = mode(x, axis=0)
-            #return xmode[0]
-            return np.percentile(x, percentile)
-        #f0 = data.rolling(window=_window, min_periods=1).apply(func=f_dff)
-        f0 = data.rolling(window=_window, min_periods=1).median()
+            #return np.percentile(x, percentile)
+            if len(x)<_filt:
+                smooth = x
+            else:
+                smooth = pd.Series(x).rolling(window=_filt, min_periods=_filt).median().values
+            return np.nanmin(smooth)
+
+        f0 = data.rolling(window=_window, min_periods=_window).apply(func=f_dff).fillna(method='bfill')
         dff = (data-f0)/f0
-        return Series(dff.values, Ts=Ts)
+        
+        ret = Series(dff.values, Ts=Ts)
+        if return_f0:
+            ret = (ret, f0)
+        return ret
     
     elif method=='np':
         if step_size == None:

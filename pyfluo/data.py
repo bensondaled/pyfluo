@@ -310,7 +310,7 @@ class Data():
 
         return self._tr
     
-    def get_dff(self, idx=None, compute_dff_kwargs={}, verbose=True):
+    def get_dff(self, idx=None, compute_dff_kwargs={}, recompute=False, verbose=True):
         if idx is None:
             idx = self._latest_roi_idx
 
@@ -319,14 +319,16 @@ class Data():
         with h5py.File(self.data_file) as f:
             grp = f['traces']
 
-            if dffname in grp:
+            if dffname in grp and not recompute:
                 self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
 
-            elif dffname not in grp:
+            elif (dffname not in grp) or recompute:
                 tr = self.get_tr(idx)
                 if tr is None:
                     return None
                 self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
+                if dffname in grp:
+                    del grp[dffname]
                 grp.create_dataset(dffname, data=np.asarray(self._dff))
 
         if self._dff.isnull().values.any():
@@ -394,10 +396,12 @@ class Data():
 
             yield dat
 
-    def segment(self, gen_kwargs=dict(chunk_size=2700, n_frames=30000, downsample=3, crop=True), **pca_ica_kwargs):
+    def segment(self, gen_kwargs=dict(chunk_size=2700, n_frames=30000, downsample=3, crop=True), verbose=True, **pca_ica_kwargs):
         def dummy_gen():
             return self.gen(**gen_kwargs)
 
+        if verbose:
+            print('Segmenting. Generator: {} frames, chunk size {}, downsample {} --> {} chunks.'.format(gen_kwargs['n_frames'], gen_kwargs['chunk_size'], gen_kwargs['downsample'], np.ceil(gen_kwargs['n_frames']/gen_kwargs['chunk_size'])))
         comps = pca_ica(dummy_gen, **pca_ica_kwargs)
         with h5py.File(self.data_file) as h:
             if 'segmentation' not in h:

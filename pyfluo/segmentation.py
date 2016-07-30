@@ -4,6 +4,7 @@ import networkx as nx
 import sys, types, time
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
+from skimage.measure import perimeter
 import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage import label
@@ -193,7 +194,7 @@ def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='compon
     space_components = estimator.components.reshape((n_components,h,w))
     return space_components,time_components
         
-def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], verbose=True):
+def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], circularity_thresh=[0,1], verbose=True):
         """
         Given the spatial components output of the IPCA_stICA function extract possible regions of interest
         The algorithm estimates the significance of a components by thresholding the components after gaussian smoothing
@@ -231,7 +232,10 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], verbose=True
             sig_pixels = np.abs(comp-np.median(comp)) >= thresh_from_median
 
             lab, n = label(sig_pixels, np.ones((3,3)))
-            all_masks += [np.asarray(lab==l) for l in np.unique(lab) if l>0 and np.sum(lab==l)>=pixels_thresh[0] and np.sum(lab==l)<=pixels_thresh[1]]
+            new_masks = [np.asarray(lab==l) for l in np.unique(lab) if l>0 and np.sum(lab==l)>=pixels_thresh[0] and np.sum(lab==l)<=pixels_thresh[1]]
+            circ = [circularity(n) for n in new_masks]
+            new_masks = [nm for nm,c in zip(new_masks,circ) if c>=circularity_thresh[0] and c<=circularity_thresh[1]]
+            all_masks += new_masks
 
             if verbose:
                 pbar.update(k)
@@ -239,10 +243,16 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], verbose=True
             pbar.finish()
 
         all_masks = np.array(all_masks)
+        centers = [np.sum(np.argwhere(a).mean(axis=0)**2) for a in all_masks]
        
-        return all_masks
+        return all_masks[np.argsort(centers)]
 
-def merge_roi(roi, overlap_thresh=0.4):
+def circularity(m):
+    area = m.sum()
+    perim = perimeter(m)
+    return 4*np.pi*area/perim**2
+
+def merge_roi(roi, overlap_thresh=0.4, merge_mode='largest'):
     # Attempts to merge regions of interest that have overlap
     roi_orig = roi.copy()
     roi = roi.reshape([len(roi), -1]).astype(int)
@@ -253,12 +263,20 @@ def merge_roi(roi, overlap_thresh=0.4):
     overlap_oflarger[np.triu_indices_from(overlap_oflarger)] = 0
     overlap_ofsmaller[np.triu_indices_from(overlap_ofsmaller)] = 0
 
-    merge = np.asarray(np.nonzero( (overlap_oflarger>overlap_thresh) & (overlap_ofsmaller>overlap_thresh) )).T
+    merge = np.asarray(np.nonzero( (overlap_oflarger>overlap_thresh) | (overlap_ofsmaller>overlap_thresh) )).T # debating between & and | for the operator
     g = nx.Graph()
     g.add_nodes_from(np.arange(len(overlap_ofsmaller)))
     g.add_edges_from(merge)
     merge_grps = list(nx.connected_components(g))
-    roi = np.array([(roi_orig[list(mg)].sum(axis=0))>0 for mg in merge_grps])
+
+    if merge_mode == 'sum':
+        # sum members of a group:
+        roi = np.array([(roi_orig[list(mg)].sum(axis=0))>0 for mg in merge_grps])
+    elif merge_mode == 'largest':
+        # or take largest of a group:
+        def largest_of(a):
+            return a[np.argmax([i.sum() for i in a])]
+        roi = np.array([largest_of(roi_orig[list(mg)]) for mg in merge_grps])
 
     roi = ROI(roi)
     return roi

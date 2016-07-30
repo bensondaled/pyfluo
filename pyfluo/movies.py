@@ -271,11 +271,15 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
         dataiter = data
            
     global current_idx
+    global oper_idx
+    oper_idx = 0 # add/subtract
     current_idx = 0
 
     def fnext(d):
         global current_idx
-        current_idx += 1
+        global oper_idx
+        opfunc = [operator.add, operator.sub][oper_idx]
+        current_idx = opfunc(current_idx, rolling_mean)
         try:
             return next(d)
         except TypeError:
@@ -283,7 +287,6 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
 
     wait = 1./fpms
     paused = False
-    oper_idx = 0 #0: add, 1: subtract
     while True:
         if not paused:
 
@@ -303,8 +306,6 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
             cv2.imshow(title,fr)
             
             # update indices
-            opfunc = [operator.add, operator.sub][oper_idx]
-            current_idx = opfunc(current_idx, rolling_mean)
             if current_idx+rolling_mean >= data.shape[0]:
                 if not loop:
                     break
