@@ -195,7 +195,7 @@ class Data():
             if '_data_funcs' not in f:
                 f.create_group('_data_funcs')
             if attr_str not in f['_data_funcs']:
-                res = [func(chunk, axis=axis) for chunk in self.gen()]
+                res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=1000)]
                 res = func(res, axis=0)
                 f['_data_funcs'].create_dataset(attr_str, data=res)
             else:
@@ -303,7 +303,7 @@ class Data():
                     sl = slice(b,min([len(self), b+batch]))
                     if verbose:
                         print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self))); sys.stdout.flush()
-                    tr = Movie(self[sl]).extract(roi)
+                    tr = self[sl].extract(roi)
                     all_tr.append(np.asarray(tr))
                 self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
                 grp.create_dataset(trname, data=np.asarray(self._tr))
@@ -330,6 +330,7 @@ class Data():
                 if dffname in grp:
                     del grp[dffname]
                 grp.create_dataset(dffname, data=np.asarray(self._dff))
+                grp[dffname].attrs.update(compute_dff_kwargs)
 
         if self._dff.isnull().values.any():
             warnings.warn('Null values zeroed out in DFF.')
@@ -396,7 +397,7 @@ class Data():
 
             yield dat
 
-    def segment(self, gen_kwargs=dict(chunk_size=2700, n_frames=30000, downsample=3, crop=True), verbose=True, **pca_ica_kwargs):
+    def segment(self, gen_kwargs=dict(chunk_size=2700, n_frames=27000, downsample=3, crop=True), verbose=True, **pca_ica_kwargs):
         def dummy_gen():
             return self.gen(**gen_kwargs)
 

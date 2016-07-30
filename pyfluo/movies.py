@@ -283,6 +283,8 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
         try:
             return next(d)
         except TypeError:
+            if current_idx>=len(data):
+                current_idx = len(data)-1
             return data[current_idx]
 
     wait = 1./fpms

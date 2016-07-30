@@ -11,7 +11,7 @@ except:
     from skimage.feature import match_template
     warnings.warn('cv2 not detected, will attempt to use alternative packages.')
 
-def motion_correct(mov, max_iters=10, shift_threshold=1., reslice=slice(None,None), in_place=True, verbose=True, compute_kwargs={}, apply_kwargs={}):
+def motion_correct(mov, max_iters=5, shift_threshold=1., reslice=slice(None,None), in_place=True, verbose=True, compute_kwargs={}, apply_kwargs={}):
     """Perform motion correction using template matching.
 
     max_iters : int
