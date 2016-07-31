@@ -94,10 +94,10 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
     conc = np.concatenate([ica_space,ica_time])
 
     if np.any(np.isinf(conc)):
-        warning.warn('Infinite values detected after PCA.')
+        warnings.warn('Infinite values detected after PCA.')
         conc[np.isinf(conc)] = 0
     if np.any(np.isnan(conc)):
-        warning.warn('NaN values detected after PCA.')
+        warnings.warn('NaN values detected after PCA.')
         conc[np.isnan(conc)] = 0
 
     with Progress(msg='ICA', verbose=verbose):
