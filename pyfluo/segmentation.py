@@ -1,7 +1,7 @@
 import numpy as np
 import pylab as pl
 import networkx as nx
-import sys, types, time
+import sys, types, time, warnings
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
 from skimage.measure import perimeter
@@ -92,6 +92,13 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
     ica_time = (1.-mu) * (reduced_mov - reduced_mov.mean(axis=0))/reduced_mov.max()
 
     conc = np.concatenate([ica_space,ica_time])
+
+    if np.any(np.isinf(conc)):
+        warning.warn('Infinite values detected after PCA.')
+        conc[np.isinf(conc)] = 0
+    if np.any(np.isnan(conc)):
+        warning.warn('NaN values detected after PCA.')
+        conc[np.isnan(conc)] = 0
 
     with Progress(msg='ICA', verbose=verbose):
         ica = FastICA(max_iter=2000, tol=0.002)
