@@ -415,3 +415,12 @@ class Data():
 
     def play(self, **kwargs):
         play_mov(self, generator_fxn='gen', **kwargs)
+
+    def export(self, out_filename, include_data=False):
+        if not out_filename.endswith('.h5'):
+            out_filename += '.h5'
+        with h5py.File(out_filename) as outfile, h5py.File(self.data_file) as infile:
+            for key in infile:
+                if include_data==False and key=='data':
+                    continue
+                infile.copy(key, outfile)
