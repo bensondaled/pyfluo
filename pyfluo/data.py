@@ -195,7 +195,7 @@ class Data():
             if '_data_funcs' not in f:
                 f.create_group('_data_funcs')
             if attr_str not in f['_data_funcs']:
-                res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=1000)]
+                res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=3000)]
                 res = func(res, axis=0)
                 f['_data_funcs'].create_dataset(attr_str, data=res)
             else:
@@ -323,6 +323,8 @@ class Data():
                 self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
 
             elif (dffname not in grp) or recompute:
+                if verbose:
+                    print('Computing DFF...'); sys.stdout.flush()
                 tr = self.get_tr(idx)
                 if tr is None:
                     return None
@@ -424,3 +426,14 @@ class Data():
                 if include_data==False and key=='data':
                     continue
                 infile.copy(key, outfile)
+    def import_file(self, filename, backup=True):
+        """
+        NOTE: overwrites all attributes except data
+        """
+        if backup:
+            self.export('{}_backup.h5'.format(os.path.splitext(self.data_file)[0]))
+        with h5py.File(filename) as infile, h5py.File(self.data_file) as datafile:
+            for key in infile:
+                if key in datafile:
+                    del datafile[key]
+                infile.copy(key, datafile)
