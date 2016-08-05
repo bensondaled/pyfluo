@@ -1,3 +1,5 @@
+***August 2016: Please note that documentation is lagging behind development at the moment. I hope to have documentation updated within the coming months.
+
 pyfluo (2015)
 ===========================
 Ben Deverett
