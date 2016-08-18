@@ -1,6 +1,7 @@
 import numpy as np, pandas as pd
 from scipy.stats.mstats import mode
 from scipy.ndimage.measurements import label
+from scipy.signal import medfilt
 import warnings, sys
 
 from .series import Series
@@ -8,79 +9,68 @@ from .util import ProgressBar
 from .util import sliding_window
 from .config import *
 
-def compute_dff(data, window_size=2.5, filter_size=.3, step_size=None, method='pd', Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
     NOTE: currently using median instead of percentile. both suck
     method: 'pd' / 'np'
     """
     Ts = Ts or data.Ts
 
-    if not any([isinstance(data, p) for p in [pd.Series, pd.DataFrame]]):
-        method = 'np'
+    was_pd = any([isinstance(data, t) for t in [pd.Series, pd.DataFrame]])
+    if was_pd:
+        orig_type = type(data)
+        data = data.values
 
-    if method=='pd':
-        _window = int(np.round(window_size / Ts))
-        _filt = int(np.round(filter_size / Ts))
+    if step_size is None:
+        step_size = Ts
 
-        def f_dff(x):
-            #return np.percentile(x, percentile)
-            if len(x)<_filt:
-                smooth = x
-            else:
-                smooth = pd.Series(x).rolling(window=_filt, min_periods=_filt).median().values
-            return np.nanmin(smooth)
+    window_size = int(window_size/Ts)
+    step_size = int(step_size/Ts)
+    filter_size = int(filter_size/Ts)
+    if filter_size % 2 == 0:
+        filter_size += 1
+    filter_kernel = [filter_size] + [1]*(len(data.shape)-1)
 
-        f0 = data.rolling(window=_window, min_periods=_window).apply(func=f_dff).fillna(method='bfill')
-        dff = (data-f0)/f0
-        
-        ret = Series(dff.values, Ts=Ts)
-        if return_f0:
-            ret = (ret, f0)
+    if window_size<1:
+        warnings.warn('Requested a window size smaller than sampling interval. Using sampling interval.')
+        window_size = 1.
+    if step_size<1:
+        warnings.warn('Requested a step size smaller than sampling interval. Using sampling interval.')
+        step_size = 1.
+
+    pad_size = window_size - 1
+    pad = ((pad_size,0),) + tuple([(0,0) for _ in range(data.ndim-1)])
+    padded = np.pad(data, pad, **pad_kwargs)
+
+    out_size = ((len(padded) - window_size) // step_size) + 1
+
+    if verbose:
+        pbar = ProgressBar(maxval=out_size).start()
+
+    filtered = medfilt(padded, filter_kernel)
+    f0 = []
+    for idx,win in enumerate(sliding_window(filtered, ws=window_size, ss=step_size)):
+        f0.append(np.min(win, axis=0))
+        if verbose:
+            pbar.update(idx)
+    f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
+    if verbose:
+        pbar.finish()
+
+    if not root_f:
+        bl = f0
+    elif root_f:
+        bl = np.sqrt(f0)
+
+    ret = (data-f0)/bl
+
+    if was_pd:
+        ret = orig_type(ret, Ts=Ts)
+
+    if return_f0:
+        return ( ret, f0 )
+    else:
         return ret
-    
-    elif method=='np':
-        if step_size == None:
-            step_size = Ts
-
-        window_size = int(window_size/Ts)
-        step_size = int(step_size/Ts)
-
-        if window_size<1:
-            warnings.warn('Requested a window size smaller than sampling interval. Using sampling interval.')
-            window_size = 1.
-        if step_size<1:
-            warnings.warn('Requested a step size smaller than sampling interval. Using sampling interval.')
-            step_size = 1.
-
-        pad_size = window_size - 1
-        pad = ((pad_size,0),) + tuple([(0,0) for _ in xrange(data.ndim-1)])
-        padded = np.pad(data, pad, **pad_kwargs)
-
-        out_size = ((len(padded) - window_size) // step_size) + 1
-
-        if verbose:
-            pbar = ProgressBar(maxval=out_size).start()
-        f0 = []
-        for idx,win in enumerate(sliding_window(padded, ws=window_size, ss=step_size)):
-            #f0.append(np.percentile(win, percentile, axis=0))
-            f0.append(mode(win, axis=0))
-            if verbose:
-                pbar.update(idx)
-        f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
-        if verbose:
-            pbar.finish()
-
-        if not root_f:
-            bl = f0
-        elif root_f:
-            bl = np.sqrt(f0)
-
-        ret = (data-f0)/bl
-
-        if return_f0:
-            return ( ret, f0 )
-        else:
-            return ret
 
 def detect_transients(sig, baseline_thresh=0.0, peak_thresh=2.5, drift_window=10., width_lims=(0.100, 3.00), Ts=None):
     """

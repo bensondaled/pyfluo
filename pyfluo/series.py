@@ -60,6 +60,9 @@ class Series(pd.DataFrame):
             object.__setattr__(self, name, getattr(other, name, None))
         return self
 
+    def reset_time(self, **kwargs):
+        self.set_index(self.Ts*np.arange(len(self)), **kwargs)
+
     def plot(self, *args, **kwargs):
 
         # dirtier kwargs for python2 support:
@@ -75,6 +78,8 @@ class Series(pd.DataFrame):
         ycolors = cmap(np.linspace(0,1,self.shape[1]))[order]
         if 'color' not in kwargs:
             kwargs['color'] = ycolors
+        elif 'color' in kwargs:
+            ycolors = kwargs['color']
 
         # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
         stacked = kwargs.pop('stacked', False)

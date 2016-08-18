@@ -323,9 +323,9 @@ class Data():
                 self._dff = Series(np.asarray(grp[dffname]), Ts=self.Ts)
 
             elif (dffname not in grp) or recompute:
+                tr = self.get_tr(idx)
                 if verbose:
                     print('Computing DFF...'); sys.stdout.flush()
-                tr = self.get_tr(idx)
                 if tr is None:
                     return None
                 self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)

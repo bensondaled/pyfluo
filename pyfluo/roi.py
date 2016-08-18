@@ -171,7 +171,7 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=1), ax=None, show=True, **kwargs):
+    def show(self, mode='contours', labels=False, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=1), ax=None, show=True, label_kwargs=dict(fontsize=5, color='white'), **kwargs):
         """Display the ROI(s)
         TODO: adjust how masks are coloured such that the image itself is RGB and doesn't need a colormap to depend on
         
@@ -185,6 +185,7 @@ class ROI(np.ndarray):
             display labels over ROIs
         colors : list-like
             a list of values indicating the relative colors (example: magnitude) of each roi
+            a list of tuples specifying specific colors
             or a float in which case all will be a single color
             needs to be fixed for the possibility of this containing values of 0
             currently buggy for 'pts' mode
@@ -192,6 +193,8 @@ class ROI(np.ndarray):
             color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
         contours_kwargs : dict
             for cv2.drawContours
+        label_kwargs : dict
+            for ax.text in drawing roi labels
         ax : mpl.axes
             ax to show, defaults to gca
         show : bool
@@ -213,11 +216,16 @@ class ROI(np.ndarray):
         if colors is None:
             colors = np.arange(1,len(mask)+1)
             colors_ = np.linspace(0, 1, len(mask))
+            colors_ = cmap(colors_)
         elif type(colors) in PF_numeric_types:
             colors_ = np.array([colors for i in mask])
-        else:
-            colors_ = colors
-        colors_ = cmap(colors_)
+            colors_ = cmap(colors_)
+        elif any([isinstance(colors,t) for t in [np.ndarray, list]]):
+            if np.isscalar(colors[0]):
+                colors_ = colors
+                colors_ = cmap(colors_)
+            elif any([isinstance(colors[0],t) for t in [tuple,list,np.ndarray]]):
+                colors_ = colors
 
         if self.ndim==2:
             pts = [self.pts]
@@ -228,9 +236,21 @@ class ROI(np.ndarray):
             base = np.zeros(mask.shape[1:]+(4,))
             for i,p in enumerate(pts):
                 cv2.drawContours(base, [p], -1, colors_[i], **contours_kwargs)
-                if labels:
-                    center = p.mean(axis=0)
-                    ax.text(center[0], center[1], str(i), color='white', weight='bold')
+                if labels not in [False,None]:
+                    if labels is True:
+                        labels = 'center'
+                    if labels == 'center':
+                        center = p.mean(axis=0)
+                        align = 'center'
+                    elif labels == 'left':
+                        center = p.mean(axis=0)
+                        center[0] = p.min(axis=0)[0]-3
+                        align = 'right'
+                    elif labels == 'right':
+                        center = p.mean(axis=0)
+                        center[0] = p.max(axis=0)[0]+3
+                        align = 'left'
+                    ax.text(center[0], center[1], str(i), ha=align, **label_kwargs)
             base[...,-1] = (base.sum(axis=-1)!=0).astype(float)
             if show:
                 ims=ax.imshow(base, interpolation='nearest', **kwargs)

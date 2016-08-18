@@ -1,0 +1,1 @@
+-motorposition not properly saved when parsing SI data
