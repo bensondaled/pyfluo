@@ -200,8 +200,8 @@ def NMF(mov,n_components=30, init='nndsvd', beta=1, tol=5e-7, sparseness='compon
     time_components = estimator.fit_transform(Y)
     space_components = estimator.components.reshape((n_components,h,w))
     return space_components,time_components
-        
-def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], circularity_thresh=[0,1], verbose=True):
+       
+def comps_to_roi(comps, n_std=3, sigma=(2,2), pixels_thresh=[25,-1], circularity_thresh=[0,1], verbose=True):
         """
         Given the spatial components output of the IPCA_stICA function extract possible regions of interest
         The algorithm estimates the significance of a components by thresholding the components after gaussian smoothing
@@ -234,9 +234,8 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], circularity_
             if sigma:
                 comp = gaussian_filter(comp, sigma)
             
-            iqr = np.diff(np.percentile(comp, [25 ,75]))
-            thresh_from_median = n_std * iqr / 1.35
-            sig_pixels = np.abs(comp-np.median(comp)) >= thresh_from_median
+            thresh = n_std * np.std(comp)
+            sig_pixels = np.abs(comp-comp.mean()) > thresh
 
             lab, n = label(sig_pixels, np.ones((3,3)))
             new_masks = [np.asarray(lab==l) for l in np.unique(lab) if l>0 and np.sum(lab==l)>=pixels_thresh[0] and np.sum(lab==l)<=pixels_thresh[1]]
@@ -251,8 +250,8 @@ def comps_to_roi(comps, n_std=4, sigma=(2,2), pixels_thresh=[5,-1], circularity_
 
         all_masks = np.array(all_masks)
         centers = [np.sum(np.argwhere(a).mean(axis=0)**2) for a in all_masks]
-       
-        return all_masks[np.argsort(centers)]
+      
+        return ROI(all_masks[np.argsort(centers)])
 
 def circularity(m):
     area = m.sum()
