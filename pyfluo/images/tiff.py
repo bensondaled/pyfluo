@@ -2,7 +2,7 @@ from __future__ import print_function # for python2
 #from skimage.external import tifffile
 import tifffile #moving away form skimage b/c it's not up to date, check to see if it is by now
 import numpy as np, pandas as pd
-import os, glob, h5py, time, sys
+import os, glob, h5py, time, sys, re
 
 from ..config import *
 from ..util import Elapsed
@@ -24,19 +24,36 @@ def fast_i2c(pages, i2c_type=str):
 
 def val_parse(v):
     # parse values from si tags into python objects if possible
-    try:
-        return eval(v)
-    except:
-        if v == 'true':
-            return True
-        elif v == 'false':
-            return False
-        elif v == 'NaN':
-            return np.nan
-        elif v == 'inf' or v == 'Inf':
-            return np.inf
-        else:
+
+    # first try lists; they will evaluate, but improperly, so must be placed first
+    if v.strip().startswith('[') and v.strip().endswith(']'):
+        v = v.strip()[1:-1]
+        v = re.sub(' +',' ',v)
+        v = v.replace(' ',',')
+        v = v.replace(';',',')
+        v = '['+v+']'
+        try:
+            return eval(v)
+        except:
+            pass
+        try:
+            return [val_parse(i) for i in v[1:-1].split(',')]
+        except:
             return v
+    else:
+        try:
+            return eval(v)
+        except:
+            if v == 'true':
+                return True
+            elif v == 'false':
+                return False
+            elif v == 'NaN':
+                return np.nan
+            elif v == 'inf' or v == 'Inf':
+                return np.inf
+            else:
+                return v
 def si_parse(pg):
     if 'image_description' not in pg.tags:
         return {}

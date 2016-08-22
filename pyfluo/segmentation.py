@@ -101,7 +101,7 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
         conc[np.isnan(conc)] = 0
 
     with Progress(msg='ICA', verbose=verbose):
-        ica = FastICA(max_iter=2000, tol=0.002)
+        ica = FastICA(max_iter=500, tol=0.001)
         ica_result = ica.fit_transform(conc)
     
     output_shape = [len(comps.T), frame_shape[0], frame_shape[1]]
