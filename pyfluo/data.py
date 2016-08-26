@@ -390,12 +390,14 @@ class Data():
 
             yield dat
 
-    def segment(self, gen_kwargs=dict(chunk_size=2700, n_frames=None, downsample=3), verbose=True, **pca_ica_kwargs):
+    def segment(self, gen_kwargs=dict(chunk_size=3000, n_frames=None, downsample=3), verbose=True, **pca_ica_kwargs):
         def dummy_gen():
             return self.gen(**gen_kwargs)
 
         if verbose:
-            print('Segmenting. Generator: {} frames, chunk size {}, downsample {} --> {} chunks.'.format(gen_kwargs['n_frames'], gen_kwargs['chunk_size'], gen_kwargs['downsample'], np.ceil(gen_kwargs['n_frames']/gen_kwargs['chunk_size'])))
+            nume = gen_kwargs['n_frames'] or len(self)
+            nc = np.ceil(nume/gen_kwargs['chunk_size'])
+            print('Segmenting. Generator: {} frames, chunk size {}, downsample {} --> {} chunks.'.format(gen_kwargs['n_frames'], gen_kwargs['chunk_size'], gen_kwargs['downsample'], nc))
         comps = pca_ica(dummy_gen, **pca_ica_kwargs)
         with h5py.File(self.data_file) as h:
             if 'segmentation' not in h:
