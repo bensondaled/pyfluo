@@ -82,7 +82,7 @@ class Series(pd.DataFrame):
             ycolors = kwargs['color']
 
         # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
-        stacked = kwargs.pop('stacked', False)
+        stacked = kwargs.pop('stacked', True)
         if stacked:
             to_plot = self.T.iloc[order,:].T
             to_plot = to_plot - to_plot.min(axis=0)

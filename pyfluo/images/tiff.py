@@ -14,6 +14,8 @@ def fast_i2c(pages, i2c_type=str):
     i0 = [t.index('I2CData = ')+11 for t in ids]
     i1 = [t[i0i:].index('\n') for t,i0i in zip(ids,i0)]
     data = [t[i0i:i0i+i1i-1].strip(' {}') for i0i,i1i,t in zip(i0,i1,ids)]
+    if all([i=='' for i in data]):
+        return None
     data = [(i,d) for i,d in enumerate(data)]
     data = [(d[0],d[1].split('} {')) for d in data]
     ix,data = zip(*[(d[0],i) for d in data for i in d[1]])

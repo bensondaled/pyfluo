@@ -1,1 +1,3 @@
--motorposition not properly saved when parsing SI data
+-allow tifs to not have any image info (almost done)
+-allow dff to work on h5py datasets
+-subtract negatives at some point

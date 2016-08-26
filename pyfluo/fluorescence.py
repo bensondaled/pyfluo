@@ -11,8 +11,7 @@ from .config import *
 
 def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
-    NOTE: currently using median instead of percentile. both suck
-    method: 'pd' / 'np'
+    pad_kwargs can be an array to use as left-pad instead of using np.pad
     """
     Ts = Ts or data.Ts
 
@@ -38,9 +37,14 @@ def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, p
         warnings.warn('Requested a step size smaller than sampling interval. Using sampling interval.')
         step_size = 1.
 
-    pad_size = window_size - 1
-    pad = ((pad_size,0),) + tuple([(0,0) for _ in range(data.ndim-1)])
-    padded = np.pad(data, pad, **pad_kwargs)
+    if isinstance(pad_kwargs, dict):
+        pad_size = window_size - 1
+        pad = ((pad_size,0),) + tuple([(0,0) for _ in range(data.ndim-1)])
+        padded = np.pad(data, pad, **pad_kwargs)
+    elif isinstance(pad_kwargs, np.ndarray):
+        print(pad_kwargs.shape)
+        print(data.shape)
+        padded = np.concatenate([pad_kwargs, data])
 
     out_size = ((len(padded) - window_size) // step_size) + 1
 
