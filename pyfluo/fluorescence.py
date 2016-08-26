@@ -1,7 +1,7 @@
 import numpy as np, pandas as pd
 from scipy.stats.mstats import mode
 from scipy.ndimage.measurements import label
-from scipy.signal import medfilt
+from scipy.ndimage.filters import median_filter
 import warnings, sys
 
 from .series import Series
@@ -9,16 +9,25 @@ from .util import ProgressBar
 from .util import sliding_window
 from .config import *
 
+def causal_median_filter(sig, size):
+    # works, but be careful, b/c using a causal filter can make pseudo-shifts in the apparent time course of the signal
+    from scipy.signal import medfilt
+    kernel = [size] + [1]*(sig.ndim-1)
+    filt = medfilt(sig, kernel)
+    filt = filt[size//2:-size//2+1]
+    pad = sig[:size-1]
+    return np.concatenate([pad, filt])
+
 def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
     """
-    pad_kwargs can be an array to use as left-pad instead of using np.pad
+    pad_kwargs can be an array to use as left-pad instead of using np.pad. in this case, give the *raw data* to use as left pad
     """
     Ts = Ts or data.Ts
 
     was_pd = any([isinstance(data, t) for t in [pd.Series, pd.DataFrame]])
     if was_pd:
         orig_type = type(data)
-        data = data.values
+        data = data.values.squeeze()
 
     if step_size is None:
         step_size = Ts
@@ -28,7 +37,7 @@ def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, p
     filter_size = int(filter_size/Ts)
     if filter_size % 2 == 0:
         filter_size += 1
-    filter_kernel = [filter_size] + [1]*(len(data.shape)-1)
+    filter_kernel = [filter_size] + [1]*(data.ndim-1)
 
     if window_size<1:
         warnings.warn('Requested a window size smaller than sampling interval. Using sampling interval.')
@@ -37,26 +46,33 @@ def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, p
         warnings.warn('Requested a step size smaller than sampling interval. Using sampling interval.')
         step_size = 1.
 
+    assert window_size < len(data), 'Window size is >= data size'
+    assert step_size < len(data), 'Step size is >= data size'
+
     if isinstance(pad_kwargs, dict):
         pad_size = window_size - 1
         pad = ((pad_size,0),) + tuple([(0,0) for _ in range(data.ndim-1)])
         padded = np.pad(data, pad, **pad_kwargs)
-    elif isinstance(pad_kwargs, np.ndarray):
-        print(pad_kwargs.shape)
-        print(data.shape)
-        padded = np.concatenate([pad_kwargs, data])
+    elif any([isinstance(pad_kwargs, dt) for dt in [np.ndarray, pd.Series, pd.DataFrame]]):
+        if any([isinstance(pad_kwargs, t) for t in [pd.Series, pd.DataFrame]]):
+            pad_kwargs = pad_kwargs.values.squeeze()
+        assert len(pad_kwargs) >= window_size, 'Not enough padding was supplied.'
+        pad = pad_kwargs[-window_size+1:]
+        padded = np.concatenate([pad, data])
 
     out_size = ((len(padded) - window_size) // step_size) + 1
-
+    
     if verbose:
         pbar = ProgressBar(maxval=out_size).start()
 
-    filtered = medfilt(padded, filter_kernel)
+    padded = median_filter(padded, filter_kernel)
+
     f0 = []
-    for idx,win in enumerate(sliding_window(filtered, ws=window_size, ss=step_size)):
+    for idx,win in enumerate(sliding_window(padded, ws=window_size, ss=step_size)):
         f0.append(np.min(win, axis=0))
         if verbose:
             pbar.update(idx)
+
     f0 = np.repeat(f0, step_size, axis=0)[:len(data)]
     if verbose:
         pbar.finish()
