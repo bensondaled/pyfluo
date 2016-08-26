@@ -70,9 +70,7 @@ class Data():
 
     def __len__(self):
         # gives length of dataset, i.e. n_frames. See obj.n_files as well
-        with h5py.File(self.data_file, 'r') as h:
-            n_frames = len(h['data'])
-        return n_frames
+        return self.shape[0]
 
     def __repr__(self):
         return repr(self.info)
