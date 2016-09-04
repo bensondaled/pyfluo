@@ -425,7 +425,7 @@ class Data():
                 print('Copying "{}"'.format(key))
                 if include_data==False and key=='data':
                     continue
-                infile.copy(key, outfile)
+                infile.copy(key, outfile, expand_soft=True, expand_refs=True, expand_external=True)
     def import_file(self, filename, backup=True):
         """
         NOTE: overwrites all attributes except data
