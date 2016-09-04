@@ -24,7 +24,10 @@ class Data():
         self.data_file = data_file
             
         with h5py.File(self.data_file, 'r') as h:
-            self.shape = h['data'].shape
+            if 'data' in h:
+                self.shape = h['data'].shape
+            else:
+                self.shape = None
         with pd.HDFStore(self.data_file) as h:
             self.n_files = len(h.info)
             self.info = h.info
@@ -51,7 +54,10 @@ class Data():
 
     def __getitem__(self, idx):
         with h5py.File(self.data_file, 'r') as h:
-            data = Movie(np.asarray(h['data'][idx]), Ts=self.Ts)
+            if 'data' in h:
+                data = Movie(np.asarray(h['data'][idx]), Ts=self.Ts)
+            else:
+                return None
 
         # likely more cases to account for in future
         if isinstance(idx, tuple):

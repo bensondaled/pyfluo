@@ -13,6 +13,7 @@ import itertools as it
 from .util import ProgressBar, Progress
 from .config import cv2
 from .roi import ROI
+from .movies import Movie
 
 def grid(data, rows=0.5, cols=0.5):
     """Generate index slices to split image/movie into grid
@@ -53,6 +54,13 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
     func is a non-instantiated generator function that yields chunks of frames
     mu : >0.5 more spatial
     """
+
+    if isinstance(func, Movie):
+        mov = func.copy()
+        def gen():
+            for i in range(1):
+                yield mov
+        func = gen
     
     ipca = IncrementalPCA(n_components=n_components)
 
