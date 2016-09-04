@@ -422,6 +422,7 @@ class Data():
             out_filename += '.h5'
         with h5py.File(out_filename) as outfile, h5py.File(self.data_file) as infile:
             for key in infile:
+                print('Copying "{}"'.format(key))
                 if include_data==False and key=='data':
                     continue
                 infile.copy(key, outfile)
