@@ -255,6 +255,18 @@ class Data():
             nex_idx = latest_idx+1
         return nex_idx
 
+    def get_segmentation(self, idx=None):
+        if idx is None:
+            idx = self._latest_segmentation_idx
+        if idx is None:
+            return None
+
+        with h5py.File(self.data_file) as f:
+            seggrp = f['segmentation']
+            self._segmentation = np.asarray(seggrp['segmentation{}'.format(int(idx))])
+
+        return self._segmentation
+
     def set_roi(self, roi):
         with h5py.File(self.data_file) as f:
             if 'roi' not in f:
