@@ -432,8 +432,13 @@ class Data():
     def export(self, out_filename, include_data=False):
         if not out_filename.endswith('.h5'):
             out_filename += '.h5'
+        with pd.HDFStore(self.data_file) as infile:
+            handle = infile.copy(out_filename, overwrite=False)
+        handle.close()
         with h5py.File(out_filename) as outfile, h5py.File(self.data_file) as infile:
             for key in infile:
+                if key in outfile:
+                    continue
                 print('Copying "{}"'.format(key))
                 if include_data==False and key=='data':
                     continue
