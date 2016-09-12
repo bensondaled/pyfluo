@@ -141,6 +141,12 @@ class Series(pd.DataFrame):
                 i.set_fontsize(yfontsize)
         return res
 
+    def normalize(self, axis=0):
+        copy = self.copy()
+        copy = (copy-copy.min(axis=axis))/(copy.max(axis=axis)-copy.min(axis=axis))
+        return copy
+
+
 if __name__ == '__main__':
     pass
 

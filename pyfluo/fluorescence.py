@@ -18,7 +18,7 @@ def causal_median_filter(sig, size):
     pad = sig[:size-1]
     return np.concatenate([pad, filt])
 
-def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, pad_kwargs=dict(mode='edge'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, pad_kwargs=dict(mode='reflect'), root_f=False, return_f0=False, verbose=True):
     """
     pad_kwargs can be an array to use as left-pad instead of using np.pad. in this case, give the *raw data* to use as left pad
     """
@@ -145,5 +145,5 @@ def detect_transients(sig, baseline_thresh=0.0, peak_thresh=2.5, drift_window=10
     for b in borders:
         if b[1]-b[0]<wmin or b[1]-b[0]>wmax:
             continue
-        ret[b[0]:b[1]] = sig[b[0]:b[1]]
+        ret[b[0]:b[1]] = 1#sig[b[0]:b[1]]
     return ret

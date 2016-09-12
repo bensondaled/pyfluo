@@ -218,7 +218,7 @@ class Movie(np.ndarray):
 
 
 ###################
-def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, backend=cv2, fontsize=1, rolling_mean=1, generator_fxn=None, **kwargs):
+def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True, fontsize=1, rolling_mean=1, generator_fxn=None, **kwargs):
     """
     Parameters
     ----------
@@ -234,8 +234,6 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
         playback rate in frames per second. Defaults to 1/Ts
     scale : float 
         scaling factor to resize playback images
-    contrast : float
-        scaling factor for pixel values (clips so as to produce contrast)
     show_time : bool
         show time on image
     fontsize : float
@@ -260,8 +258,10 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
         fps = 1/data.Ts
     fpms = fps / 1000.
 
-    title = 'p / q / f / s / r / = / -'
-    minn,maxx = data.min(),data.max()
+    title = 'p / q / f / s / r / b / d / = / -'
+    cv2.namedWindow(title)
+    minn,maxx = minmax
+    #minn,maxx = data.min(),data.max() # not needed anymore with new contrast method
 
     if generator_fxn is not None:
         gfunc = getattr(data,generator_fxn)
@@ -299,9 +299,9 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
 
             fr = np.mean([fnext(dataiter) for k in range(rolling_mean)], axis=0)
 
-            fr = contrast * (fr-minn)/(maxx-minn)
-            fr[fr>1.0] = 1.0
-            fr[fr<0.0] = 0.0
+            fr = np.clip(fr, minn, maxx)
+            fr -= minn
+            fr /= maxx-minn
             fr = cv2.resize(fr,size)
             if show_time:
                 cv2.putText(fr, '{:0.3f}'.format(t), (5,int(30*font_size)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (120,100,80), thickness=1)
@@ -327,6 +327,10 @@ def play_mov(data, loop=False, fps=None, scale=1, contrast=1., show_time=True, b
             wait = max([wait, 1])
         elif k == ord('s'):
             wait = wait*1.5
+        elif k == ord('b'):
+            minn -= 20 #brighter
+        elif k == ord('d'):
+            minn += 20 #dimmer
         elif k == ord('r'):
             oper_idx = int(not oper_idx)
         elif k == ord('='):
