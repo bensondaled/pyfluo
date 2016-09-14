@@ -291,7 +291,7 @@ class Data():
 
         return _roi
     
-    def get_example(self, slyce=None, resample=3, redo=False):
+    def get_example(self, slices=None, resample=3, redo=False):
         # slice is specified only first time, then becomes meaningless once example is extracted; unless redo is used
         with h5py.File(self.data_file) as f:
             if 'example' in f and not redo:
@@ -302,24 +302,24 @@ class Data():
                 if not self._has_data:
                     warnings.warn('Data not stored in this file, so cannot make example.')
                     return
-                if slyce is None:
+                if slices is None:
                     sub_movie_size = 3000
                     n_sub_movies = 3
                     Ts = self.Ts
                     quart = len(self)//(n_sub_movies+1)
-                    slyce = [np.arange(quart*i-sub_movie_size//2,quart*i+sub_movie_size//2) for i in range(1,n_sub_movies+1)]
-                    slyce = [item for s in slyce for item in s]
+                    slices = [slice(quart*i-sub_movie_size//2,quart*i+sub_movie_size//2) for i in range(1,n_sub_movies+1)]
                 else:
-                    if isinstance(slyce, slice):
-                        step = slyce.step or 1
+                    if all([isinstance(s, slice) for s in slices]) and all([s.step==slices[0].step for s in slices]):
+                        step = slices[0].step or 1
                     else:
                         step = 1
                     Ts = self.Ts * step
-                _example = Movie(self[slyce], Ts=Ts)
+                data = np.concatenate([self[s] for s in slices])
+                _example = Movie(data, Ts=Ts)
                 _example = _example.resample(resample)
                 ds = f.create_dataset('example', data=_example)
                 ds.attrs['Ts'] = _example.Ts
-                ds.attrs['slice'] = slyce
+                ds.attrs['slices'] = slices
 
         return _example
 
