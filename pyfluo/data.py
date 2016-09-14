@@ -28,8 +28,10 @@ class Data():
                 self.shape = h['data'].shape
                 self._data_chunk_size = h['data'].chunks
                 self.batch_size = self._data_chunk_size[0]*200 # hard-coded for now, corresponds to 6400 frames in the normal case
+                self._has_data = True
             else:
                 self.shape = None
+                self._has_data = False
         with pd.HDFStore(self.data_file) as h:
             self.n_files = len(h.info)
             self.info = h.info
@@ -295,7 +297,7 @@ class Data():
             if 'example' in f:
                 _example = np.asarray(f['example'])
             else:
-                if self.data is None:
+                if not self._has_data:
                     warnings.warn('Data not stored in this file, so cannot make example.')
                     return
                 if slyce is None:
