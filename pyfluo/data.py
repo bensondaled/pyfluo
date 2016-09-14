@@ -303,9 +303,12 @@ class Data():
 
         return Movie(_example, Ts=self.Ts)
 
-    def get_tr(self, idx=None, batch=6000, verbose=True):
+    def get_tr(self, idx=None, batch=None, verbose=True):
         if idx is None:
             idx = self._latest_roi_idx
+
+        if batch is None:
+            batch = self.batch_size
 
         roi = self.get_roi(idx)
         if roi is None:
