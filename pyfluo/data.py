@@ -317,6 +317,7 @@ class Data():
                 _example = _example.resample(resample)
                 ds = f.create_dataset('example', data=_example)
                 ds.attrs['Ts'] = _example.Ts
+                ds.attrs['slice'] = slyce
 
         return _example
 
