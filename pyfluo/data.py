@@ -26,6 +26,8 @@ class Data():
         with h5py.File(self.data_file, 'r') as h:
             if 'data' in h:
                 self.shape = h['data'].shape
+                self._data_chunk_size = h['data'].chunks
+                self.batch_size = self._data_chunk_size[0]*200 # hard-coded for now, corresponds to 6400 frames in the normal case
             else:
                 self.shape = None
         with pd.HDFStore(self.data_file) as h:
@@ -192,7 +194,7 @@ class Data():
             if '_data_funcs' not in f:
                 f.create_group('_data_funcs')
             if attr_str not in f['_data_funcs']:
-                res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=3000)]
+                res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=self.batch_size)]
                 res = func(res, axis=0)
                 f['_data_funcs'].create_dataset(attr_str, data=res)
             else:
