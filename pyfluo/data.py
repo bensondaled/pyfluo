@@ -291,13 +291,15 @@ class Data():
     
     def get_example(self, slyce=None):
         # slice is specified only first time, then becomes meaningless once example is extracted
-        if slyce is None:
-            slyce = slice(len(self)//2-1500, len(self)//2+1500, 3) #1000 frames roughly in middle of data
-        
         with h5py.File(self.data_file) as f:
             if 'example' in f:
                 _example = np.asarray(f['example'])
             else:
+                if self.data is None:
+                    warnings.warn('Data not stored in this file, so cannot make example.')
+                    return
+                if slyce is None:
+                    slyce = slice(len(self)//2-1500, len(self)//2+1500, 3) #1000 frames roughly in middle of data
                 _example = self[slyce]
                 f.create_dataset('example', data=_example)
 
