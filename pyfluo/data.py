@@ -297,6 +297,8 @@ class Data():
             if 'example' in f and not redo:
                 _example = Movie(np.asarray(f['example']), Ts=f['example'].attrs['Ts'])
             else:
+                if 'example' in f and redo:
+                    del f['example']
                 if not self._has_data:
                     warnings.warn('Data not stored in this file, so cannot make example.')
                     return
