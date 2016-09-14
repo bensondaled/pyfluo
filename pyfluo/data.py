@@ -291,21 +291,34 @@ class Data():
 
         return _roi
     
-    def get_example(self, slyce=None):
-        # slice is specified only first time, then becomes meaningless once example is extracted
+    def get_example(self, slyce=None, resample=3, redo=False):
+        # slice is specified only first time, then becomes meaningless once example is extracted; unless redo is used
         with h5py.File(self.data_file) as f:
-            if 'example' in f:
-                _example = np.asarray(f['example'])
+            if 'example' in f and not redo:
+                _example = Movie(np.asarray(f['example']), Ts=f['example'].attrs['Ts'])
             else:
                 if not self._has_data:
                     warnings.warn('Data not stored in this file, so cannot make example.')
                     return
                 if slyce is None:
-                    slyce = slice(len(self)//2-1500, len(self)//2+1500, 3) #1000 frames roughly in middle of data
-                _example = self[slyce]
-                f.create_dataset('example', data=_example)
+                    sub_movie_size = 3000
+                    n_sub_movies = 3
+                    Ts = self.Ts
+                    quart = len(self)//(n_sub_movies+1)
+                    slyce = [np.arange(quart*i-sub_movie_size//2,quart*i+sub_movie_size//2) for i in range(1,n_sub_movies+1)]
+                    slyce = [item for s in slyce for item in s]
+                else:
+                    if isinstance(slyce, slice):
+                        step = slyce.step or 1
+                    else:
+                        step = 1
+                    Ts = self.Ts * step
+                _example = Movie(self[slyce], Ts=Ts)
+                _example = _example.resample(resample)
+                ds = f.create_dataset('example', data=_example)
+                ds.attrs['Ts'] = _example.Ts
 
-        return Movie(_example, Ts=self.Ts)
+        return _example
 
     def get_tr(self, idx=None, batch=None, verbose=True):
         if idx is None:
