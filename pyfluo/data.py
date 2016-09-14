@@ -319,7 +319,7 @@ class Data():
                 _example = _example.resample(resample)
                 ds = f.create_dataset('example', data=_example)
                 ds.attrs['Ts'] = _example.Ts
-                ds.attrs['slices'] = slices
+                ds.attrs['slices'] = str(slices)
 
         return _example
 
