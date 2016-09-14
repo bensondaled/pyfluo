@@ -263,9 +263,9 @@ class Data():
 
         with h5py.File(self.data_file) as f:
             seggrp = f['segmentation']
-            self._segmentation = np.asarray(seggrp['segmentation{}'.format(int(idx))])
+            _segmentation = np.asarray(seggrp['segmentation{}'.format(int(idx))])
 
-        return self._segmentation
+        return _segmentation
 
     def set_roi(self, roi):
         with h5py.File(self.data_file) as f:
@@ -283,9 +283,23 @@ class Data():
 
         with h5py.File(self.data_file) as f:
             roigrp = f['roi']
-            self._roi = ROI(roigrp['roi{}'.format(int(idx))])
+            _roi = ROI(roigrp['roi{}'.format(int(idx))])
 
-        return self._roi
+        return _roi
+    
+    def get_example(self, slyce=None):
+        # slice is specified only first time, then becomes meaningless once example is extracted
+        if slyce is None:
+            slyce = slice(len(self)//2-1500, len(self)//2+1500, 3) #1000 frames roughly in middle of data
+        
+        with h5py.File(self.data_file) as f:
+            if 'example' in f:
+                _example = np.asarray(f['example'])
+            else:
+                _example = self[slyce]
+                f.create_dataset('example', data=_example)
+
+        return Movie(_example, Ts=self.Ts)
 
     def get_tr(self, idx=None, batch=6000, verbose=True):
         if idx is None:
@@ -319,7 +333,7 @@ class Data():
 
         return self._tr
     
-    def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=20.), recompute=False, verbose=True):
+    def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=10.), recompute=False, verbose=True):
         if idx is None:
             idx = self._latest_roi_idx
 
@@ -454,3 +468,4 @@ class Data():
                 if key in datafile:
                     del datafile[key]
                 infile.copy(key, datafile)
+

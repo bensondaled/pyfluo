@@ -146,7 +146,7 @@ class TiffGroup(object):
             diverged = not all([n[:i]==units[0][:i] for n in units[1:]])
         return '_'.join(units[0][:i-1])
 
-    def to_hdf5(self, verbose=True):
+    def to_hdf5(self, chunks=(32,128,128), verbose=True):
 
         t0 = time.time()
         
@@ -170,7 +170,7 @@ class TiffGroup(object):
             # store data
             with h5py.File(self.hdf_path) as h:
                 if 'data' not in h:
-                    h.create_dataset('data', data=t.data, maxshape=(None,)+t.data.shape[1:], compression='lzf')
+                    h.create_dataset('data', data=t.data, maxshape=(None,)+t.data.shape[1:], compression='lzf', chunks=chunks)
                 elif 'data' in h:
                     newshape = (t.data.shape[0]+len(h['data']),) + h['data'].shape[1:]
                     h['data'].resize(newshape)
