@@ -327,9 +327,6 @@ class Data():
         if idx is None:
             idx = self._latest_roi_idx
 
-        if batch is None:
-            batch = self.batch_size
-
         roi = self.get_roi(idx)
         if roi is None:
             return None
@@ -346,6 +343,9 @@ class Data():
             elif trname not in grp:
                 if verbose:
                     print ('Extracting traces...'); sys.stdout.flush()
+                if batch is None:
+                    batch = self.batch_size
+
                 all_tr = []
                 for b in range(0,len(self),batch):
                     sl = slice(b,min([len(self), b+batch]))
@@ -358,7 +358,7 @@ class Data():
 
         return self._tr
     
-    def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=10.), recompute=False, verbose=True):
+    def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=120.), recompute=False, verbose=True):
         if idx is None:
             idx = self._latest_roi_idx
 
@@ -476,7 +476,7 @@ class Data():
             out_filename = os.path.join(out_filename, os.path.split(self.data_file)[-1])
 
         if os.path.exists(out_filename):
-            overwrite = input('File {} exists. Overwrite? (y/[n])'.format(out_filename))A
+            overwrite = input('File {} exists. Overwrite? (y/[n])'.format(out_filename))
             if overwrite == 'y':
                 pass
             else:
