@@ -29,7 +29,7 @@ class Movie(np.ndarray):
     _custom_attrs = ['Ts', 'filename']
     
     def __new__(cls, data, Ts=1, filename=[], **kwargs):
-        assert any([isinstance(data,lt) for lt in PF_list_types+PF_str_types]), 'Movie data not supplied in proper format.'
+        assert isinstance(data, PF_list_types+PF_str_types), 'Movie data not supplied in proper format.'
 
         # if data is filenames
         if type(data) in PF_str_types:
@@ -151,9 +151,9 @@ class Movie(np.ndarray):
         order : int
             order of interpolation (0=nearest, 1=bilinear, 2=cubic)
         """              
-        if type(factor) in [int,float,np.float16,np.float32,np.float64,np.float128,np.int8,np.int16,np.int32,np.int64]:
+        if isinstance(factor, PF_numeric_types):
             factor = [factor,factor]
-        elif any([isinstance(factor,t) for t in [list,tuple,np.ndarray]]):
+        elif isinstance(factor, PF_list_types):
             factor = list(factor)
         else:
             raise Exception('factor parameter not understood')

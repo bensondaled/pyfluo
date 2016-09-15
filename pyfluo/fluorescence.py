@@ -24,7 +24,7 @@ def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, p
     """
     Ts = Ts or data.Ts
 
-    was_pd = any([isinstance(data, t) for t in [pd.Series, pd.DataFrame]])
+    was_pd = isinstance(data, (pd.Series, pd.DataFrame))
     if was_pd:
         orig_type = type(data)
         data = data.values.squeeze()
@@ -53,7 +53,7 @@ def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, p
         pad_size = window_size - 1
         pad = ((pad_size,0),) + tuple([(0,0) for _ in range(data.ndim-1)])
         padded = np.pad(data, pad, **pad_kwargs)
-    elif any([isinstance(pad_kwargs, dt) for dt in [np.ndarray, pd.Series, pd.DataFrame]]):
+    elif isinstance(pad_kwargs, (np.ndarray, pd.Series, pd.DataFrame)):
         if any([isinstance(pad_kwargs, t) for t in [pd.Series, pd.DataFrame]]):
             pad_kwargs = pad_kwargs.values.squeeze()
         assert len(pad_kwargs) >= window_size, 'Not enough padding was supplied.'

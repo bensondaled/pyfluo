@@ -138,7 +138,7 @@ def apply_motion_correction(mov, shifts, interpolation=None, crop=None, in_place
             xmax = int(min([0, min(shifts[:,1])]) or None)
             ymin = int(max(shifts[:,0]))
             xmin = int(max(shifts[:,1]))
-        elif any([isinstance(crop, dt) for dt in PF_numeric_types]):
+        elif isinstance(crop, PF_numeric_types):
             crop = int(crop)
             ymax,xmax = -crop,-crop
             ymin,xmin = crop,crop

@@ -220,11 +220,11 @@ class ROI(np.ndarray):
         elif type(colors) in PF_numeric_types:
             colors_ = np.array([colors for i in mask])
             colors_ = cmap(colors_)
-        elif any([isinstance(colors,t) for t in [np.ndarray, list]]):
+        elif isinstance(colors,PF_list_types):
             if np.isscalar(colors[0]):
                 colors_ = colors
                 colors_ = cmap(colors_)
-            elif any([isinstance(colors[0],t) for t in [tuple,list,np.ndarray]]):
+            elif isinstance(colors[0],PF_list_types):
                 colors_ = colors
 
         if self.ndim==2:
