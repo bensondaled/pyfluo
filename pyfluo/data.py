@@ -471,6 +471,17 @@ class Data():
     def export(self, out_filename, include_data=False):
         if not out_filename.endswith('.h5'):
             out_filename += '.h5'
+
+        if os.path.isdir(out_filename):
+            out_filename = os.path.join(out_filename, os.path.split(self.data_file)[-1])
+
+        if os.path.exists(out_filename):
+            overwrite = input('File {} exists. Overwrite? (y/[n])'.format(out_filename))A
+            if overwrite == 'y':
+                pass
+            else:
+                return
+
         with pd.HDFStore(self.data_file) as infile:
             handle = infile.copy(out_filename, overwrite=False)
         handle.close()
@@ -478,9 +489,9 @@ class Data():
             for key in infile:
                 if key in outfile:
                     continue
-                print('Copying "{}"'.format(key))
                 if include_data==False and key=='data':
                     continue
+                print('Copying "{}"'.format(key))
                 infile.copy(key, outfile, expand_soft=True, expand_refs=True, expand_external=True)
     def import_file(self, filename, backup=True):
         """
