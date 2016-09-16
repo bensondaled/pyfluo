@@ -321,8 +321,8 @@ class Data():
                 _example = Movie(data, Ts=Ts)
                 _example = _example.resample(resample)
                 ds = f.create_dataset('example', data=_example, compression='lzf')
-                ds.attrs['Ts'] = _example.Ts
-                ds.attrs['slices'] = str(slices)
+                f['example'].attrs['Ts'] = _example.Ts
+                f['example'].attrs['slices'] = str(slices)
 
         return _example
 
