@@ -18,7 +18,7 @@ def causal_median_filter(sig, size):
     pad = sig[:size-1]
     return np.concatenate([pad, filt])
 
-def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, pad_kwargs=dict(mode='reflect'), root_f=False, return_f0=False, verbose=True):
+def compute_dff(data, window_size=5., filter_size=1., use_filter=True, step_size=None, Ts=None, pad_kwargs=dict(mode='reflect'), root_f=False, return_f0=False, verbose=True):
     """
     pad_kwargs can be an array to use as left-pad instead of using np.pad. in this case, give the *raw data* to use as left pad
     """
@@ -65,7 +65,8 @@ def compute_dff(data, window_size=5., filter_size=1., step_size=None, Ts=None, p
     if verbose:
         pbar = ProgressBar(maxval=out_size).start()
 
-    padded = median_filter(padded, filter_kernel)
+    if use_filter:
+        padded = median_filter(padded, filter_kernel)
 
     f0 = []
     for idx,win in enumerate(sliding_window(padded, ws=window_size, ss=step_size)):

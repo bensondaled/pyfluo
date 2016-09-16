@@ -7,6 +7,8 @@ sklNMF = NMF
 from skimage.measure import perimeter
 import multiprocessing as mup
 from scipy.ndimage.filters import gaussian_filter
+from skimage.morphology import erosion, dilation
+from skimage.filters import gaussian
 from scipy.ndimage import label
 import itertools as it
 
@@ -345,3 +347,70 @@ def local_correlations(self,eight_neighbours=False):
 
      return rho
      
+def semiauto(mov, roi, min_size=100, n_std=2., filter_kernel=.75, no_borders=True, return_all=False, verbose=True):
+    ## 
+    mov = mov-mov.mean(axis=0)
+
+    shape = np.array(mov.shape[1:])
+
+    tr_all = mov.extract(roi)
+    if roi.ndim == 2:
+        roi = [roi]
+
+    cims = []
+    full = []
+    result = []
+
+    for idx,r in enumerate(roi):
+        tr = tr_all.iloc[:,idx].values
+        p = r.pts.mean(axis=0)
+
+        ## Within-roi correlation map
+        aw = np.argwhere(r)
+        within = mov[:,aw[:,0],aw[:,1]]
+        within_ccs = [np.corrcoef(w,tr)[0,1] for w in within.T]
+        within_mean = np.mean(within_ccs)
+        within_std = np.std(within_ccs)
+
+        ## Fullframe correlation map
+        res = np.zeros(shape)
+        (maxy,maxx),(miny,minx) = shape-1,[0,0]
+        if verbose:
+            pbar = ProgressBar(maxval=shape[0]).start()
+        for y in np.arange(0,shape[0]):
+            if verbose:
+                pbar.update(y)
+            for x in np.arange(0,shape[1]):
+                res[y,x] = np.corrcoef(tr, mov[:,y,x])[0,1]
+        if verbose:
+            pbar.finish()
+
+        cims.append(res)
+        # some filtering
+        thresh = within_mean - n_std*within_std
+        im = res>thresh
+        im = gaussian(im, filter_kernel)
+        im = erosion(im)
+        im = dilation(im)
+        im = im>0
+
+        # labeling
+        objs,nob = label(im)
+        segs = []
+        for i in range(1,nob+1):
+            if np.sum(objs==i)<min_size:
+                continue
+            wh = np.where(objs==i)
+            if no_borders and any([np.any((w==0)|(w==d)) for w,d in zip(wh,shape)]):
+                continue
+            segs.append(objs==i)
+        centers = np.array([np.argwhere(s).mean(axis=0) for s in segs])
+        dist = np.array([np.sqrt(np.sum(p-c)**2) for c in centers])
+        cell = segs[np.argmin(dist)]
+        result.append(cell)
+        full.append(segs)
+    if return_all:
+        return ROI(result), [ROI(f) for f in full], np.array(cims)
+    else:
+        return ROI(result)
+    ##

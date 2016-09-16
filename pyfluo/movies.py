@@ -114,7 +114,7 @@ class Movie(np.ndarray):
         *args, **kwargs
             those accepted by pyfluo.roi.select_roi
         """
-        zp = self.project(show=False, method=kwargs.pop('projection_method',np.std))
+        zp = self.project(show=False, method=kwargs.pop('projection_method',np.mean))
         return select_roi(zp, *args, **kwargs)
     def extract(self, roi):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied

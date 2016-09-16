@@ -472,11 +472,10 @@ class Data():
         play_mov(self, generator_fxn='gen', **kwargs)
 
     def export(self, out_filename, include_data=False):
-        if not out_filename.endswith('.h5'):
-            out_filename += '.h5'
-
         if os.path.isdir(out_filename):
             out_filename = os.path.join(out_filename, os.path.split(self.data_file)[-1])
+        elif not out_filename.endswith('.h5'):
+            out_filename += '.h5'
 
         if os.path.exists(out_filename):
             overwrite = input('File {} exists. Overwrite? (y/[n])'.format(out_filename))
