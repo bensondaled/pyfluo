@@ -16,9 +16,10 @@ if cv2:
 # Types
 if _pyver == 3:
     xrange = range
-    PF_str_types = (str)
+    PF_str_types = (str,)
 elif _pyver == 2:
     PF_str_types = (str, unicode)
+    input = raw_input
 PF_numeric_types = tuple([int, float] + np.sctypes['float'] + np.sctypes['int'] + np.sctypes['uint'])
 PF_list_types = (list, np.ndarray, tuple)
 

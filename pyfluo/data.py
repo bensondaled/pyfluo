@@ -38,6 +38,8 @@ class Data():
             self.si_data = h.si_data
             self.i2c = h.i2c
             self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
+            self.i2c.ix[:,'phase'] = (self.i2c.data-self.i2c.data.astype(int)).round(1)*10   
+            self.i2c.ix[:,'trial'] = self.i2c.data.astype(int)
             self._has_motion_correction = 'motion' in h
             if self._has_motion_correction:
                 self.motion = h.motion
@@ -317,7 +319,7 @@ class Data():
                 data = np.concatenate([self[s] for s in slices])
                 _example = Movie(data, Ts=Ts)
                 _example = _example.resample(resample)
-                ds = f.create_dataset('example', data=_example)
+                ds = f.create_dataset('example', data=_example, compression='lzf')
                 ds.attrs['Ts'] = _example.Ts
                 ds.attrs['slices'] = str(slices)
 
