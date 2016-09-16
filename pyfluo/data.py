@@ -136,7 +136,7 @@ class Data():
         
         # create new datasets
         with h5py.File(self.data_file) as h:
-            h.create_dataset('templates', data=np.zeros((n_chunks+1,) + self.shape[1:]))
+            h.create_dataset('templates', data=np.zeros((n_chunks+1,) + self.shape[1:]), compression='lzf')
         
         # iterate through frame chunks, local corrections
         for idx,sli in enumerate(slices):
@@ -201,7 +201,7 @@ class Data():
             if attr_str not in f['_data_funcs']:
                 res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=self.batch_size)]
                 res = func(res, axis=0)
-                f['_data_funcs'].create_dataset(attr_str, data=res)
+                f['_data_funcs'].create_dataset(attr_str, data=res, compression='lzf')
             else:
                 res = np.asarray(f['_data_funcs'][attr_str])
         if isinstance(res, np.ndarray) and res.ndim==0:
@@ -280,7 +280,7 @@ class Data():
                 roigrp = f.create_group('roi')
             else:
                 roigrp = f['roi']
-            roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi))
+            roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi), compression='lzf')
    
     def get_roi(self, idx=None):
         if idx is None:
@@ -357,7 +357,7 @@ class Data():
                     tr = self[sl].extract(roi)
                     all_tr.append(np.asarray(tr))
                 self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
-                grp.create_dataset(trname, data=np.asarray(self._tr))
+                grp.create_dataset(trname, data=np.asarray(self._tr), compression='lzf')
 
         return self._tr
     
@@ -382,7 +382,7 @@ class Data():
                 self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
                 if dffname in grp:
                     del grp[dffname]
-                grp.create_dataset(dffname, data=np.asarray(self._dff))
+                grp.create_dataset(dffname, data=np.asarray(self._dff), compression='lzf')
                 grp[dffname].attrs.update(compute_dff_kwargs)
 
         if self._dff.isnull().values.any():
@@ -410,7 +410,7 @@ class Data():
                 if dff is None:
                     return None
                 self._transients = detect_transients(dff, **detect_transients_kwargs)
-                grp.create_dataset(transname, data=np.asarray(self._transients))
+                grp.create_dataset(transname, data=np.asarray(self._transients), compression='lzf')
 
         return self._transients
 
@@ -464,7 +464,7 @@ class Data():
                 grp = h.create_group('segmentation')
             else:
                 grp = h['segmentation']
-            ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps)
+            ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps, compression='lzf')
             pca_ica_kwargs.update(gen_kwargs)
             ds.attrs.update(pca_ica_kwargs)
 
