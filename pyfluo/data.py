@@ -9,6 +9,7 @@ from .roi import ROI
 from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica
 from .motion import motion_correct, apply_motion_correction
+from .config import *
 
 class Data():
     """
