@@ -68,6 +68,7 @@ class Series(pd.DataFrame):
         # dirtier kwargs for python2 support:
         gap = kwargs.pop('gap', 0.1)
         order = kwargs.pop('order', None)
+        names = kwargs.pop('names',None)
 
         cmap = kwargs.pop('cmap',pl.cm.viridis)
         kwargs['legend'] = kwargs.get('legend', False)
@@ -91,7 +92,10 @@ class Series(pd.DataFrame):
             to_add.index = to_plot.columns
             to_plot = to_plot + to_add
             yticks = np.asarray(to_plot.mean(axis=0))
-            yticklab = np.array([str(i) for i in np.arange(self.shape[1])])[order]
+            if names is None:
+                yticklab = np.array([str(i) for i in np.arange(self.shape[1])])[order]
+            else:
+                yticklab = names
         else:
             to_plot = self
 
