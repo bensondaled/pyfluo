@@ -62,6 +62,9 @@ class Series(pd.DataFrame):
 
     def reset_time(self, **kwargs):
         self.set_index(self.Ts*np.arange(len(self)), **kwargs)
+    
+    def set_time(self, time, **kwargs):
+        self.set_index(self.Ts*np.arange(len(self)), **kwargs)
 
     def plot(self, *args, **kwargs):
 

@@ -20,7 +20,12 @@ class Data():
     (2) send the tifs to a consolidated hdf5 file (using pyfluo.images.TiffGroup.to_hdf5)
     (3) open the resulting file through a Data object, which allows motion correction, segmentation, extractions, etc.
     """
-    def __init__(self, data_file):
+    def __init__(self, data_file, puffs=True):
+        """
+            puffs : bool
+                whether or not this data corresponds to a puffs experiment
+                (not strictly appropriate for this class, but its current use is so frequently this)
+        """
         
         self.data_file = data_file
             
@@ -39,8 +44,9 @@ class Data():
             self.si_data = h.si_data
             self.i2c = h.i2c
             self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
-            self.i2c.ix[:,'phase'] = (self.i2c.data-self.i2c.data.astype(int)).round(1)*10   
-            self.i2c.ix[:,'trial'] = self.i2c.data.astype(int)
+            if puffs:
+                self.i2c.ix[:,'phase'] = (self.i2c.data-self.i2c.data.astype(int)).round(1)*10   
+                self.i2c.ix[:,'trial'] = self.i2c.data.astype(int)
             self._has_motion_correction = 'motion' in h
             if self._has_motion_correction:
                 self.motion = h.motion
@@ -179,9 +185,10 @@ class Data():
 
         self._has_motion_correction = True
 
-    def show(self):
+    def project(self, show=True):
         im = self.mean(axis=0)
-        pl.imshow(im)
+        if show:
+            pl.imshow(im)
         return im
 
     def _apply_func(self, func, func_name, axis):
@@ -201,7 +208,7 @@ class Data():
             if attr_str not in f['_data_funcs']:
                 res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=self.batch_size)]
                 res = func(res, axis=0)
-                f['_data_funcs'].create_dataset(attr_str, data=res, compression='lzf')
+                f['_data_funcs'].create_dataset(attr_str, data=res)
             else:
                 res = np.asarray(f['_data_funcs'][attr_str])
         if isinstance(res, np.ndarray) and res.ndim==0:
