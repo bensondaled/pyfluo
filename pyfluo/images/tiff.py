@@ -147,7 +147,6 @@ class TiffGroup(object):
         return '_'.join(units[0][:i-1])
 
     def to_hdf5(self, chunks=(32,128,128), verbose=True):
-
         t0 = time.time()
         
         for idx in range(self.nfiles):

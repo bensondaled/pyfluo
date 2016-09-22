@@ -191,7 +191,7 @@ class Data():
             pl.imshow(im)
         return im
 
-    def _apply_func(self, func, func_name, axis):
+    def _apply_func(self, func, func_name, axis, agg_func=None):
         """Applies arbitrary function to entire dataset in chunks
         Importantly, applies to chunks, then applies to result of that
         This works for functions like max, min, mean, but not all functions
@@ -201,13 +201,15 @@ class Data():
         ax_str = str(axis)
         if axis is None:
             ax_str = ''
+        if agg_func is None:
+            agg_func = func
         attr_str = '_{}_{}'.format(func_name, ax_str)
         with h5py.File(self.data_file) as f:
             if '_data_funcs' not in f:
                 f.create_group('_data_funcs')
             if attr_str not in f['_data_funcs']:
                 res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=self.batch_size)]
-                res = func(res, axis=0)
+                res = agg_func(res, axis=0)
                 f['_data_funcs'].create_dataset(attr_str, data=res)
             else:
                 res = np.asarray(f['_data_funcs'][attr_str])
@@ -221,6 +223,12 @@ class Data():
         return self._apply_func(np.nanmin, axis=axis, func_name='min')
     def mean(self, axis=None):
         return self._apply_func(np.nanmean, axis=axis, func_name='mean')
+    def std(self, axis=None):
+        def _std(x, mean=self.mean(axis=axis), axis=None):
+            return np.mean((x-mean)**2, axis=axis)
+        def _std_combine(x, axis=None):
+            return np.sqrt(np.mean(x, axis=axis))
+        return self._apply_func(_std, axis=axis, func_name='std', agg_func=_std_combine)
 
     def __max__(self):
         return self.max()
@@ -421,7 +429,7 @@ class Data():
 
         return self._transients
 
-    def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False):
+    def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False, return_idx=False):
         """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
 
         chunk_size : number of frames to include in one chunk *before* downsampling
@@ -442,12 +450,14 @@ class Data():
 
         for idx in range(nchunks+int(remainder>0)):
             if idx == nchunks:
-                dat = self[idx*chunk_size:]
+                _i = slice(idx*chunk_size, None)
+                dat = self[_i]
                 if enforce_chunk_size:
                     pad_size = chunk_size - len(dat)
                     dat = np.pad(dat, ((0,pad_size),(0,0),(0,0)), mode='constant', constant_values=(np.nan,))
             else:
-                dat = self[idx*chunk_size:idx*chunk_size+chunk_size]
+                _i = slice(idx*chunk_size,idx*chunk_size+chunk_size)
+                dat = self[_i]
 
             if crop:
                 pass
@@ -455,7 +465,10 @@ class Data():
 
             dat = dat.resample(downsample)
 
-            yield dat
+            if return_idx:
+                yield (dat, _i)
+            else:
+                yield dat
 
     def segment(self, gen_kwargs=dict(chunk_size=3000, n_frames=None, downsample=3), verbose=True, **pca_ica_kwargs):
         def dummy_gen():
@@ -513,4 +526,13 @@ class Data():
                 if key in datafile:
                     del datafile[key]
                 infile.copy(key, datafile)
+
+    def r(self, sig):
+        # Pearson's r over hdf dataset
+        # currently assuming sig is a 1d vector same length as whole dataset. will expand to multiple afterward
+        gen = self.gen(chunk_size=self.batch_size, return_idx=True)
+        for gi,idx in gen:
+            sigi = sig[idx]
+        
+        return E
 
