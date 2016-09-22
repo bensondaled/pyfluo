@@ -368,7 +368,7 @@ class Data():
 
         return self._tr
     
-    def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=40.), recompute=False, verbose=True):
+    def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=12.), recompute=False, verbose=True):
         if idx is None:
             idx = self._latest_roi_idx
 
