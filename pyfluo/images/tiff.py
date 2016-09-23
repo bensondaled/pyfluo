@@ -146,7 +146,7 @@ class TiffGroup(object):
             diverged = not all([n[:i]==units[0][:i] for n in units[1:]])
         return '_'.join(units[0][:i-1])
 
-    def to_hdf5(self, chunks=(32,128,128), verbose=True):
+    def to_hdf5(self, chunks=(2,512,512), verbose=True):
         t0 = time.time()
         
         for idx in range(self.nfiles):

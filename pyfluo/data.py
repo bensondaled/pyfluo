@@ -2,6 +2,9 @@ from __future__ import print_function
 import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
+from skimage.morphology import erosion, dilation
+from skimage.filters import gaussian
+from scipy.ndimage import label
 
 from .movies import Movie, play_mov
 from .series import Series
@@ -33,7 +36,7 @@ class Data():
             if 'data' in h:
                 self.shape = h['data'].shape
                 self._data_chunk_size = h['data'].chunks
-                self.batch_size = self._data_chunk_size[0]*200 # hard-coded for now, corresponds to 6400 frames in the normal case
+                self.batch_size = self._data_chunk_size[0]*250 # hard-coded for now, corresponds to 500 frames in the normal case
                 self._has_data = True
             else:
                 self.shape = None
@@ -75,6 +78,7 @@ class Data():
         # likely more cases to account for in future
         if isinstance(idx, tuple):
             mc_idx = idx[0]
+            warnings.warn('x/y slicing was requested, but Data class will not properly motion correct such segments. Edges will be skewed.')
         else:
             mc_idx = idx
 
@@ -224,10 +228,13 @@ class Data():
     def mean(self, axis=None):
         return self._apply_func(np.nanmean, axis=axis, func_name='mean')
     def std(self, axis=None):
+        # confirmed working, sept 22 2016
         def _std(x, mean=self.mean(axis=axis), axis=None):
-            return np.mean((x-mean)**2, axis=axis)
+            return np.nansum((x-mean)**2, axis=axis), x.shape[axis]
         def _std_combine(x, axis=None):
-            return np.sqrt(np.mean(x, axis=axis))
+            n = np.nansum([i[1] for i in x])
+            x = [i[0] for i in x]
+            return np.sqrt(np.sum(x, axis=0) / (n-1))
         return self._apply_func(_std, axis=axis, func_name='std', agg_func=_std_combine)
 
     def __max__(self):
@@ -246,10 +253,31 @@ class Data():
             matches = [re.match('roi(\d)', s) for s in keys]
             idxs = [int(m.groups()[0]) for m in matches if m]
             return max(idxs)
+    
+    @property
+    def _latest_r_idx(self):
+        with h5py.File(self.data_file) as f:
+            if 'r' not in f:
+                return None
+            keys = list(f['r'].keys())
+            if len(keys)==0:
+                return None
+            matches = [re.match('r(\d)', s) for s in keys]
+            idxs = [int(m.groups()[0]) for m in matches if m]
+            return max(idxs)
 
     @property
     def _next_roi_idx(self):
         latest_idx = self._latest_roi_idx
+        if latest_idx is None:
+            nex_idx = 0
+        else:
+            nex_idx = latest_idx+1
+        return nex_idx
+    
+    @property
+    def _next_r_idx(self):
+        latest_idx = self._latest_r_idx
         if latest_idx is None:
             nex_idx = 0
         else:
@@ -296,7 +324,7 @@ class Data():
             else:
                 roigrp = f['roi']
             roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi), compression='lzf')
-   
+    
     def get_roi(self, idx=None):
         if idx is None:
             idx = self._latest_roi_idx
@@ -308,6 +336,21 @@ class Data():
             _roi = ROI(roigrp['roi{}'.format(int(idx))])
 
         return _roi
+    
+    def get_r(self, idx=None):
+        if self._latest_r_idx is None:
+            return None
+
+        if idx is None:
+            idx = self._latest_r_idx
+        if idx is None:
+            return None
+
+        with h5py.File(self.data_file) as f:
+            rgrp = f['r']
+            _r = np.asarray(rgrp['r{}'.format(int(idx))])
+
+        return _r
     
     def get_example(self, slices=None, resample=3, redo=False):
         # slice is specified only first time, then becomes meaningless once example is extracted; unless redo is used
@@ -527,12 +570,73 @@ class Data():
                     del datafile[key]
                 infile.copy(key, datafile)
 
-    def r(self, sig):
+    def refine_roi(self, roi_idx=None, verbose=True):
         # Pearson's r over hdf dataset
-        # currently assuming sig is a 1d vector same length as whole dataset. will expand to multiple afterward
-        gen = self.gen(chunk_size=self.batch_size, return_idx=True)
-        for gi,idx in gen:
-            sigi = sig[idx]
-        
-        return E
+        if roi_idx is None:
+            roi_idx = self._latest_roi_idx
+
+        roi = self.get_roi(roi_idx)
+        rs = self.get_r(roi_idx)
+
+        if rs is None:
+
+            sig = self.get_tr(roi_idx).values
+
+            dmean = self.mean(axis=0)
+            smean = np.mean(sig, axis=0)
+
+            assert sig.shape[0]==self.shape[0]
+            if sig.ndim == 1:
+                sig = sig[:,None]
+
+            gen = self.gen(chunk_size=self.batch_size, return_idx=True)
+
+            sums,ns = [[] for i in range(sig.shape[1])],[]
+            for gi,idx in gen:
+                if verbose:
+                    print('Chunk {}'.format(idx))
+                sigi = sig[idx] - smean
+                di = gi - dmean
+
+                assert len(di) == len(sigi)
+
+                for subsig in range(sig.shape[1]):
+                    sums[subsig].append(np.nansum(sigi[:,subsig][:,None,None] * di, axis=0))
+                ns.append(len(di))
+
+            sums = np.array([np.sum(s, axis=0) for s in sums])
+            cov = sums / (np.sum(ns)-1)
+            
+            rs = [c / (self.std(axis=0)*sd) for c,sd in zip(cov,np.std(sig,axis=0))]
+
+            # store rs
+            with h5py.File(self.data_file) as f:
+                if 'r' not in f:
+                    rgrp = f.create_group('r')
+                else:
+                    rgrp = f['r']
+                rgrp.create_dataset('r{}'.format(roi_idx), data=np.asarray(rs), compression='lzf')
+
+        # binarize correlation images
+        orig = np.array([r.flat[ro.flat==True] for r,ro in zip(rs,roi)])
+        omeans = np.array([np.mean(o) for o in orig])
+        ostd = np.array([np.std(o) for o in orig])
+        stds = np.array([np.std(i) for i in rs])
+        threshs = omeans - stds#ostd
+
+        masks = np.array([r>th for th,r in zip(threshs,rs)])
+        masks = np.array([dilation(erosion(gaussian(m,.6))) for m in masks])
+
+        masks_new = []
+        for m,r in zip(masks,roi):
+            #rcent = np.argwhere(r).mean(axis=0)
+            l,nl = label(m)
+            #centers = [np.argwhere(l==i).mean(axis=0) for i in np.arange(1,nl+1)]
+            #dists = [np.sqrt(np.sum((c-rcent)**2)) for c in centers]
+            overlap = [np.sum((l==i) & r) for i in np.arange(1,nl+1)]
+            iwin = np.argmax(overlap) + 1
+            masks_new.append(l==iwin)
+
+        self.set_roi(np.asarray(masks_new))
+        self.get_tr() # extract new traces
 
