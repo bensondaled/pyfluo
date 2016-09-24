@@ -570,7 +570,7 @@ class Data():
                     del datafile[key]
                 infile.copy(key, datafile)
 
-    def refine_roi(self, roi_idx=None, verbose=True):
+    def refine_roi(self, roi_idx=None, include_rejections=False, verbose=True):
         # Pearson's r over hdf dataset
         if roi_idx is None:
             roi_idx = self._latest_roi_idx
@@ -618,25 +618,32 @@ class Data():
                 rgrp.create_dataset('r{}'.format(roi_idx), data=np.asarray(rs), compression='lzf')
 
         # binarize correlation images
+        rs -= np.median(rs, axis=0)
+        rs = np.array([dilation(erosion(gaussian(ri,.2))) for ri in rs])
         orig = np.array([r.flat[ro.flat==True] for r,ro in zip(rs,roi)])
         omeans = np.array([np.mean(o) for o in orig])
         ostd = np.array([np.std(o) for o in orig])
-        stds = np.array([np.std(i) for i in rs])
-        threshs = omeans - stds#ostd
+        threshs = omeans - 1.*ostd
+        masks = np.array([r>=th for th,r in zip(threshs,rs)])
+        masks = np.array([dilation(erosion(gaussian(m,.2))) for m in masks])
 
-        masks = np.array([r>th for th,r in zip(threshs,rs)])
-        masks = np.array([dilation(erosion(gaussian(m,.6))) for m in masks])
-
+        # find best match, using overlap-based metric
         masks_new = []
-        for m,r in zip(masks,roi):
-            #rcent = np.argwhere(r).mean(axis=0)
+        rejects = []
+        for i,m,r in zip(range(len(roi)),masks,roi):
             l,nl = label(m)
-            #centers = [np.argwhere(l==i).mean(axis=0) for i in np.arange(1,nl+1)]
-            #dists = [np.sqrt(np.sum((c-rcent)**2)) for c in centers]
             overlap = [np.sum((l==i) & r) for i in np.arange(1,nl+1)]
             iwin = np.argmax(overlap) + 1
-            masks_new.append(l==iwin)
+            new = l==iwin
+            # verify that area of roi hasn't inflated/shrunk too much, else keep the manual one
+            if new.sum()>r.sum()*3.5 or new.sum()<r.sum()*.5:
+                rejects.append(i)
+                if include_rejections:
+                    masks_new.append(r) # original
+            else:
+                masks_new.append(new) # new
 
         self.set_roi(np.asarray(masks_new))
-        self.get_tr() # extract new traces
+        print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects))
+        #self.get_tr() # extract new traces
 

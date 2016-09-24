@@ -67,6 +67,13 @@ class Series(pd.DataFrame):
         self.set_index(self.Ts*np.arange(len(self)), **kwargs)
 
     def plot(self, *args, **kwargs):
+        """
+            gap : float
+            order : list-like
+            names : list-like
+            cmap : mpl cmap
+            stacked : bool
+        """
 
         # dirtier kwargs for python2 support:
         gap = kwargs.pop('gap', 0.1)
@@ -84,6 +91,8 @@ class Series(pd.DataFrame):
             kwargs['color'] = ycolors
         elif 'color' in kwargs:
             ycolors = kwargs['color']
+            if isinstance(ycolors, PF_str_types):
+                ycolors = [ycolors] * self.shape[1]
 
         # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
         stacked = kwargs.pop('stacked', True)
