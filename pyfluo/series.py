@@ -60,12 +60,9 @@ class Series(pd.DataFrame):
             object.__setattr__(self, name, getattr(other, name, None))
         return self
 
-    def reset_time(self, **kwargs):
-        self.set_index(self.Ts*np.arange(len(self)), **kwargs)
+    def reset_time(self, offset=0, **kwargs):
+        self.set_index(self.Ts*np.arange(len(self)) + offset, **kwargs)
     
-    def set_time(self, time, **kwargs):
-        self.set_index(self.Ts*np.arange(len(self)), **kwargs)
-
     def plot(self, *args, **kwargs):
         """
             gap : float

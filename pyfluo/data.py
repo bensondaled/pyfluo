@@ -594,7 +594,7 @@ class Data():
             sums,ns = [[] for i in range(sig.shape[1])],[]
             for gi,idx in gen:
                 if verbose:
-                    print('Chunk {}'.format(idx))
+                    print('Chunk {}'.format(idx)); sys.stdout.flush()
                 sigi = sig[idx] - smean
                 di = gi - dmean
 
@@ -644,6 +644,6 @@ class Data():
                 masks_new.append(new) # new
 
         self.set_roi(np.asarray(masks_new))
-        print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects))
+        print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
         #self.get_tr() # extract new traces
 
