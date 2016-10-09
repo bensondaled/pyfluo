@@ -2,7 +2,7 @@ from __future__ import print_function # for python2
 #from skimage.external import tifffile
 import tifffile #moving away form skimage b/c it's not up to date, check to see if it is by now
 import numpy as np, pandas as pd
-import os, glob, h5py, time, sys, re
+import os, glob, h5py, time, sys, re, warnings
 
 from ..config import *
 from ..util import Elapsed
@@ -107,7 +107,14 @@ class Tiff(object):
             metadata['name'] = self.name
             metadata['y'] = page.shape[0]
             metadata['x'] = page.shape[1]
-            metadata['Ts'] = 1/pagedata.get('scanimage.SI.hRoiManager.scanFrameRate', 1)
+            si_scanFrameRate = pagedata.get('scanimage.SI.hRoiManager.scanFrameRate', 1)
+            ts = 1. / si_scanFrameRate
+            si_linePeriod = pagedata.get('scanimage.SI.hRoiManager.linePeriod')
+            si_linesPerFrame = pagedata.get('scanimage.SI.hRoiManager.linesPerFrame')
+            computed_ts = si_linePeriod * si_linesPerFrame
+            if np.abs(ts-computed_ts) > 0.010:
+                warnings.warn('Scanimage Ts is suspect: reports Ts of {} but parameters work out to {}.'.format(ts,computed_ts))
+            metadata['Ts'] = computed_ts
             metadata['n'] = len(tif.pages)
 
             i2c = fast_i2c(tif.pages)
@@ -162,9 +169,10 @@ class TiffGroup(object):
                 info.index = [idx]*len(info)
                 h.append('info', info)
                 i2c = t.i2c
-                i2c.reset_index(inplace=True, drop=True)
-                i2c.ix[:,'file_idx'] = idx
-                h.append('i2c', i2c)
+                if i2c is not None:
+                    i2c.reset_index(inplace=True, drop=True)
+                    i2c.ix[:,'file_idx'] = idx
+                    h.append('i2c', i2c)
 
             # store data
             with h5py.File(self.hdf_path) as h:

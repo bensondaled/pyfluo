@@ -45,11 +45,13 @@ class Data():
             self.n_files = len(h.info)
             self.info = h.info
             self.si_data = h.si_data
-            self.i2c = h.i2c
-            self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
-            if puffs:
-                self.i2c.ix[:,'phase'] = (self.i2c.data-self.i2c.data.astype(int)).round(1)*10   
-                self.i2c.ix[:,'trial'] = self.i2c.data.astype(int)
+            if 'i2c' in h:
+                self.i2c = h.i2c
+                self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
+                self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
+                if puffs:
+                    self.i2c.ix[:,'phase'] = (self.i2c.data-self.i2c.data.astype(int)).round(1)*10   
+                    self.i2c.ix[:,'trial'] = self.i2c.data.astype(int)
             self._has_motion_correction = 'motion' in h
             if self._has_motion_correction:
                 self.motion = h.motion
@@ -63,7 +65,6 @@ class Data():
             print(self.info)
             self.info.Ts = np.mean(self.info.Ts)
 
-        self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
 
     def _batch_framei(self, row):
         return self.framei(row.frame_idx, row.file_idx)
@@ -189,7 +190,7 @@ class Data():
 
         self._has_motion_correction = True
 
-    def project(self, show=True):
+    def project(self, show=False):
         im = self.mean(axis=0)
         if show:
             pl.imshow(im)
