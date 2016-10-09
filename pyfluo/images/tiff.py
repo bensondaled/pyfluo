@@ -172,6 +172,7 @@ class TiffGroup(object):
                 if i2c is not None:
                     i2c.reset_index(inplace=True, drop=True)
                     i2c.ix[:,'file_idx'] = idx
+                    i2c.file_idx = i2c.file_idx.astype(np.int64) #for 1-item i2c's, correcting for a bug in pandas I think
                     h.append('i2c', i2c)
 
             # store data
