@@ -111,8 +111,9 @@ class Tiff(object):
             ts = 1. / si_scanFrameRate
             si_linePeriod = pagedata.get('scanimage.SI.hRoiManager.linePeriod')
             si_linesPerFrame = pagedata.get('scanimage.SI.hRoiManager.linesPerFrame')
-            computed_ts = si_linePeriod * si_linesPerFrame
-            if np.abs(ts-computed_ts) > 0.010:
+            si_flyback = pagedata.get('scanimage.SI.hScan2D.flybackTimePerFrame')
+            computed_ts = si_linePeriod * si_linesPerFrame + si_flyback
+            if np.abs(ts-computed_ts) > 0.001:
                 warnings.warn('Scanimage Ts is suspect: reports Ts of {} but parameters work out to {}.'.format(ts,computed_ts))
             metadata['Ts'] = computed_ts
             metadata['n'] = len(tif.pages)
