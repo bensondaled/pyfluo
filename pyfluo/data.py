@@ -353,7 +353,7 @@ class Data():
 
         return _r
     
-    def get_example(self, slices=None, resample=3, redo=False):
+    def get_example(self, slices=None, resample=3, redo=False, enforce_datatype=np.int16):
         # slice is specified only first time, then becomes meaningless once example is extracted; unless redo is used
         with h5py.File(self.data_file) as f:
             if 'example' in f and not redo:
@@ -383,6 +383,8 @@ class Data():
                 f['example'].attrs['Ts'] = _example.Ts
                 f['example'].attrs['slices'] = str(slices)
 
+        if enforce_datatype is not None:
+            _example = _example.astype(enforce_datatype)
         return _example
 
     def get_tr(self, idx=None, batch=None, verbose=True):
@@ -535,18 +537,15 @@ class Data():
     def play(self, **kwargs):
         play_mov(self, generator_fxn='gen', **kwargs)
 
-    def export(self, out_filename, include_data=False):
+    def export(self, out_filename, include_data=False, overwrite=False):
         if os.path.isdir(out_filename):
             out_filename = os.path.join(out_filename, os.path.split(self.data_file)[-1])
         elif not out_filename.endswith('.h5'):
             out_filename += '.h5'
 
-        if os.path.exists(out_filename):
-            overwrite = input('File {} exists. Overwrite? (y/[n])'.format(out_filename))
-            if overwrite == 'y':
-                pass
-            else:
-                return
+        if os.path.exists(out_filename) and not overwrite:
+            print ('File exists and overwrite=False. Returning.')
+            return
 
         with pd.HDFStore(self.data_file) as infile:
             handle = infile.copy(out_filename, overwrite=False)
