@@ -365,7 +365,7 @@ class Data():
                     del f['maxmov']
                
                 gen = self.gen(chunk_size=chunk_size, downsample=resample, enforce_chunk_size=True)
-                data = np.array([np.nanmax(g/np.nanmin(g,axis=0), axis=0) for g in gen])
+                data = np.array([np.nanmax(g-np.nanmean(g,axis=0), axis=0) for g in gen])
                 _mm = Movie(data, Ts=self.Ts*chunk_size)
                 ds = f.create_dataset('maxmov', data=_mm, compression='lzf')
                 f['maxmov'].attrs['Ts'] = _mm.Ts
