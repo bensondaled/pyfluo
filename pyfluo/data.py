@@ -353,6 +353,29 @@ class Data():
 
         return _r
     
+    def get_maxmov(self, chunk_size=150, resample=3, redo=False, enforce_datatype=np.int16):
+        with h5py.File(self.data_file) as f:
+            if 'maxmov' in f and not redo:
+                    _mm = Movie(np.asarray(f['maxmov']), Ts=f['maxmov'].attrs['Ts'])
+            else:
+                if not self._has_data:
+                    warnings.warn('Data not stored in this file, so cannot make example.')
+                    return
+                if 'maxmov' in f and redo:
+                    del f['maxmov']
+               
+                gen = self.gen(chunk_size=chunk_size, downsample=resample, enforce_chunk_size=True)
+                data = np.array([np.nanmax(g/np.nanmin(g,axis=0), axis=0) for g in gen])
+                _mm = Movie(data, Ts=self.Ts*chunk_size)
+                ds = f.create_dataset('maxmov', data=_mm, compression='lzf')
+                f['maxmov'].attrs['Ts'] = _mm.Ts
+                f['maxmov'].attrs['chunk_size'] = chunk_size
+                f['maxmov'].attrs['resample'] = resample
+
+        if enforce_datatype is not None:
+            _mm = _mm.astype(enforce_datatype)
+        return _mm
+    
     def get_example(self, slices=None, resample=3, redo=False, enforce_datatype=np.int16):
         # slice is specified only first time, then becomes meaningless once example is extracted; unless redo is used
         with h5py.File(self.data_file) as f:
