@@ -557,7 +557,7 @@ class Data():
                 dat = self[_i]
                 if enforce_chunk_size:
                     pad_size = chunk_size - len(dat)
-                    dat = pf.Movie(np.pad(dat, ((0,pad_size),(0,0),(0,0)), mode='constant', constant_values=(np.nan,)))
+                    dat = Movie(np.pad(dat, ((0,pad_size),(0,0),(0,0)), mode='constant', constant_values=(np.nan,)), Ts=self.Ts)
             else:
                 _i = slice(idx*chunk_size,idx*chunk_size+chunk_size)
                 dat = self[_i]
