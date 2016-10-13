@@ -477,6 +477,40 @@ class Data():
             self._dff[np.isinf(self._dff)] = 0
         return self._dff
     
+    def get_rollcor(self, idx=None, window=.750, recompute=False, verbose=True):
+        # window in seconds
+        if idx is None:
+            idx = self._latest_roi_idx
+
+        rollcorname = 'rollcor{}'.format(idx)
+
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
+
+            if rollcorname in grp and not recompute:
+                _rollcor = Series(np.asarray(grp[rollcorname]), Ts=self.Ts)
+
+            elif (rollcorname not in grp) or recompute:
+                dff = self.get_dff(idx)
+                if verbose:
+                    print('Computing rollcor...'); sys.stdout.flush()
+                if dff is None:
+                    return None
+
+                corwin_ = int(window/self.Ts)
+                rollcor = dff.rolling(window=corwin_, center=True).corr()
+                mask = (np.tril(np.ones_like(rollcor.iloc[0].values))==0)[None,...].astype(float)
+                mask[mask==0] = np.nan
+                _rollcor = pd.Series(np.nanmean(rollcor.values * mask, axis=(1,2))).values
+
+                if rollcorname in grp:
+                    del grp[rollcorname]
+
+                grp.create_dataset(rollcorname, data=np.asarray(_rollcor), compression='lzf')
+                grp[rollcorname].attrs.update(window=window)
+
+        return _rollcor
+    
     def get_transients(self, idx=None, detect_transients_kwargs={}):
         if idx is None:
             idx = self._latest_roi_idx
