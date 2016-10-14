@@ -37,7 +37,9 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
     if ax is None and img is None:
         raise Exception('Image or axes must be supplied to select ROI.')
 
+    figmade = False
     if ax == None:
+        figmade = True
         fig = pl.figure()
         ax = fig.add_subplot(111)
     elif ax == 'current':
@@ -73,7 +75,8 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
         elif pts == []:
             break
         ax.cla()
-    pl.close()
+    if figmade:
+        pl.close()
     return existing
 
 class ROI(np.ndarray):

@@ -8,7 +8,7 @@ from scipy.ndimage import label
 
 from .movies import Movie, play_mov
 from .series import Series
-from .roi import ROI
+from .roi import ROI, select_roi
 from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica
 from .motion import motion_correct, apply_motion_correction
@@ -704,3 +704,17 @@ class Data():
         print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
         #self.get_tr() # extract new traces
 
+    def select_roi(self):
+        mm = self.get_maxmov()
+        existing = None
+        fig = pl.figure('ROI Selection')
+        for idx,m in enumerate(mm):
+            ax = fig.add_subplot(111)
+            ax.set_title('{}/{}'.format(idx+1, len(mm)))
+            roi = select_roi(m, ax=ax, existing=existing)
+            existing = roi
+            np.save('_roitmp.npy', np.asarray(existing))
+            fig.clear()
+        roi = np.load('_roitmp.npy')
+        self.set_roi(roi)
+        os.remove('_roitmp.npy')
