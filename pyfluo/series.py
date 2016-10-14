@@ -1,5 +1,7 @@
 # External imports
 import pandas as pd, numpy as np, matplotlib.pyplot as pl
+from matplotlib.collections import LineCollection
+from matplotlib.colors import ListedColormap, BoundaryNorm
 import warnings
 
 # Internal imports
@@ -63,58 +65,65 @@ class Series(pd.DataFrame):
     def reset_time(self, offset=0, **kwargs):
         self.set_index(self.Ts*np.arange(len(self)) + offset, **kwargs)
     
-    def plot(self, *args, **kwargs):
+    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None):
         """
             gap : float
             order : list-like
             names : list-like
             cmap : mpl cmap
             stacked : bool
+            binary_label : trues/falses of same shape as data
         """
 
-        # dirtier kwargs for python2 support:
-        gap = kwargs.pop('gap', 0.1)
-        order = kwargs.pop('order', None)
-        names = kwargs.pop('names',None)
-
-        cmap = kwargs.pop('cmap',pl.cm.viridis)
-        kwargs['legend'] = kwargs.get('legend', False)
+        if ax is None:
+            ax = pl.gca()
         
         if order is None:
             order = np.arange(self.shape[1])
         
         ycolors = cmap(np.linspace(0,1,self.shape[1]))[order]
-        if 'color' not in kwargs:
-            kwargs['color'] = ycolors
-        elif 'color' in kwargs:
-            ycolors = kwargs['color']
+        if color is not None:
+            ycolors = color
             if isinstance(ycolors, PF_str_types):
                 ycolors = [ycolors] * self.shape[1]
 
-        # Overwrite meaning of "stacked," b/c something other than pandas implementation is desired
-        stacked = kwargs.pop('stacked', True)
+        if binary_label is None:
+            binary_label = Series(np.zeros_like(self.values))
+        binary_label = binary_label.T.iloc[order,:].T.astype(bool).values
+
+        to_plot = self.T.iloc[order,:].T.values
+        if self.shape[1] == 1:
+            stacked=False
         if stacked:
-            to_plot = self.T.iloc[order,:].T
             to_plot = to_plot - to_plot.min(axis=0)
             tops = (to_plot.max(axis=0)).cumsum()
-            to_add = pd.Series(0).append( tops[:-1] ).reset_index(drop=True) + gap*np.arange(to_plot.shape[1])
-            to_add.index = to_plot.columns
-            to_plot = to_plot + to_add
+            to_add = np.append(0, tops[:-1]) + gap*np.arange(to_plot.shape[1])
+            to_plot += to_add
             yticks = np.asarray(to_plot.mean(axis=0))
             if names is None:
                 yticklab = np.array([str(i) for i in np.arange(self.shape[1])])[order]
             else:
                 yticklab = names
-        else:
-            to_plot = self
 
-        ax = super(Series, to_plot).plot(*args, **kwargs)
-        
+        for idx,tp,color,blab in zip(np.arange(to_plot.shape[1]),to_plot.T, ycolors, binary_label.T):
+            dfx = np.asarray(self.index)
+            dfy = tp
+            points = np.array([dfx, dfy]).T.reshape(-1, 1, 2)
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+            lcmap = ListedColormap([color,'r'])
+            norm = BoundaryNorm([-1, -0.5, 0.5, 1], lcmap.N)
+            lc = LineCollection(segments, cmap=lcmap, norm=norm)
+            lc.set_array((blab[1:] | blab[:-1]))
+            ax.add_collection(lc)
+
         if stacked:
             ax.set_yticks(yticks)
             ax.set_yticklabels(yticklab, ha='right')
             for i,c in zip(ax.get_yticklabels(), ycolors):
                 i.set_color(c)
+
+        ax.set_xlim([self.index.min(), self.index.max()])
+        ax.set_ylim([to_plot.min(), to_plot.max()])
 
         return ax
 
