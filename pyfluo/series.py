@@ -65,7 +65,7 @@ class Series(pd.DataFrame):
     def reset_time(self, offset=0, **kwargs):
         self.set_index(self.Ts*np.arange(len(self)) + offset, **kwargs)
     
-    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None):
+    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, **kwargs):
         """
             gap : float
             order : list-like
@@ -87,9 +87,8 @@ class Series(pd.DataFrame):
             if isinstance(ycolors, PF_str_types):
                 ycolors = [ycolors] * self.shape[1]
 
-        if binary_label is None:
-            binary_label = Series(np.zeros_like(self.values))
-        binary_label = binary_label.T.iloc[order,:].T.astype(bool).values
+        if binary_label is not None:
+            binary_label = binary_label.T.iloc[order,:].T.astype(bool).values
 
         to_plot = self.T.iloc[order,:].T.values
         if self.shape[1] == 1:
@@ -105,16 +104,20 @@ class Series(pd.DataFrame):
             else:
                 yticklab = names
 
-        for idx,tp,color,blab in zip(np.arange(to_plot.shape[1]),to_plot.T, ycolors, binary_label.T):
-            dfx = np.asarray(self.index)
-            dfy = tp
-            points = np.array([dfx, dfy]).T.reshape(-1, 1, 2)
-            segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            lcmap = ListedColormap([color,'r'])
-            norm = BoundaryNorm([-1, -0.5, 0.5, 1], lcmap.N)
-            lc = LineCollection(segments, cmap=lcmap, norm=norm)
-            lc.set_array((blab[1:] | blab[:-1]))
-            ax.add_collection(lc)
+        for idx,tp,color in zip(np.arange(to_plot.shape[1]),to_plot.T, ycolors):
+            if binary_label is not None:
+                dfx = np.asarray(self.index)
+                dfy = tp
+                points = np.array([dfx, dfy]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                lcmap = ListedColormap([color,'r'])
+                norm = BoundaryNorm([-1, -0.5, 0.5, 1], lcmap.N)
+                lc = LineCollection(segments, cmap=lcmap, norm=norm)
+                blab = binary_label.T[idx]
+                lc.set_array((blab[1:] | blab[:-1]))
+                ax.add_collection(lc)
+            else:
+                ax.plot(self.index, tp, color=color)
 
         if stacked:
             ax.set_yticks(yticks)

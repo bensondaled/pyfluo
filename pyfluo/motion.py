@@ -120,7 +120,7 @@ def apply_motion_correction(mov, shifts, interpolation=None, crop=None, in_place
     for i,frame in enumerate(mov):
         sh_x_n, sh_y_n = shifts[i]
         if cv2 is not None:
-            M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n]])                 
+            M = np.float32([[1,0,sh_x_n],[0,1,sh_y_n]])                 
             mov[i] = cv2.warpAffine(frame,M,(w,h),flags=interpolation)
         elif cv2 is None:
             M = np.float32([[1,0,sh_y_n],[0,1,sh_x_n],[0,0,1]])  
@@ -217,6 +217,7 @@ def compute_motion(mov, max_shift=(25,25), template=np.median, template_matching
                 avg_metric = np.mean(res)
                 top_left = np.unravel_index(np.argmax(res), res.shape)
 
+            ## from hereon in, x and y are reversed in naming convention
             sh_y,sh_x = top_left
             bottom_right = (top_left[0] + w, top_left[1] + h)
         
@@ -233,8 +234,9 @@ def compute_motion(mov, max_shift=(25,25), template=np.median, template_matching
             else:
                 sh_x_n = -(sh_x - ms_h)
                 sh_y_n = -(sh_y - ms_w)
-                    
-            vals[i,:] = [sh_x_n, sh_y_n, avg_metric]
+
+            # NOTE: to correct for reversal in naming convention, vals are placed y, x -- but their meaning is x,y
+            vals[i,:] = [sh_y_n, sh_x_n, avg_metric] # X , Y
                 
         if verbose: 
             pbar.finish()         
