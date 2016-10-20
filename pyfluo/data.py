@@ -23,11 +23,8 @@ class Data():
     (2) send the tifs to a consolidated hdf5 file (using pyfluo.images.TiffGroup.to_hdf5)
     (3) open the resulting file through a Data object, which allows motion correction, segmentation, extractions, etc.
     """
-    def __init__(self, data_file, puffs=True):
+    def __init__(self, data_file):
         """
-            puffs : bool
-                whether or not this data corresponds to a puffs experiment
-                (not strictly appropriate for this class, but its current use is so frequently this)
         """
         
         self.data_file = data_file
@@ -45,13 +42,19 @@ class Data():
             self.n_files = len(h.info)
             self.info = h.info
             self.si_data = h.si_data
+
+            if self.shape is None:
+                self.shape = (np.sum(self.info.n.values), self.info.y.values[0], self.info.x.values[0])
+
             if 'i2c' in h:
                 self.i2c = h.i2c
                 self.i2c = self.i2c.apply(pd.to_numeric, errors='ignore') #backwards compatability. can be deleted soon
                 self.i2c.ix[:,'abs_frame_idx'] = self.i2c.apply(self._batch_framei, axis=1)
-                if puffs:
+                try:
                     self.i2c.ix[:,'phase'] = (self.i2c.data-self.i2c.data.astype(int)).round(1)*10   
                     self.i2c.ix[:,'trial'] = self.i2c.data.astype(int)
+                except:
+                    pass
             self._has_motion_correction = 'motion' in h
             if self._has_motion_correction:
                 self.motion = h.motion
@@ -59,12 +62,24 @@ class Data():
                     self.motion_params = h.get_storer('motion').attrs.params
                 except:
                     self.motion_params = None
+
+                xv,yv = self.motion.x.values,self.motion.y.values
+                shy,shx = self.shape[1:]
+                self.motion_borders = pd.Series(dict(xmin=xv.max(), xmax=min(shx, shx+xv.min()), ymin=yv.max(), ymax=min(shy, shy+yv.min()))) #
         self.Ts = self.info.iloc[0].Ts
         if not (self.info.Ts==self.Ts).all():
             warnings.warn('Sampling periods do not match. This class currently doesn\'t support this. Will replace Ts\'s with mean of Ts\'s.')
             print(self.info)
             self.info.Ts = np.mean(self.info.Ts)
 
+    def si_find(self, query):
+        i = np.argwhere([query in k for k in self.si_data.keys()]).squeeze()
+        i = np.atleast_1d(i)
+        if len(i) == 0:
+            return None
+        keys = [self.si_data.keys()[idx] for idx in i]
+        result = {k:self.si_data[k] for k in keys}
+        return result
 
     def _batch_framei(self, row):
         return self.framei(row.frame_idx, row.file_idx)
