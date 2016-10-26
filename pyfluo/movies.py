@@ -30,7 +30,8 @@ class Movie(np.ndarray):
     
     def __new__(cls, data, Ts=1, filename=[], **kwargs):
         assert isinstance(data, PF_list_types+PF_str_types), 'Movie data not supplied in proper format.'
-
+        
+        tf = None
         # if data is filenames
         if type(data) in PF_str_types:
             filename = data
@@ -53,6 +54,7 @@ class Movie(np.ndarray):
 
         obj.Ts = Ts
         obj.filename = filename
+        obj.tif_obj = tf
 
         return obj
 

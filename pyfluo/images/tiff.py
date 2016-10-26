@@ -142,7 +142,10 @@ class TiffGroup(object):
         self.file_names = [os.path.split(fp)[-1] for fp in self.file_paths]
         self.names = [os.path.splitext(fn)[0] for fn in self.file_names]
         self.nfiles = len(self.names)
-        self.common_name = self._determine_common_name()
+        if self.nfiles > 1:
+            self.common_name = self._determine_common_name()
+        else:
+            self.common_name = self.names[0]
         self.hdf_path = os.path.join(self.path, self.common_name+'.h5')
 
     def _determine_common_name(self):

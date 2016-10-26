@@ -4,6 +4,7 @@ import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 from skimage.morphology import erosion, dilation
 from skimage.filters import gaussian
+from skimage.exposure import equalize_adapthist
 from scipy.ndimage import label
 
 from .movies import Movie, play_mov
@@ -12,6 +13,7 @@ from .roi import ROI, select_roi
 from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica
 from .motion import motion_correct, apply_motion_correction
+from .util import rolling_correlation
 from .config import *
 
 class Data():
@@ -205,8 +207,10 @@ class Data():
 
         self._has_motion_correction = True
 
-    def project(self, show=False):
+    def project(self, show=False, equalize=False):
         im = self.mean(axis=0)
+        if equalize:
+            im = equalize_adapthist((im-im.min())/(im.max()-im.min()))
         if show:
             pl.imshow(im)
         return im
@@ -492,7 +496,7 @@ class Data():
             self._dff[np.isinf(self._dff)] = 0
         return self._dff
     
-    def get_rollcor(self, idx=None, window=.750, recompute=False, verbose=True):
+    def get_rollcor(self, idx=None, window=.300, recompute=False, verbose=True):
         # window in seconds
         if idx is None:
             idx = self._latest_roi_idx
@@ -513,10 +517,7 @@ class Data():
                     return None
 
                 corwin_ = int(window/self.Ts)
-                rollcor = dff.rolling(window=corwin_, center=True).corr()
-                mask = (np.tril(np.ones_like(rollcor.iloc[0].values))==0)[None,...].astype(float)
-                mask[mask==0] = np.nan
-                _rollcor = pd.Series(np.nanmean(rollcor.values * mask, axis=(1,2))).values
+                _rollcor = rolling_correlation(dff.values, corwin_, verbose=verbose)
 
                 if rollcorname in grp:
                     del grp[rollcorname]
@@ -524,7 +525,7 @@ class Data():
                 grp.create_dataset(rollcorname, data=np.asarray(_rollcor), compression='lzf')
                 grp[rollcorname].attrs.update(window=window)
 
-        return _rollcor
+        return Series(_rollcor, Ts=self.Ts)
     
     def get_transients(self, idx=None, detect_transients_kwargs={}):
         if idx is None:
@@ -733,3 +734,35 @@ class Data():
         roi = np.load('_roitmp.npy')
         self.set_roi(roi)
         os.remove('_roitmp.npy')
+
+    def roi_subset(self, keep, roi_idx=None):
+        """
+        Generate a new roi made of a subset of a current roi
+        keep : boolean array of length of roi at roi_idx
+        """
+        if (not isinstance(keep, np.ndarray)) or (keep.dtype != bool):
+            raise Exception('Must supply boolean numpy array as "keep" parameter.')
+
+        roi = self.get_roi(roi_idx)
+        if roi is None:
+            return
+        tr = self.get_tr(roi_idx)
+        dff = self.get_dff(roi_idx)
+
+        roi = roi[keep]
+        tr = tr.iloc[:,keep]
+        dff = dff.iloc[:,keep]
+
+        # set new roi
+        self.set_roi(roi)
+       
+        # set new traces
+        idx = self._latest_roi_idx
+        trname = 'tr{}'.format(idx)
+        dffname = 'dff{}'.format(idx)
+
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
+            grp.create_dataset(trname, data=np.asarray(tr), compression='lzf')
+            grp.create_dataset(dffname, data=np.asarray(dff), compression='lzf')
+            grp[dffname].attrs.update(origin='roi_idx_{}'.format(roi_idx), subset=keep.tolist())

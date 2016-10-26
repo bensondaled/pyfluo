@@ -219,7 +219,6 @@ def compute_motion(mov, max_shift=(25,25), template=np.median, template_matching
 
             ## from hereon in, x and y are reversed in naming convention
             sh_y,sh_x = top_left
-            bottom_right = (top_left[0] + w, top_left[1] + h)
         
             if (0 < top_left[1] < 2 * ms_h-1) & (0 < top_left[0] < 2 * ms_w-1):
                 # if max is internal, check for subpixel shift using gaussian peak registration
