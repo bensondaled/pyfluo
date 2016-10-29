@@ -285,6 +285,18 @@ class Data():
             matches = [re.match('r(\d)', s) for s in keys]
             idxs = [int(m.groups()[0]) for m in matches if m]
             return max(idxs)
+    
+    @property
+    def _latest_ct_idx(self):
+        with h5py.File(self.data_file) as f:
+            if 'camera_traces' not in f:
+                return None
+            keys = list(f['camera_traces'].keys())
+            if len(keys)==0:
+                return None
+            matches = [re.match('camera_traces(\d)', s) for s in keys]
+            idxs = [int(m.groups()[0]) for m in matches if m]
+            return max(idxs)
 
     @property
     def _next_roi_idx(self):
@@ -298,6 +310,15 @@ class Data():
     @property
     def _next_r_idx(self):
         latest_idx = self._latest_r_idx
+        if latest_idx is None:
+            nex_idx = 0
+        else:
+            nex_idx = latest_idx+1
+        return nex_idx
+    
+    @property
+    def _next_ct_idx(self):
+        latest_idx = self._latest_ct_idx
         if latest_idx is None:
             nex_idx = 0
         else:
@@ -371,6 +392,34 @@ class Data():
             _r = np.asarray(rgrp['r{}'.format(int(idx))])
 
         return _r
+    
+    def set_camera_traces(self, traces):
+        """traces : series with index corresponding to timestamps
+        """
+        with h5py.File(self.data_file) as f:
+            if 'camera_traces' not in f:
+                ctgrp = f.create_group('camera_traces')
+            else:
+                ctgrp = f['camera_traces']
+            idx = self._next_ct_idx
+            ctgrp.create_dataset('camera_traces{}'.format(idx), data=traces.values, compression='lzf')
+            ctgrp.create_dataset('camera_traces{}ts'.format(idx), data=np.asarray(traces.index), compression='lzf')
+    
+    def get_camera_traces(self, idx=None):
+        if self._latest_ct_idx is None:
+            return None
+
+        if idx is None:
+            idx = self._latest_ct_idx
+        if idx is None:
+            return None
+
+        with h5py.File(self.data_file) as f:
+            ctgrp = f['camera_traces']
+            _ct = np.asarray(ctgrp['camera_traces{}'.format(int(idx))])
+            _ctts = np.asarray(ctgrp['camera_traces{}ts'.format(int(idx))])
+
+        return Series(_ct, index=_ctts)
     
     def get_maxmov(self, chunk_size=150, resample=3, redo=False, enforce_datatype=np.int16):
         with h5py.File(self.data_file) as f:
