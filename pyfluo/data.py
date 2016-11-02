@@ -390,6 +390,8 @@ class Data():
 
         with h5py.File(self.data_file) as f:
             rgrp = f['r']
+            if 'r{}'.format(int(idx)) not in rgrp:
+                return None
             _r = np.asarray(rgrp['r{}'.format(int(idx))])
 
         return _r
@@ -772,12 +774,13 @@ class Data():
 
     def select_roi(self):
         mm = self.get_maxmov()
+        mmm = mm.mean(axis=0)
         existing = None
         fig = pl.figure('ROI Selection')
         for idx,m in enumerate(mm):
             ax = fig.add_subplot(111)
             ax.set_title('{}/{}'.format(idx+1, len(mm)))
-            roi = select_roi(m, ax=ax, existing=existing)
+            roi = select_roi(m-mmm, ax=ax, existing=existing)
             existing = roi
             np.save('_roitmp.npy', np.asarray(existing))
             fig.clear()
