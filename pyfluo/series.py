@@ -19,6 +19,10 @@ class Series(np.ndarray):
         obj = np.asarray(data, **kwargs).view(cls)
         if obj.ndim == 1:
             obj = np.atleast_2d(obj).T
+        elif obj.ndim > 2:
+            obj = np.squeeze(obj)
+            if obj.ndim > 2:
+                raise Exception('Series can be at most 2d.')
 
         obj.Ts = Ts
         obj.t0 = t0
