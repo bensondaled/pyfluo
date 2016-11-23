@@ -17,9 +17,7 @@ class Series(np.ndarray):
     def __new__(cls, data, Ts=1., t0=0., **kwargs):
 
         obj = np.asarray(data, **kwargs).view(cls)
-        if obj.ndim == 1:
-            obj = np.atleast_2d(obj).T
-        elif obj.ndim > 2:
+        if obj.ndim > 2:
             obj = np.squeeze(obj)
             if obj.ndim > 2:
                 raise Exception('Series can be at most 2d.')
@@ -40,6 +38,18 @@ class Series(np.ndarray):
         return np.ndarray.__array_wrap__(self, out, context)
 
     def __getitem__(self,idx):
+        
+        # special handling of attempts to treat a 1d series as 2d -- this is allowed
+        if self.ndim==1 and isinstance(idx, tuple):
+            if len(idx) > 2:
+                pass # let the superclass handle the error
+            elif len(idx) == 2:
+                # first dimension is the time index, second refers to our nonexistent second axis
+                # the only acceptable indices for the second position are "0" or ":"
+                if idx[1] not in [0, slice(None,None,None)]:
+                    raise Exception('This series object is 1D and thus index exceeds bounds.')
+                idx = idx[0]
+
         out = super(Series,self).__getitem__(idx)
 
         # cases where a pf Series should not be returned
@@ -48,15 +58,21 @@ class Series(np.ndarray):
         if isinstance(idx, PF_numeric_types):
             return out.view(np.ndarray)
 
-        # all pf series are by definition 2d
-        if out.ndim == 1:
-            out = np.atleast_2d(out).T
+        ## all pf series are by definition 2d
+        #if out.ndim == 1:
+        #    out = np.atleast_2d(out).T
 
         return out
 
     @property
     def index(self):
         return np.arange(len(self)) * self.Ts + self.t0
+
+    def as_2d(self):
+        if self.ndim==2:
+            return self
+        elif self.ndim==1:
+            return np.atleast_2d(self).T
 
     def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, **kwargs):
         """
@@ -68,23 +84,25 @@ class Series(np.ndarray):
             binary_label : trues/falses of same shape as data
         """
 
+        to_plot = self.as_2d()
+
         if ax is None:
             ax = pl.gca()
         
         if order is None:
-            order = np.arange(self.shape[1])
+            order = np.arange(to_plot.shape[1])
         
-        ycolors = cmap(np.linspace(0,1,self.shape[1]))[order]
+        ycolors = cmap(np.linspace(0,1,to_plot.shape[1]))[order]
         if color is not None:
             ycolors = color
             if isinstance(ycolors, PF_str_types):
-                ycolors = [ycolors] * self.shape[1]
+                ycolors = [ycolors] * to_plot.shape[1]
 
         if binary_label is not None:
             binary_label = binary_label.T[order,:].T.astype(bool)
 
-        to_plot = self[:,order]
-        if self.shape[1] == 1:
+        to_plot = to_plot[:,order]
+        if to_plot.shape[1] == 1:
             stacked=False
         if stacked:
             to_plot = to_plot - to_plot.min(axis=0)
@@ -93,7 +111,7 @@ class Series(np.ndarray):
             to_plot += to_add
             yticks = np.asarray(to_plot.mean(axis=0))
             if names is None:
-                yticklab = np.array([str(i) for i in np.arange(self.shape[1])])[order]
+                yticklab = np.array([str(i) for i in np.arange(to_plot.shape[1])])[order]
             else:
                 yticklab = names
 
@@ -127,15 +145,17 @@ class Series(np.ndarray):
         """
         labels: True, False/None, or list of labels, one for each column in data
         """
+        to_plot = self.as_2d()
+
         if ax is None:
             ax = pl.gca()
         if order is None:
-            order = np.arange(self.shape[1])
+            order = np.arange(to_plot.shape[1])
         if 'cmap' not in kwargs:
             kwargs['cmap'] = pl.cm.jet
         x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
-        true_y = np.arange(self.shape[1])
-        y = np.arange(self.shape[1]+1)-0.5
+        true_y = np.arange(to_plot.shape[1])
+        y = np.arange(to_plot.shape[1]+1)-0.5
 
         if labels is True:
             ylab = [str(int(i)) for i in true_y[order]]
@@ -143,9 +163,9 @@ class Series(np.ndarray):
             ylab = labels
         elif not labels:
             ylab = None
-        ycolors = color_id_map(np.linspace(0,1,self.shape[1]))[order]
+        ycolors = color_id_map(np.linspace(0,1,to_plot.shape[1]))[order]
 
-        res = ax.pcolormesh(x, y, self.T[order,:], **kwargs)
+        res = ax.pcolormesh(x, y, to_plot.T[order,:], **kwargs)
 
         if hlines:
             ax.hlines(y, x[0], x[-1], color='w')
