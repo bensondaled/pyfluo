@@ -7,58 +7,64 @@ import warnings
 # Internal imports
 from .config import *
 
-class Series(np.ndarray):
+class Series(pd.DataFrame):
     """Series object
     """
 
-    __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['Ts', 't0']
+    _metadata = ['Ts']
 
-    def __new__(cls, data, Ts=1., t0=0., **kwargs):
+    def __init__(self, data, *args, **kwargs):
 
-        obj = np.asarray(data, **kwargs).view(cls)
-        if obj.ndim == 1:
-            obj = np.atleast_2d(obj).T
+        Ts = kwargs.pop('Ts', None)
 
-        obj.Ts = Ts
-        obj.t0 = t0
+        # Init object
+        super(Series, self).__init__(data, *args, **kwargs)
 
-        return obj
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-
-        for ca in self._custom_attrs:
-            setattr(self, ca, getattr(obj, ca, None))
-
-    def __array_wrap__(self, out, context=None):
-        return np.ndarray.__array_wrap__(self, out, context)
-
-    def __getitem__(self,idx):
-        out = super(Series,self).__getitem__(idx)
-
-        if not isinstance(out,Series):
-            return out
-
-        if isinstance(idx, PF_numeric_types):
-            return out.view(np.ndarray)
-        elif isinstance(idx, slice):
-            idxi = idx
-        elif isinstance(idx, tuple) or all([isinstance(i,slice) for i in idx]):
-            idxi = idx[0]
+        if hasattr(self, 'Ts'):
+            self.set_index(self.Ts*np.arange(len(self)), inplace=True)
+        elif Ts is not None:
+            self.Ts = Ts
+            self.set_index(self.Ts*np.arange(len(self)), inplace=True)
         else:
-            idxi = idx
+            self.Ts = 1.0
 
-        for ca in self._custom_attrs:
-            setattr(out, ca, getattr(out, ca, None))
-        
-        return out
+    def _wrapped_pandas_method(self, mtd, *args, **kwargs):
+        val = getattr(super(Series, self), mtd)(*args, **kwargs)
+        if isinstance(val, pd.Series) or isinstance(val, Series):
+            val.__class__ = Series
+            for name in self._metadata:
+                setattr(val, name, getattr(self, name))
+        return val
+
+    def __add__(self, arg):
+        return self._wrapped_pandas_method('__add__', arg)
+    def __radd__(self, arg):
+        return self._wrapped_pandas_method('__radd__', arg)
+    def __sub__(self, arg):
+        return self._wrapped_pandas_method('__sub__', arg)
+    def __rsub__(self, arg):
+        return self._wrapped_pandas_method('__rsub__', arg)
+    def __div__(self, arg):
+        return self._wrapped_pandas_method('__div__', arg)
+    def __rdiv__(self, arg):
+        return self._wrapped_pandas_method('__rdiv__', arg)
+    def __mul__(self, arg):
+        return self._wrapped_pandas_method('__mul__', arg)
+    def __rmul__(self, arg):
+        return self._wrapped_pandas_method('__rmul__', arg)
 
     @property
-    def index(self):
-        return np.arange(len(self)) * self.Ts + self.t0
+    def _constructor(self):
+        return Series
+    
+    def __finalize__(self, other, method=None, **kwargs):
+        for name in self._metadata:
+            object.__setattr__(self, name, getattr(other, name, None))
+        return self
 
+    def reset_time(self, offset=0, **kwargs):
+        self.set_index(self.Ts*np.arange(len(self)) + offset, **kwargs)
+    
     def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, **kwargs):
         """
             gap : float
@@ -82,9 +88,9 @@ class Series(np.ndarray):
                 ycolors = [ycolors] * self.shape[1]
 
         if binary_label is not None:
-            binary_label = binary_label.T[order,:].T.astype(bool)
+            binary_label = binary_label.T.iloc[order,:].T.astype(bool).values
 
-        to_plot = self[:,order]
+        to_plot = self.T.iloc[order,:].T.values
         if self.shape[1] == 1:
             stacked=False
         if stacked:
@@ -146,7 +152,7 @@ class Series(np.ndarray):
             ylab = None
         ycolors = color_id_map(np.linspace(0,1,self.shape[1]))[order]
 
-        res = ax.pcolormesh(x, y, self.T[order,:], **kwargs)
+        res = ax.pcolormesh(x, y, self.T.iloc[order,:], **kwargs)
 
         if hlines:
             ax.hlines(y, x[0], x[-1], color='w')
