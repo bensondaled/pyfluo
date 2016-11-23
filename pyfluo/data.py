@@ -405,7 +405,7 @@ class Data():
             else:
                 ctgrp = f['camera_traces']
             idx = self._next_ct_idx
-            ctgrp.create_dataset('camera_traces{}'.format(idx), data=traces.values, compression='lzf')
+            ctgrp.create_dataset('camera_traces{}'.format(idx), data=traces, compression='lzf')
             ctgrp.create_dataset('camera_traces{}ts'.format(idx), data=np.asarray(traces.index), compression='lzf')
     
     def get_camera_traces(self, idx=None):
@@ -573,7 +573,7 @@ class Data():
                     return None
 
                 corwin_ = int(window/self.Ts)
-                _rollcor = rolling_correlation(dff.values, corwin_, verbose=verbose)
+                _rollcor = rolling_correlation(dff, corwin_, verbose=verbose)
 
                 if rollcorname in grp:
                     del grp[rollcorname]
@@ -709,7 +709,7 @@ class Data():
 
         if rs is None:
 
-            sig = self.get_tr(roi_idx).values
+            sig = self.get_tr(roi_idx)
 
             dmean = self.mean(axis=0)
             smean = np.mean(sig, axis=0)
