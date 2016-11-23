@@ -12,7 +12,7 @@ class Series(np.ndarray):
     """
 
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
-    _custom_attrs = ['Ts', 't0']
+    _custom_attrs = {'Ts':1., 't0':0.}
 
     def __new__(cls, data, Ts=1., t0=0., **kwargs):
 
@@ -32,7 +32,7 @@ class Series(np.ndarray):
             return
 
         for ca in self._custom_attrs:
-            setattr(self, ca, getattr(obj, ca, None))
+            setattr(self, ca, getattr(obj, ca, self._custom_attrs[ca]))
 
     def __array_wrap__(self, out, context=None):
         return np.ndarray.__array_wrap__(self, out, context)
@@ -42,13 +42,17 @@ class Series(np.ndarray):
         # special handling of attempts to treat a 1d series as 2d -- this is allowed
         if self.ndim==1 and isinstance(idx, tuple):
             if len(idx) > 2:
-                pass # let the superclass handle the error
+                pass # let the superclass handle it
             elif len(idx) == 2:
                 # first dimension is the time index, second refers to our nonexistent second axis
-                # the only acceptable indices for the second position are "0" or ":"
-                if idx[1] not in [0, slice(None,None,None)]:
-                    raise Exception('This series object is 1D and thus index exceeds bounds.')
-                idx = idx[0]
+                # if the second item is None, then it's the special numpy convention, pass it through
+                if idx[1] is None:
+                    pass
+                else:
+                    # now the only acceptable indices for the second position are "0" or ":"
+                    if idx[1] not in [0, slice(None,None,None)]:
+                        raise Exception('This series object is 1D and thus index exceeds bounds.')
+                    idx = idx[0]
 
         out = super(Series,self).__getitem__(idx)
 
