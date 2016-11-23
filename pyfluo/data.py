@@ -422,7 +422,7 @@ class Data():
             _ct = np.asarray(ctgrp['camera_traces{}'.format(int(idx))])
             _ctts = np.asarray(ctgrp['camera_traces{}ts'.format(int(idx))])
 
-        return Series(_ct, index=_ctts)
+        return pd.DataFrame(_ct, index=_ctts)
     
     def get_maxmov(self, chunk_size=150, resample=3, redo=False, enforce_datatype=np.int16):
         with h5py.File(self.data_file) as f:
@@ -540,10 +540,10 @@ class Data():
                 grp.create_dataset(dffname, data=np.asarray(self._dff), compression='lzf')
                 grp[dffname].attrs.update(compute_dff_kwargs)
 
-        if self._dff.isnull().values.any():
+        if np.any(np.isnan(self._dff)):
             warnings.warn('Null values zeroed out in DFF.')
-            self._dff[self._dff.isnull()] = 0
-        if np.isinf(self._dff).values.any():
+            self._dff[np.isnan(self._dff)] = 0
+        if np.any(np.isinf(self._dff)):
             warnings.warn('Inf values zeroed out in DFF.')
             self._dff[np.isinf(self._dff)] = 0
         return self._dff
@@ -803,8 +803,8 @@ class Data():
         dff = self.get_dff(roi_idx)
 
         roi = roi[keep]
-        tr = tr.iloc[:,keep]
-        dff = dff.iloc[:,keep]
+        tr = tr[:,keep]
+        dff = dff[:,keep]
 
         # set new roi
         self.set_roi(roi)
