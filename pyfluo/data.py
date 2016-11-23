@@ -423,7 +423,7 @@ class Data():
             _ctts = np.asarray(ctgrp['camera_traces{}ts'.format(int(idx))])
 
         Ts = np.mean(np.diff(_ctts))
-        if np.abs(Ts*len(_ct) - _ctts[-1]) > 0.005:
+        if np.abs(Ts*(len(_ct)-1) - (_ctts[-1]-_ctts[0]) ) > 0.005:
             warnings.warn('In camera timestamps, Ts estimation is flawed. Use caution in interpreting timestamps of this signal.')
 
         return Series(_ct, Ts=Ts, t0=_ctts[0])
