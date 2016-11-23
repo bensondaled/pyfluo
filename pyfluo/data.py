@@ -422,7 +422,11 @@ class Data():
             _ct = np.asarray(ctgrp['camera_traces{}'.format(int(idx))])
             _ctts = np.asarray(ctgrp['camera_traces{}ts'.format(int(idx))])
 
-        return pd.DataFrame(_ct, index=_ctts)
+        Ts = np.mean(np.diff(_ctts))
+        if np.abs(Ts*len(_ct) - _ctts[-1]) > 0.005:
+            warnings.warn('In camera timestamps, Ts estimation is flawed. Use caution in interpreting timestamps of this signal.')
+
+        return Series(_ct, Ts=Ts, t0=_ctts[0])
     
     def get_maxmov(self, chunk_size=150, resample=3, redo=False, enforce_datatype=np.int16):
         with h5py.File(self.data_file) as f:

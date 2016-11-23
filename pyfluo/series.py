@@ -38,17 +38,15 @@ class Series(np.ndarray):
     def __getitem__(self,idx):
         out = super(Series,self).__getitem__(idx)
 
+        # cases where a pf Series should not be returned
         if not isinstance(out,Series):
             return out
-
         if isinstance(idx, PF_numeric_types):
             return out.view(np.ndarray)
-        elif isinstance(idx, slice):
-            idxi = idx
-        elif isinstance(idx, tuple) or all([isinstance(i,slice) for i in idx]):
-            idxi = idx[0]
-        else:
-            idxi = idx
+
+        # all pf series are by definition 2d
+        if out.ndim == 1:
+            out = np.atleast_2d(out).T
 
         for ca in self._custom_attrs:
             setattr(out, ca, getattr(out, ca, None))
