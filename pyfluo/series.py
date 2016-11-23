@@ -48,9 +48,6 @@ class Series(np.ndarray):
         if out.ndim == 1:
             out = np.atleast_2d(out).T
 
-        for ca in self._custom_attrs:
-            setattr(out, ca, getattr(out, ca, None))
-        
         return out
 
     @property
