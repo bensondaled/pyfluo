@@ -78,6 +78,13 @@ class Series(np.ndarray):
         elif self.ndim==1:
             return np.atleast_2d(self).T
 
+    def mean(self, **kwargs):
+        return np.nanmean(self, **kwargs)
+    def std(self, **kwargs):
+        return np.nanstd(self, **kwargs)
+    def median(self, **kwargs):
+        return np.nanmedian(self, **kwargs)
+
     def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, **kwargs):
         """
             gap : float
