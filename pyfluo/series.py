@@ -103,7 +103,7 @@ class Series(np.ndarray):
                 ycolors = [ycolors] * to_plot.shape[1]
 
         if binary_label is not None:
-            binary_label = binary_label.T[order,:].T.astype(bool)
+            binary_label = binary_label[:,order].astype(bool)
 
         to_plot = to_plot[:,order]
         if to_plot.shape[1] == 1:
@@ -128,7 +128,7 @@ class Series(np.ndarray):
                 lcmap = ListedColormap([color,'r'])
                 norm = BoundaryNorm([-1, -0.5, 0.5, 1], lcmap.N)
                 lc = LineCollection(segments, cmap=lcmap, norm=norm)
-                blab = binary_label.T[idx]
+                blab = binary_label[:,idx]
                 lc.set_array((blab[1:] | blab[:-1]))
                 ax.add_collection(lc)
             else:
