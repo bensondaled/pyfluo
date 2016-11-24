@@ -69,7 +69,7 @@ def compute_dff(data, window_size=5., filter_size=1., use_filter=True, step_size
         padded = median_filter(padded, filter_kernel)
 
     f0 = []
-    for idx,win in enumerate(sliding_window(padded, ws=window_size, ss=step_size)):
+    for idx,win in enumerate(sliding_window(padded, ws=window_size, ss=step_size, pad=False)):
         f0.append(np.min(win, axis=0))
         if verbose:
             pbar.update(idx)
