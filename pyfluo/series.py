@@ -78,14 +78,23 @@ class Series(np.ndarray):
         elif self.ndim==1:
             return np.atleast_2d(self).T
 
-    def mean(self, **kwargs):
-        return np.nanmean(self.view(np.ndarray), **kwargs)
-    def std(self, **kwargs):
-        return np.nanstd(self.view(np.ndarray), **kwargs)
-    def median(self, **kwargs):
-        return np.nanmedian(self.view(np.ndarray), **kwargs)
+    def _cls_chk(self, res):
+        if isinstance(res, np.ndarray) and res.ndim>0:
+            res = Series(res)
+            for ca in self._custom_attrs:
+                setattr(res, ca, getattr(self, ca, self._custom_attrs[ca]))
+        else:
+            pass
+        return res
 
-    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, use_index=False, **kwargs):
+    def mean(self, **kwargs):
+        return self._cls_chk( np.nanmean(self.view(np.ndarray), **kwargs) )
+    def std(self, **kwargs):
+        return self._cls_chk( np.nanstd(self.view(np.ndarray), **kwargs) )
+    def median(self, **kwargs):
+        return self._cls_chk( np.nanmedian(self.view(np.ndarray), **kwargs) )
+
+    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, use_index=True, **kwargs):
         """
             gap : float
             order : list-like
