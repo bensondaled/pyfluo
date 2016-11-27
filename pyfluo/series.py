@@ -85,7 +85,7 @@ class Series(np.ndarray):
     def median(self, **kwargs):
         return np.nanmedian(self.view(np.ndarray), **kwargs)
 
-    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, **kwargs):
+    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, use_index=False, **kwargs):
         """
             gap : float
             order : list-like
@@ -93,6 +93,7 @@ class Series(np.ndarray):
             cmap : mpl cmap
             stacked : bool
             binary_label : trues/falses of same shape as data
+            use_index : use Ts to determine index
         """
 
         to_plot = self.as_2d()
