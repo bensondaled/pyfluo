@@ -96,6 +96,10 @@ class Series(np.ndarray):
         """
 
         to_plot = self.as_2d()
+        if use_index:
+            tp_idx = self.index
+        else:
+            tp_idx = np.arange(len(to_plot))
 
         if ax is None:
             ax = pl.gca()
@@ -128,7 +132,7 @@ class Series(np.ndarray):
 
         for idx,tp,color in zip(np.arange(to_plot.shape[1]),to_plot.T, ycolors):
             if binary_label is not None:
-                dfx = np.asarray(self.index)
+                dfx = np.asarray(tp_idx)
                 dfy = tp
                 points = np.array([dfx, dfy]).T.reshape(-1, 1, 2)
                 segments = np.concatenate([points[:-1], points[1:]], axis=1)
@@ -139,7 +143,7 @@ class Series(np.ndarray):
                 lc.set_array((blab[1:] | blab[:-1]))
                 ax.add_collection(lc)
             else:
-                ax.plot(self.index, tp, color=color, **kwargs)
+                ax.plot(tp_idx, tp, color=color, **kwargs)
 
         if stacked:
             ax.set_yticks(yticks)
@@ -147,7 +151,7 @@ class Series(np.ndarray):
             for i,c in zip(ax.get_yticklabels(), ycolors):
                 i.set_color(c)
 
-        ax.set_xlim([self.index.min(), self.index.max()])
+        ax.set_xlim([tp_idx.min(), tp_idx.max()])
         ax.set_ylim([to_plot.min(), to_plot.max()])
 
         return ax
