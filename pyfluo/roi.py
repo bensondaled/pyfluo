@@ -187,8 +187,8 @@ class ROIView():
 
         # button convention: name: [obj, callback, label]
         self.buts = collections.OrderedDict([   
-                    ('select', [None,self.evt_select,'Select (L)']),
-                    ('remove', [None,self.evt_remove,'Remove (R)']),
+                    ('select', [None,self.evt_select,'Select (T)']),
+                    ('remove', [None,self.evt_remove,'Remove (X)']),
                     ('hideshow', [None,self.evt_hideshow,'Hide (V)']),
                     ('next', [None,self.evt_next,'Next (N)']),
                     ('save', [None,self.cache,'Save (cmd-S)']),
@@ -272,6 +272,8 @@ class ROIView():
             return
 
         x,y = evt.xdata,evt.ydata
+        if self.roi is None or len(self.roi) == 0:
+            return
         best = np.argmin([dist((x,y), c) for c in self._roi_centers])
 
         self.update_patches(draw=False)
@@ -288,7 +290,7 @@ class ROIView():
         elif self._mode != 'select':
             self.reset_mode()
             self._mode = 'select'
-            but.label.set_text('STOP (L)')
+            but.label.set_text('STOP (T)')
             but.label.set_color('red')
         self.fig.canvas.draw()
     
@@ -301,7 +303,7 @@ class ROIView():
         elif self._mode != 'remove':
             self.reset_mode()
             self._mode = 'remove'
-            but.label.set_text('STOP (R)')
+            but.label.set_text('STOP (X)')
             but.label.set_color('red')
         self.fig.canvas.draw()
 
@@ -347,15 +349,16 @@ class ROIView():
         np.save(self._cachename, self.roi)
 
     def evt_key(self, evt):
+
         if evt.key == 'z':
             self.remove_roi(-1)
 
         elif evt.key == 'escape':
             self.reset_mode()
 
-        elif evt.key == 'l':
+        elif evt.key == 't':
             self.evt_select()
-        elif evt.key == 'r':
+        elif evt.key == 'x':
             self.evt_remove()
         elif evt.key == 'v':
             self.evt_hideshow()
