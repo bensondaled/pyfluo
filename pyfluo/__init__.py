@@ -1,7 +1,7 @@
 from .config import *
 from .movies import Movie
 from .series import Series
-from .roi import ROI, select_roi
+from .roi import ROI, ROIView
 from .io import save, load
 from .fluorescence import compute_dff, detect_transients
 from .images.tiff import Tiff

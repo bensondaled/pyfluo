@@ -119,13 +119,13 @@ def image_cart_to_polar(image, center, min_radius, max_radius, phase_width, zoom
 
 def mask_polar_to_cart(mask, center, min_radius, max_radius, output_shape, zoom_factor=1):
     '''Converts a polar binary mask to Cartesian and places in an image of zeros'''
-
+    
     # Account for upsampling 
     if zoom_factor != 1:
         center = (center[0]*zoom_factor + zoom_factor/2, center[1]*zoom_factor + zoom_factor/2)
         min_radius = min_radius * zoom_factor
         max_radius = max_radius * zoom_factor
-        output_shape = map(lambda a: a * zoom_factor, output_shape)
+        output_shape = tuple(map(lambda a: a * zoom_factor, output_shape))
 
     # new image
     image = np.zeros(output_shape)
@@ -206,7 +206,7 @@ def edge_polar_to_cart(edge, center):
 
 
 def cell_magic_wand_single_point(image, center, min_radius, max_radius,
-                                 roughness=2, zoom_factor=1):
+                                 roughness=2, zoom_factor=1, center_range=None):
     '''Draws a border within a specified radius around a specified center "seed" point
     using a polar transform and a dynamic programming edge-following algorithm.
 

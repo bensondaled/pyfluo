@@ -2,86 +2,15 @@
 import warnings
 import numpy as np, matplotlib.pyplot as pl, matplotlib.lines as mlines
 from matplotlib.collections import PolyCollection
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, Slider
 from matplotlib.patches import Polygon
 from matplotlib.gridspec import GridSpec
-import collections
+import collections, os, time
+from scipy.spatial.distance import euclidean as dist
 # Internal imports
 from .config import *
-from .util import cell_magic_wand
+from .util import cell_magic_wand, cell_magic_wand_single_point
 
-def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_kw={}, cmap=pl.cm.Greys_r):
-    """Select any number of regions of interest (ROI) in the movie.
-    
-    Parameters
-    ----------
-    img : np.ndarray
-        image over which to select roi
-    n : int
-        number of ROIs to select
-    ax : matplotlib.Axes
-        axes on which to show and select. If None, defaults to new, if 'current', defaults to current
-    existing : pyfluo.ROI
-        pre-existing rois to which to add selections
-    mode : 'polygon', 'lasso'
-        mode by which to select roi
-    show_kw : dict
-        kwargs to ROI.show
-    cmap : matplotlib.LinearSegmentedColormap
-        color map with which to display img
-        
-    Returns
-    -------
-    ROI object
-
-    Notes
-    -----
-    Select points by clicking, and hit enter to finalize and ROI. Hit enter again to complete selection process.
-    """
-    if ax is None and img is None:
-        raise Exception('Image or axes must be supplied to select ROI.')
-
-    figmade = False
-    if ax == None:
-        figmade = True
-        fig = pl.figure()
-        ax = fig.add_subplot(111)
-    elif ax == 'current':
-        ax = pl.gca()
-    pl.sca(ax)
-    fig = ax.get_figure()
-
-    if img is not None:
-        shape = img.shape
-    elif ax is not None:
-        shape = [abs(np.diff(ax.get_ylim())), abs(np.diff(ax.get_xlim()))]
-
-    q = 0
-    while True:
-        if n>0 and q>=n:
-            break
-        if img is not None:
-            ax.imshow(img, cmap=cmap)
-        if existing is not None:
-            existing.show(**show_kw)
-        if mode == 'polygon':
-            pts = fig.ginput(0, timeout=0)
-        elif mode == 'lasso':
-            pts = lasso(lasso_strictness)
-
-        if pts != []:
-            new_roi = ROI(pts=pts, shape=shape)
-            if existing is None:
-                existing = ROI(pts=pts, shape=shape)
-            else:
-                existing = existing.add(new_roi)
-            q += 1
-        elif pts == []:
-            break
-        ax.cla()
-    if figmade:
-        pl.close()
-    return existing
 
 class ROI(np.ndarray):
     """An object storing ROI information for 1 or more ROIs
@@ -201,14 +130,11 @@ class ROI(np.ndarray):
         if ax is None:
             ax = pl.gca()
             nans = np.zeros(roi.shape[1:], dtype=float)
-            nans[:] = np.nan
-            ax.imshow(nans)
+            #nans[:] = np.nan
+            ax.imshow(nans, cmap=pl.cm.Greys)
 
         coll = PolyCollection(verts=[r.pts for r in roi], array=np.arange(len(roi)), **patch_kw)
         ax.add_collection(coll)
-
-        ax.set_xlim(0, roi.shape[2])
-        ax.set_ylim(0, roi.shape[1])
 
         return ax
 
@@ -218,7 +144,9 @@ class ROI(np.ndarray):
         Useful because the object can in principle be 2d or 3d
         """
         if self.ndim == 2:
-            return np.rollaxis(np.atleast_3d(self),-1)
+            res = np.rollaxis(np.atleast_3d(self),-1)
+            res.pts = np.array([res.pts])
+            return res
         else:
             return self
    
@@ -252,19 +180,38 @@ class ROI(np.ndarray):
 
 OBJ,CB,LAB = 0,1,2
 class ROIView():
-    def __init__(self, img, roi=None):
+    def __init__(self, img=None, roi=None, iterator=None):
+        """
+        iterator : any iterator (can handle next() calls)
+        """
 
         # button convention: name: [obj, callback, label]
         self.buts = collections.OrderedDict([   
                     ('select', [None,self.evt_select,'Select']),
                     ('remove', [None,self.evt_remove,'Remove']),
                     ('hideshow', [None,self.evt_hideshow,'Hide']),
+                    ('next', [None,self.evt_next,'Next']),
+                    ('save', [None,self.cache,'Save']),
                     ('method', [None,self.evt_method,'Wand']),
                         ]) 
+        # sliders convention: name : [obj, min, max, init]
+        self.sliders = collections.OrderedDict([   
+                    ('min_radius', [None,1,20,8]),
+                    ('max_radius', [None,10,100,20]),
+                    ('roughness', [None,1,10,2]),
+                    ('center_range', [None,1,5,2]),
+                        ]) 
+        self.wand_params = {name:v for name,(*_,v) in self.sliders.items()}
+
+        if img is None and iterator is not None:
+            img = next(iterator)
+        
+        self._cachename = '_roicache_' + str(time.time()) + '.npy'
         
         # fig & axes
         self.fig = pl.figure()
-        self.gs = GridSpec(len(self.buts), 2, left=0, bottom=0, top=1, right=1, width_ratios=[1,10])
+        hr = [3]*len(self.buts) + [1]*len(self.sliders)
+        self.gs = GridSpec(len(self.buts)+len(self.sliders), 2, left=0, bottom=0, top=1, right=1, width_ratios=[1,10], height_ratios=hr, wspace=0.01, hspace=0.01)
         self.ax_fov = self.fig.add_subplot(self.gs[:,1])
         self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
         self.ax_fov.set_autoscale_on(False)
@@ -275,11 +222,22 @@ class ROIView():
             but = Button(ax, lab)
             but.on_clicked(cb)
             self.buts[name][OBJ] = but
+        # sliders
+        for si,(name,(obj,minn,maxx,init)) in enumerate(self.sliders.items()):
+            ax = self.fig.add_subplot(self.gs[si+len(self.buts),0])
+            sli = Slider(ax, name, minn, maxx, init, facecolor='gray', edgecolor='none', alpha=0.5, valfmt='%0.0f')
+            sli.label.set_position((0.5,0.5))
+            sli.label.set_horizontalalignment('center')
+            sli.vline.set_color('k')
+            sli.on_changed(self.evt_slide)
+            self.sliders[name][OBJ] = sli # hold onto reference to avoid garbage collection
 
         # callbacks
         self.fig.canvas.mpl_connect('button_press_event', self.evt_click)
         self.fig.canvas.mpl_connect('key_press_event', self.evt_key)
         self.fig.canvas.mpl_connect('pick_event', self.evt_pick)
+        self.fig.canvas.mpl_connect('motion_notify_event', self.evt_motion)
+        self.iterator = iterator
 
         # runtime
         self._mode = '' # select, remove
@@ -287,14 +245,35 @@ class ROIView():
         self._hiding = False
         self._selection = []
         self._selection_patches = []
-        self.roi = roi
+        self.roi = None
         self._roi_patches = []
+        self._roi_centers = []
+        self.add_roi(mask=roi)
 
     def reset_mode(self):
         if self._mode == 'select':
             self.evt_select()
         elif self._mode == 'remove':
             self.evt_remove()
+
+    def evt_slide(self, *args):
+        for key,(obj,*_) in self.sliders.items():
+            self.wand_params[key] = int(np.round(obj.val))
+
+    def evt_motion(self, evt):
+        if evt.inaxes != self.ax_fov:
+            return
+
+        if self._mode != 'remove':
+            return
+
+        x,y = evt.xdata,evt.ydata
+        best = np.argmin([dist((x,y), c) for c in self._roi_centers])
+
+        self.update_patches(draw=False)
+        self._roi_patches[best].set_color('red')
+        self._roi_patches[best].set_alpha(1.)
+        self.fig.canvas.draw()
 
     def evt_select(self, *args):
         but,_,lab = self.buts['select']
@@ -347,7 +326,25 @@ class ROIView():
             self._method = 'wand'
         self.fig.canvas.draw()
 
+    def evt_next(self, *args):
+        if self.iterator is None:
+            return
+        self._clear_selection()
+        try:
+            n = next(self.iterator)
+            self.set_img(n)
+        except StopIteration:
+            self.set_img(np.zeros_like(self._im.get_array()))
+
+        self.cache()
+
+    def cache(self, *args):
+        np.save(self._cachename, self.roi)
+
     def evt_key(self, evt):
+        if evt.key == 'z':
+            self.remove_roi(-1)
+
         if self._mode != 'select':
             return
 
@@ -374,27 +371,34 @@ class ROIView():
         if evt.inaxes != self.ax_fov:
             return
 
-        pt = [evt.xdata, evt.ydata]
+        pt = [round(evt.xdata), round(evt.ydata)]
 
         if self._method == 'manual':
             self._selection_patches.append(self.ax_fov.plot(pt[0], pt[1], marker='x', color='orange')[0])
             self._selection.append(pt)
 
         elif self._method == 'wand':
-            mask = cell_magic_wand(self._im.get_array(), pt[::-1], 10, 60)
-            self.add_roi(mask=mask)
+            mask = cell_magic_wand(self._im.get_array(), pt[::-1], **self.wand_params)
+            if np.any(mask):
+                self.add_roi(mask=mask)
 
         self.fig.canvas.draw()
 
     def evt_pick(self, evt):
-        if self._mode != 'remove' or self.roi is None or len(self.roi)==0:
+        if self._mode != 'remove':
             return
         obj = evt.artist
         idx = self._roi_patches.index(obj)
+        self.remove_roi(idx)
+
+    def remove_roi(self, idx):
+        if self.roi is None or len(self.roi)==0:
+            return
         self._roi_patches[idx].remove()
         self.roi = self.roi.remove(idx)
         del self._roi_patches[idx]
-        self.fig.canvas.draw()
+        del self._roi_centers[idx]
+        self.update_patches()
 
     def set_img(self, img):
         if self._im is None:
@@ -419,8 +423,25 @@ class ROIView():
             self.roi = self.roi.add(roi)
 
         # show
-        poly = Polygon(roi.pts, alpha=0.5, picker=5)
-        self.ax_fov.add_patch(poly)
-        self._roi_patches.append(poly)
-        self.fig.canvas.draw()
+        roi = roi.as3d()
+        for r in roi:
+            poly = Polygon(r.pts, alpha=0.5, picker=5)
+            self.ax_fov.add_patch(poly)
+            self._roi_patches.append(poly)
+            self._roi_centers.append(np.mean(r.pts, axis=0))
+        self.update_patches()
+
+    def update_patches(self, draw=True):
+        if self.roi is not None and len(self.roi) > 0:
+            cols = pl.cm.viridis(np.linspace(0,1,len(self.roi)))
+            for col,p in zip(cols,self._roi_patches):
+                p.set_color(col)
+                p.set_alpha(0.5)
+        if draw:
+            self.fig.canvas.draw()
+
+    def end(self):
+        if os.path.exists(self._cachename):
+            os.remove(self._cachename)
+        pl.close(self.fig)
 
