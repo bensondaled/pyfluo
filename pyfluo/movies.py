@@ -3,7 +3,7 @@ from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
 import sys, tifffile, operator, os, threading
 
-from .roi import ROI, select_roi
+from .roi import ROI, ROIView
 from .images import Tiff, AVI, HDF5
 from .series import Series
 from .config import *
@@ -107,17 +107,18 @@ class Movie(np.ndarray):
         play_mov(self, **kwargs)
     
     def select_roi(self, *args, **kwargs):
-        """A convenience method for pyfluo.roi.select_roi(self.project(), *args, **kwargs)
+        """Select ROI using ROIView
 
         Parameters
         ----------
         projection_method : def
             'method' parameter for Movie.project, used in display
         *args, **kwargs
-            those accepted by pyfluo.roi.select_roi
+            those accepted by pyfluo.roi.ROIView
         """
         zp = self.project(show=False, method=kwargs.pop('projection_method',np.mean))
-        return select_roi(zp, *args, **kwargs)
+        rv = ROIView(zp)
+        return rv
     def extract(self, roi):
         """Extract a time series consisting of one value for each movie frame, attained by performing an operation over the regions of interest (ROI) supplied
         

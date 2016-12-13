@@ -1,10 +1,16 @@
 # External imports
-import numpy as np, pylab as pl, matplotlib.lines as mlines
 import warnings
+import numpy as np, matplotlib.pyplot as pl, matplotlib.lines as mlines
+from matplotlib.collections import PolyCollection
+from matplotlib.widgets import Button
+from matplotlib.patches import Polygon
+from matplotlib.gridspec import GridSpec
+import collections
 # Internal imports
 from .config import *
+from .util import cell_magic_wand
 
-def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode='mask', cmap=pl.cm.Greys_r, lasso_strictness=1):
+def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_kw={}, cmap=pl.cm.Greys_r):
     """Select any number of regions of interest (ROI) in the movie.
     
     Parameters
@@ -19,12 +25,10 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
         pre-existing rois to which to add selections
     mode : 'polygon', 'lasso'
         mode by which to select roi
-    show_mode : 'pts', 'mask'
-        mode by which to show existing rois
+    show_kw : dict
+        kwargs to ROI.show
     cmap : matplotlib.LinearSegmentedColormap
         color map with which to display img
-    lasso_strictness : float
-        number from 0-inf, to do with tolerance for edge finding
         
     Returns
     -------
@@ -59,7 +63,7 @@ def select_roi(img=None, n=0, ax=None, existing=None, mode='polygon', show_mode=
         if img is not None:
             ax.imshow(img, cmap=cmap)
         if existing is not None:
-            existing.show(mode=show_mode)
+            existing.show(**show_kw)
         if mode == 'polygon':
             pts = fig.ginput(0, timeout=0)
         elif mode == 'lasso':
@@ -174,110 +178,39 @@ class ROI(np.ndarray):
         result._compute_pts()
         return result
 
-    def show(self, mode='contours', labels=False, label_strs=None, colors=None, cmap=pl.cm.viridis, contours_kwargs=dict(thickness=1), ax=None, show=True, label_kwargs=dict(fontsize=5, color='white'), **kwargs):
-        """Display the ROI(s)
-        TODO: adjust how masks are coloured such that the image itself is RGB and doesn't need a colormap to depend on
-        
+    def remove(self, idx):
+        """Remove ROI from ROI object
+
         Parameters
         ----------
-        mode : 'mask', 'contours'
-            specifies how to display the ROIs. If 'mask', displays as filled space. If 'contour', draws contours around rois
-            mask and contours can be used together, ex. 'mask,contours'
-            **contours currently under construction
-        labels : bool
-            display labels over ROIs
-        colors : list-like
-            a list of values indicating the relative colors (example: magnitude) of each roi
-            a list of tuples specifying specific colors
-            or a float in which case all will be a single color
-            needs to be fixed for the possibility of this containing values of 0
-            currently buggy for 'pts' mode
-        cmap : matplotlib.LinearSegmentedColormap
-            color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
-        contours_kwargs : dict
-            for cv2.drawContours
-        label_kwargs : dict
-            for ax.text in drawing roi labels
-        ax : mpl.axes
-            ax to show, defaults to gca
-        show : bool
-            display image (if False, just returns displayed image)
-        kwargs : dict
-            any arguments accepted by matplotlib.imshow
-
-        Returns
-        -------
-        If mode=='mask', the combined mask of all ROIs used for display
+        idx : int
+            idx to remove
         """
+        roi = self.as3d()
+        result = np.delete(roi, idx, axis=0)
+        result = ROI(result)
+        return result
 
-        cmap = cmap
-        if ax is None and show:
+    def show(self, ax=None, **patch_kw):
+        patch_kw['alpha'] = patch_kw.get('alpha', 0.5)
+        patch_kw['edgecolors'] = patch_kw.get('edgecolors', 'none')
+        patch_kw['cmap'] = patch_kw.get('cmap', pl.cm.viridis)
+
+        roi = self.as3d()
+
+        if ax is None:
             ax = pl.gca()
-            xlim,ylim = ax.get_xlim(),ax.get_ylim()
+            nans = np.zeros(roi.shape[1:], dtype=float)
+            nans[:] = np.nan
+            ax.imshow(nans)
 
-        mask = self.as3d().copy().view(np.ndarray).astype(np.float32)
-        if colors is None:
-            colors = np.arange(1,len(mask)+1)
-            colors_ = np.linspace(0, 1, len(mask))
-            colors_ = cmap(colors_)
-        elif type(colors) in PF_numeric_types:
-            colors_ = np.array([colors for i in mask])
-            colors_ = cmap(colors_)
-        elif isinstance(colors,PF_list_types):
-            if np.isscalar(colors[0]):
-                colors_ = colors
-                colors_ = cmap(colors_)
-            elif isinstance(colors[0],PF_list_types):
-                colors_ = colors
+        coll = PolyCollection(verts=[r.pts for r in roi], array=np.arange(len(roi)), **patch_kw)
+        ax.add_collection(coll)
 
-        if self.ndim==2:
-            pts = [self.pts]
-        else:
-            pts = self.pts
+        ax.set_xlim(0, roi.shape[2])
+        ax.set_ylim(0, roi.shape[1])
 
-        if 'contours' in mode:
-            base = np.zeros(mask.shape[1:]+(4,))
-            for i,p in enumerate(pts):
-                cv2.drawContours(base, [p], -1, colors_[i], **contours_kwargs)
-                if labels not in [False,None]:
-                    if labels is True:
-                        labels = 'center'
-                    if labels == 'center':
-                        center = p.mean(axis=0)
-                        align = 'center'
-                    elif labels == 'left':
-                        center = p.mean(axis=0)
-                        center[0] = p.min(axis=0)[0]-3
-                        align = 'right'
-                    elif labels == 'right':
-                        center = p.mean(axis=0)
-                        center[0] = p.max(axis=0)[0]+3
-                        align = 'left'
-                    s = label_strs[i] if label_strs is not None else str(i)
-                    ax.text(center[0], center[1], s, ha=align, **label_kwargs)
-            base[...,-1] = (base.sum(axis=-1)!=0).astype(float)
-            if show:
-                ims=ax.imshow(base, interpolation='nearest', **kwargs)
-            #pl.draw()
-
-        if 'mask' in mode:
-            mask *= colors[...,np.newaxis,np.newaxis]
-            mask = np.max(mask, axis=0)
-            mask[mask==0] = None #so background doesn't steal one color from colormap, offsetting correspondence to all other uses of cmap
-
-            alpha = kwargs.pop('alpha', 0.6)
-
-            #cv2.drawContours(mask, self.pts, -1, (255,255,255), **contours_kwargs)
-            if show:
-                ims=ax.imshow(mask, interpolation='nearest', cmap=cmap, alpha=alpha, **kwargs)
-            pl.draw()
-
-        if show:
-            ax.figure.canvas.draw()
-        if mode == 'mask':
-            return mask
-        elif mode == 'contours':
-            return base
+        return ax
 
     def as3d(self):
         """Return 3d version of object
@@ -316,3 +249,178 @@ class ROI(np.ndarray):
             for ca in ROI._custom_attrs_slice:
                 setattr(out, ca, getattr(out, ca, None)[idx])
         return out
+
+OBJ,CB,LAB = 0,1,2
+class ROIView():
+    def __init__(self, img, roi=None):
+
+        # button convention: name: [obj, callback, label]
+        self.buts = collections.OrderedDict([   
+                    ('select', [None,self.evt_select,'Select']),
+                    ('remove', [None,self.evt_remove,'Remove']),
+                    ('hideshow', [None,self.evt_hideshow,'Hide']),
+                    ('method', [None,self.evt_method,'Wand']),
+                        ]) 
+        
+        # fig & axes
+        self.fig = pl.figure()
+        self.gs = GridSpec(len(self.buts), 2, left=0, bottom=0, top=1, right=1, width_ratios=[1,10])
+        self.ax_fov = self.fig.add_subplot(self.gs[:,1])
+        self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
+        self.ax_fov.set_autoscale_on(False)
+
+        # buttons
+        for bi,(name,(obj,cb,lab)) in enumerate(self.buts.items()):
+            ax = self.fig.add_subplot(self.gs[bi,0])
+            but = Button(ax, lab)
+            but.on_clicked(cb)
+            self.buts[name][OBJ] = but
+
+        # callbacks
+        self.fig.canvas.mpl_connect('button_press_event', self.evt_click)
+        self.fig.canvas.mpl_connect('key_press_event', self.evt_key)
+        self.fig.canvas.mpl_connect('pick_event', self.evt_pick)
+
+        # runtime
+        self._mode = '' # select, remove
+        self._method = 'manual' # manual, wand
+        self._hiding = False
+        self._selection = []
+        self._selection_patches = []
+        self.roi = roi
+        self._roi_patches = []
+
+    def reset_mode(self):
+        if self._mode == 'select':
+            self.evt_select()
+        elif self._mode == 'remove':
+            self.evt_remove()
+
+    def evt_select(self, *args):
+        but,_,lab = self.buts['select']
+        if self._mode == 'select':
+            self._mode = ''
+            but.label.set_text(lab)
+            but.label.set_color('k')
+        elif self._mode != 'select':
+            self.reset_mode()
+            self._mode = 'select'
+            but.label.set_text('STOP')
+            but.label.set_color('red')
+        self.fig.canvas.draw()
+    
+    def evt_remove(self, *args):
+        but,_,lab = self.buts['remove']
+        if self._mode == 'remove':
+            self._mode = ''
+            but.label.set_text(lab)
+            but.label.set_color('k')
+        elif self._mode != 'remove':
+            self.reset_mode()
+            self._mode = 'remove'
+            but.label.set_text('STOP')
+            but.label.set_color('red')
+        self.fig.canvas.draw()
+
+    def evt_hideshow(self, *args):
+        but,_,lab = self.buts['hideshow']
+        if self._hiding:
+            but.label.set_text('Hide')
+            self._hiding = False
+            for p in self._roi_patches:
+                p.set_visible(True)
+        elif self._hiding == False:
+            but.label.set_text('Show')
+            self._hiding = True
+            for p in self._roi_patches:
+                p.set_visible(False)
+        self.fig.canvas.draw()
+    
+    def evt_method(self, *args):
+        self._clear_selection()
+        but,_,lab = self.buts['method']
+        if self._method == 'wand':
+            but.label.set_text('Wand')
+            self._method = 'manual'
+        elif self._method == 'manual':
+            but.label.set_text('Manual')
+            self._method = 'wand'
+        self.fig.canvas.draw()
+
+    def evt_key(self, evt):
+        if self._mode != 'select':
+            return
+
+        if evt.key == 'enter':
+            self.add_roi(pts=self._selection)
+            self._clear_selection()
+        elif evt.key == 'backspace':
+            if len(self._selection) > 0:
+                self._selection = self._selection[:-1]
+                self._selection_patches[-1].remove()
+                self._selection_patches = self._selection_patches[:-1]
+                self.fig.canvas.draw()
+    
+    def _clear_selection(self):
+        self._selection = []
+        for p in self._selection_patches:
+            p.remove()
+        self._selection_patches = []
+        self.fig.canvas.draw()
+    
+    def evt_click(self, evt):
+        if self._mode != 'select':
+            return
+        if evt.inaxes != self.ax_fov:
+            return
+
+        pt = [evt.xdata, evt.ydata]
+
+        if self._method == 'manual':
+            self._selection_patches.append(self.ax_fov.plot(pt[0], pt[1], marker='x', color='orange')[0])
+            self._selection.append(pt)
+
+        elif self._method == 'wand':
+            mask = cell_magic_wand(self._im.get_array(), pt[::-1], 10, 60)
+            self.add_roi(mask=mask)
+
+        self.fig.canvas.draw()
+
+    def evt_pick(self, evt):
+        if self._mode != 'remove' or self.roi is None or len(self.roi)==0:
+            return
+        obj = evt.artist
+        idx = self._roi_patches.index(obj)
+        self._roi_patches[idx].remove()
+        self.roi = self.roi.remove(idx)
+        del self._roi_patches[idx]
+        self.fig.canvas.draw()
+
+    def set_img(self, img):
+        if self._im is None:
+            self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
+        else:
+            self._im.set_data(img)
+
+    def add_roi(self, pts=None, mask=None):
+        if pts is None and mask is None:
+            return
+
+        if pts is None and not np.any(mask):
+            return
+
+        if mask is None and len(pts)==0:
+            return
+
+        roi = ROI(pts=pts, mask=mask, shape=self._im.get_array().shape)
+        if self.roi is None:
+            self.roi = roi
+        else:
+            self.roi = self.roi.add(roi)
+
+        # show
+        poly = Polygon(roi.pts, alpha=0.5, picker=5)
+        self.ax_fov.add_patch(poly)
+        self._roi_patches.append(poly)
+        self.fig.canvas.draw()
+
