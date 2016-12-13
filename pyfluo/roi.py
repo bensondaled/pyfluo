@@ -187,12 +187,12 @@ class ROIView():
 
         # button convention: name: [obj, callback, label]
         self.buts = collections.OrderedDict([   
-                    ('select', [None,self.evt_select,'Select']),
-                    ('remove', [None,self.evt_remove,'Remove']),
-                    ('hideshow', [None,self.evt_hideshow,'Hide']),
-                    ('next', [None,self.evt_next,'Next']),
-                    ('save', [None,self.cache,'Save']),
-                    ('method', [None,self.evt_method,'Wand']),
+                    ('select', [None,self.evt_select,'Select (L)']),
+                    ('remove', [None,self.evt_remove,'Remove (R)']),
+                    ('hideshow', [None,self.evt_hideshow,'Hide (V)']),
+                    ('next', [None,self.evt_next,'Next (N)']),
+                    ('save', [None,self.cache,'Save (cmd-S)']),
+                    ('method', [None,self.evt_method,'Wand (M)']),
                         ]) 
         # sliders convention: name : [obj, min, max, init]
         self.sliders = collections.OrderedDict([   
@@ -238,6 +238,8 @@ class ROIView():
         self.fig.canvas.mpl_connect('pick_event', self.evt_pick)
         self.fig.canvas.mpl_connect('motion_notify_event', self.evt_motion)
         self.iterator = iterator
+        if self.iterator is None:
+            self.buts['next'][OBJ].set_active(False)
 
         # runtime
         self._mode = '' # select, remove
@@ -255,16 +257,18 @@ class ROIView():
             self.evt_select()
         elif self._mode == 'remove':
             self.evt_remove()
+        self.update_patches()
 
     def evt_slide(self, *args):
         for key,(obj,*_) in self.sliders.items():
             self.wand_params[key] = int(np.round(obj.val))
 
     def evt_motion(self, evt):
-        if evt.inaxes != self.ax_fov:
+        if self._mode != 'remove':
             return
 
-        if self._mode != 'remove':
+        if evt.inaxes != self.ax_fov:
+            self.update_patches()
             return
 
         x,y = evt.xdata,evt.ydata
@@ -284,7 +288,7 @@ class ROIView():
         elif self._mode != 'select':
             self.reset_mode()
             self._mode = 'select'
-            but.label.set_text('STOP')
+            but.label.set_text('STOP (L)')
             but.label.set_color('red')
         self.fig.canvas.draw()
     
@@ -297,19 +301,19 @@ class ROIView():
         elif self._mode != 'remove':
             self.reset_mode()
             self._mode = 'remove'
-            but.label.set_text('STOP')
+            but.label.set_text('STOP (R)')
             but.label.set_color('red')
         self.fig.canvas.draw()
 
     def evt_hideshow(self, *args):
         but,_,lab = self.buts['hideshow']
         if self._hiding:
-            but.label.set_text('Hide')
+            but.label.set_text('Hide (V)')
             self._hiding = False
             for p in self._roi_patches:
                 p.set_visible(True)
         elif self._hiding == False:
-            but.label.set_text('Show')
+            but.label.set_text('Show (V)')
             self._hiding = True
             for p in self._roi_patches:
                 p.set_visible(False)
@@ -319,10 +323,10 @@ class ROIView():
         self._clear_selection()
         but,_,lab = self.buts['method']
         if self._method == 'wand':
-            but.label.set_text('Wand')
+            but.label.set_text('Wand (M)')
             self._method = 'manual'
         elif self._method == 'manual':
-            but.label.set_text('Manual')
+            but.label.set_text('Manual (M)')
             self._method = 'wand'
         self.fig.canvas.draw()
 
@@ -335,6 +339,7 @@ class ROIView():
             self.set_img(n)
         except StopIteration:
             self.set_img(np.zeros_like(self._im.get_array()))
+            self.buts['next'][OBJ].set_active(False)
 
         self.cache()
 
@@ -344,6 +349,22 @@ class ROIView():
     def evt_key(self, evt):
         if evt.key == 'z':
             self.remove_roi(-1)
+
+        elif evt.key == 'escape':
+            self.reset_mode()
+
+        elif evt.key == 'l':
+            self.evt_select()
+        elif evt.key == 'r':
+            self.evt_remove()
+        elif evt.key == 'v':
+            self.evt_hideshow()
+        elif evt.key == 'n':
+            self.evt_next()
+        elif evt.key == 'super+s':
+            self.cache()
+        elif evt.key == 'm':
+            self.evt_method()
 
         if self._mode != 'select':
             return
