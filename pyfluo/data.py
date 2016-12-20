@@ -75,7 +75,7 @@ class Data():
             self.info.Ts = np.mean(self.info.Ts)
 
     def si_find(self, query):
-        i = np.argwhere([query in k for k in self.si_data.keys()]).squeeze()
+        i = np.argwhere([query.lower() in k.lower() for k in self.si_data.keys()]).squeeze()
         i = np.atleast_1d(i)
         if len(i) == 0:
             return None
@@ -486,7 +486,12 @@ class Data():
             _example = _example.astype(enforce_datatype)
         return _example
 
-    def get_tr(self, idx=None, batch=None, verbose=True):
+    def get_tr(self, idx=None, batch=None, subtract_min=True, verbose=True):
+        # subtract_min: will override this option is SubtractOffset was true in si_data
+
+        if np.all(self.si_data['scanimage.SI.hChannels.channelSubtractOffset']):
+            subtract_min = False
+
         if idx is None:
             idx = self._latest_roi_idx
 
@@ -519,6 +524,8 @@ class Data():
                 self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
                 grp.create_dataset(trname, data=np.asarray(self._tr), compression='lzf')
 
+        if subtract_min:
+            self._tr -= self.min()
         return self._tr
     
     def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=12.), recompute=False, verbose=True):
@@ -779,12 +786,12 @@ class Data():
 
     def select_roi(self):
         mm = self.get_maxmov()
-        mm -= mm.mean(axis=0)
+        mm -= mm.mean(axis=0).astype(mm.dtype)
 
-        roiv = ROIView(mm[0], iterator=iter(mm))
+        self.roiview = ROIView(mm[0], iterator=iter(mm))
+        print('Remember to set roi using Data.set_roi(roi_view.roi).\nIf you forgot to store roi_view, it is saved in object as Data.roiview.')
 
-        self.set_roi(roiv.roi)
-        roiv.end()
+        return self.roiview
 
     def roi_subset(self, keep, roi_idx=None):
         """
