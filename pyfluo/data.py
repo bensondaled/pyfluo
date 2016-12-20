@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
@@ -207,6 +206,8 @@ class Data():
             h.get_storer('motion').attrs.params = compute_kwargs
 
         self._has_motion_correction = True
+        with pd.HDFStore(self.data_file) as h:
+            self.motion = h.motion
 
     def project(self, show=False, equalize=False):
         im = self.mean(axis=0)

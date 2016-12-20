@@ -136,6 +136,9 @@ class TiffGroup(object):
         if sort:
             files = sorted(files)
 
+        if len(files) == 0:
+            return
+
         # filenames
         self.file_paths = [os.path.abspath(f) for f in files]
         self.path = os.path.split(self.file_paths[0])[0]
@@ -190,3 +193,8 @@ class TiffGroup(object):
 
         if verbose:
             print('{} complete ({:0.2f} sec).'.format(self.common_name, time.time()-t0))
+
+    def __repr__(self):
+        return repr(self.file_paths)
+    def __str__(self):
+        return str(self.file_paths)

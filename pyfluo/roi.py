@@ -429,6 +429,7 @@ class ROIView():
             self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
         else:
             self._im.set_data(img)
+        self.fig.canvas.draw()
 
     def add_roi(self, pts=None, mask=None):
         if pts is None and mask is None:

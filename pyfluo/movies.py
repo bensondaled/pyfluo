@@ -140,9 +140,8 @@ class Movie(np.ndarray):
         roi_norm = roi_norm.reshape(flatshape)
         self_flat = self.reshape((len(self),-1)).T
         dp = (roi_norm.dot(self_flat)).T
-        trace = dp
         
-        return Series(trace, Ts=self.Ts)
+        return Series(dp, Ts=self.Ts)
 
     def resize(self, factor, order=0):
         """Resize movie using scipy.ndimage.zoom
