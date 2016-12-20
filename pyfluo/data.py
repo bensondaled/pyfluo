@@ -716,6 +716,8 @@ class Data():
         rs = self.get_r(roi_idx)
 
         if rs is None:
+            # compute the correlation coefficient between each trace in sig with every pixel in the movie
+            # iterative method for computation of pearson's r
 
             sig = self.get_tr(roi_idx)
 
