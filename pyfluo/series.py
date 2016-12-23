@@ -173,7 +173,7 @@ class Series(np.ndarray):
                 ycolors = [ycolors] * to_plot.shape[1]
 
         if to_plot.shape[1] == 1: # use default color cycle if only plotting one line
-            ycolor = None 
+            ycolors = [None] 
 
         if binary_label is not None:
             binary_label = binary_label[:,order].astype(bool)
