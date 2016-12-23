@@ -220,7 +220,7 @@ class Series(np.ndarray):
         if order is None:
             order = np.arange(to_plot.shape[1])
         if 'cmap' not in kwargs:
-            kwargs['cmap'] = pl.cm.jet
+            kwargs['cmap'] = pl.cm.inferno
         x = np.append(np.asarray(self.index), self.index[-1]+self.Ts)
         true_y = np.arange(to_plot.shape[1])
         y = np.arange(to_plot.shape[1]+1)-0.5
