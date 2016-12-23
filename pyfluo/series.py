@@ -60,7 +60,7 @@ class Series(np.ndarray):
             return result
 
         # case (2) -- only relevant to 2d Series
-        if self.ndim==2 and isinstance(idx, tuple) and isinstance(idx[0], PF_list_types) and not any([s.start is None or s.stop is None for s in idx[0]]):
+        if self.ndim==2 and isinstance(idx, tuple) and isinstance(idx[0], PF_list_types) and all([isinstance(item,slice) for item in idx[0]]) and not any([s.start is None or s.stop is None for s in idx[0]]):
             sls = idx[0] # these are the time slices requested
             # (2a)
             if isinstance(idx[1], PF_numeric_types):
