@@ -45,6 +45,7 @@ class Series(np.ndarray):
             # (2): myseries[(slice(), slice(),), 0] -- normally this is not allowed, but will be here. only applies to 2d series
                 # (2a) the one above
                 # (2b) myseries[(slice(), slice()), 0:10]
+                # (2c) myseries[(slice(), slice()), [0,5,9]]
         # importantly, case (1) *must* use list or ndarray, not tuple
             # (reason is:) with tuple, it's underdetermined; if that tuple contains 2 slices, it is indistinguishible from a normal attempt to access the 2 axes of this array
             # (this arises from the fact that python cannot distinguish x[1,2] from x[(1,2)])
@@ -72,6 +73,11 @@ class Series(np.ndarray):
             # (2b)
             elif isinstance(idx[1], slice):
                 i1s = idx[1] # this is the slice of desired subseries
+                result = np.array([self[sl,i1s] for sl in sls]) # now 3d, out of purview of this class
+                return result
+            # (2c)
+            elif isinstance(idx[1], PF_list_types):
+                i1s = idx[1] # this is the list of desired subseries
                 result = np.array([self[sl,i1s] for sl in sls]) # now 3d, out of purview of this class
                 return result
         
