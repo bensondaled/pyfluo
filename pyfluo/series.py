@@ -38,8 +38,44 @@ class Series(np.ndarray):
         return np.ndarray.__array_wrap__(self, out, context)
 
     def __getitem__(self,idx):
+
+        # special handling of lists of slices: this is not normally allowed in numpy, but is commonly desired in this class
+        # there are 2 instances that are being custom allowed that wouldn't otherwise be:
+            # (1): myseries[[slice(), slice(), slice()]] -- normally this would be too many axes, but it will instead interpret it as multiple slices of first axis
+            # (2): myseries[(slice(), slice(),), 0] -- normally this is not allowed, but will be here. only applies to 2d series
+                # (2a) the one above
+                # (2b) myseries[(slice(), slice()), 0:10]
+        # importantly, case (1) *must* use list or ndarray, not tuple
+            # (reason is:) with tuple, it's underdetermined; if that tuple contains 2 slices, it is indistinguishible from a normal attempt to access the 2 axes of this array
+            # (this arises from the fact that python cannot distinguish x[1,2] from x[(1,2)])
+        # (case (1) is actually a special case of (2b), where the second index is inferred to be ":")
+        # conditions: must supply a list-like, must all be slices, and none can be boundless slices (i.e. where None is one of the bounds)
+
+        # case (1)
+        if isinstance(idx, (list,np.ndarray)) and all([isinstance(item,slice) for item in idx]) and not any([s.start is None or s.stop is None for s in idx]):
+            slice_len_0 = idx[0].stop - idx[0].start
+            if not all([s.stop-s.start == slice_len_0 for s in idx]):
+                raise Exception('Supplied list of slices to index Series, but slices are not all of the same length.')
+            result = np.array([self[sli] for sli in idx]) # now 3d so no longer in the purview of this class
+            return result
+
+        # case (2) -- only relevant to 2d Series
+        if self.ndim==2 and isinstance(idx, tuple) and isinstance(idx[0], PF_list_types) and not any([s.start is None or s.stop is None for s in idx[0]]):
+            sls = idx[0] # these are the time slices requested
+            # (2a)
+            if isinstance(idx[1], PF_numeric_types):
+                i1 = idx[1] # this is the specific subseries requested
+                result = Series(np.array([self[sl,i1] for sl in sls]).T)
+                for ca in self._custom_attrs:
+                    setattr(result, ca, getattr(self, ca, self._custom_attrs[ca]))
+                return result
+            # (2b)
+            elif isinstance(idx[1], slice):
+                i1s = idx[1] # this is the slice of desired subseries
+                result = np.array([self[sl,i1s] for sl in sls]) # now 3d, out of purview of this class
+                return result
         
-        # special handling of attempts to treat a 1d series as 2d -- this is allowed
+        # special handling of attempts to treat a 1d series as 2d -- this is another custom-allowed feature
         if self.ndim==1 and isinstance(idx, tuple):
             if len(idx) > 2:
                 pass # let the superclass handle it
@@ -62,7 +98,7 @@ class Series(np.ndarray):
         if isinstance(idx, PF_numeric_types):
             return out.view(np.ndarray)
 
-        ## all pf series are by definition 2d
+        ## when it used to be that all pf series are by definition 2d
         #if out.ndim == 1:
         #    out = np.atleast_2d(out).T
 
@@ -93,6 +129,13 @@ class Series(np.ndarray):
         return self._cls_chk( np.nanstd(self.view(np.ndarray), **kwargs) )
     def median(self, **kwargs):
         return self._cls_chk( np.nanmedian(self.view(np.ndarray), **kwargs) )
+    def sem(self, **kwargs):
+        axis = kwargs.get('axis', None)
+        if axis is None:
+            n = np.size(self)
+        else:
+            n = self.shape[axis]
+        return self.std(**kwargs) / np.sqrt(n)
 
     def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, use_index=True, **kwargs):
         """
