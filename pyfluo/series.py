@@ -185,7 +185,7 @@ class Series(np.ndarray):
             to_plot = to_plot - to_plot.min(axis=0)
             tops = (to_plot.max(axis=0)).cumsum()
             to_add = np.append(0, tops[:-1]) + gap*np.arange(to_plot.shape[1])
-            to_plot += to_add
+            to_plot += to_add.astype(to_plot.dtype)
             yticks = np.asarray(to_plot.mean(axis=0))
             if names is None:
                 yticklab = np.array([str(i) for i in np.arange(to_plot.shape[1])])[order]
