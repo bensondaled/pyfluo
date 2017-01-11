@@ -7,9 +7,5 @@ Welcome to the documentation for **pyfluo**.
 	
    introduction
 
-   data_structures
-
-   functions
-
    contribute
 

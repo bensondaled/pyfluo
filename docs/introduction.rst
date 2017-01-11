@@ -1,13 +1,13 @@
 About this library
 --------------------
 
-*** Please note that as of February 2016, I am in the process of updating the library in many ways. The current version is unlikely to install properly without some adjustments, and some features may be broken. I anticipate completing this upgrade by May 2016. ***
+*** Please note that as of January 2017, I am in the process of updating the library in many ways (including redoing the website). The current version is likely to work in many respects, but some features may be broken. I anticipate completing this upgrade by mid 2017. ***
 
 The **pyfluo** library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions.
 
 This project is `hosted on github <https://github.com/bensondaled/pyfluo/>`_.
 
-Note that **pyfluo** is a work in progress; neither the code nor the documentation is complete. That said, it is already functional for a wide variety of tasks.
+Note that **pyfluo** is intentionally a continuous work in progress; as such, neither the code nor the documentation is entirely complete. That said, it has become increasingly functional for a wide variety of tasks.
 
 Because the library is constantly under progress, the documentation for functions and classes on this site may be out of date. The most reliable way to determine the available functions and their signatures is to interactively check them after importing the package (for example in ipython).
 
@@ -19,8 +19,7 @@ The library has the following dependencies:
 * scipy
 * scikit-learn
 * matplotlib
-* opencv
-* pims (for tiffs)
+* opencv (for certain features only)
 
 Note that currently, only numpy, scipy, and matplotlib are enforced on installation of the package.
 
@@ -43,10 +42,10 @@ Here is a quick-start example to get you moving with pyfluo.
     mov = pf.Movie('mov.tif', Ts=0.032)
 
     # motion correct the movie
-    mov = mov.motion_correct(max_shift=10)
+    mov = pf.motion_correct(mov, max_shift=10)
 
     # play the movie
-    mov.play(fps=30, scale=5, contrast=3)
+    mov.play()
 
     # manually select some ROIs
     roi = mov.select_roi()
@@ -55,16 +54,13 @@ Here is a quick-start example to get you moving with pyfluo.
     mov.project(show=True, roi=roi)
 
     # extract traces
-    tr = mov.extract_by_roi(roi)
+    tr = mov.extract(roi)
     
     # convert traces to ∆F/F
-    dff = tr.compute_dff(window_size=1.0, step_size=0.100)
+    dff = pf.compute_dff(tr, window_size=1.0)
 
     # display traces
     dff.plot()
-
-    # save everything
-    pf.save('my_saved_data', movie=mov, traces=dff)
 
 Shown below are examples of the projected movie (left), and extracted traces (right).
 
