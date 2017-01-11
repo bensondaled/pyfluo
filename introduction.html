@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>About this library &mdash; pyfluo  documentation</title>
+    <title>About this library &#8212; pyfluo  documentation</title>
     
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -17,14 +17,16 @@
         VERSION:     '',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyfluo  documentation" href="index.html" />
-    <link rel="next" title="Core Data Structures" href="data_structures.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Requests and Contributions" href="contribute.html" />
     <link rel="prev" title="Welcome to the documentation for pyfluo." href="index.html" /> 
   </head>
   <body role="document">
@@ -35,12 +37,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="data_structures.html" title="Core Data Structures"
+          <a href="contribute.html" title="Requests and Contributions"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to the documentation for pyfluo."
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pyfluo  documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">pyfluo  documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -51,10 +53,10 @@
             
   <div class="section" id="about-this-library">
 <h1>About this library<a class="headerlink" href="#about-this-library" title="Permalink to this headline">¶</a></h1>
-<p><strong>* Please note that as of February 2016, I am in the process of updating the library in many ways. The current version is unlikely to install properly without some adjustments, and some features may be broken. I anticipate completing this upgrade by May 2016. *</strong></p>
+<p><strong>* Please note that as of January 2017, I am in the process of updating the library in many ways (including redoing the website). The current version is likely to work in many respects, but some features may be broken. I anticipate completing this upgrade by mid 2017. *</strong></p>
 <p>The <strong>pyfluo</strong> library enables easy and efficient manipulation of imaging data using a set of custom-built data structures and functions.</p>
 <p>This project is <a class="reference external" href="https://github.com/bensondaled/pyfluo/">hosted on github</a>.</p>
-<p>Note that <strong>pyfluo</strong> is a work in progress; neither the code nor the documentation is complete. That said, it is already functional for a wide variety of tasks.</p>
+<p>Note that <strong>pyfluo</strong> is intentionally a continuous work in progress; as such, neither the code nor the documentation is entirely complete. That said, it has become increasingly functional for a wide variety of tasks.</p>
 <p>Because the library is constantly under progress, the documentation for functions and classes on this site may be out of date. The most reliable way to determine the available functions and their signatures is to interactively check them after importing the package (for example in ipython).</p>
 </div>
 <div class="section" id="requirements">
@@ -65,8 +67,7 @@
 <li>scipy</li>
 <li>scikit-learn</li>
 <li>matplotlib</li>
-<li>opencv</li>
-<li>pims (for tiffs)</li>
+<li>opencv (for certain features only)</li>
 </ul>
 <p>Note that currently, only numpy, scipy, and matplotlib are enforced on installation of the package.</p>
 </div>
@@ -105,19 +106,16 @@
 22
 23
 24
-25
-26
-27
-28</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pyfluo</span> <span class="kn">as</span> <span class="nn">pf</span>
+25</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyfluo</span> <span class="kn">as</span> <span class="nn">pf</span>
 
 <span class="c1"># create a movie from a tiff file</span>
 <span class="n">mov</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span><span class="s1">&#39;mov.tif&#39;</span><span class="p">,</span> <span class="n">Ts</span><span class="o">=</span><span class="mf">0.032</span><span class="p">)</span>
 
 <span class="c1"># motion correct the movie</span>
-<span class="n">mov</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">motion_correct</span><span class="p">(</span><span class="n">max_shift</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">mov</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">motion_correct</span><span class="p">(</span><span class="n">mov</span><span class="p">,</span> <span class="n">max_shift</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># play the movie</span>
-<span class="n">mov</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">contrast</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">mov</span><span class="o">.</span><span class="n">play</span><span class="p">()</span>
 
 <span class="c1"># manually select some ROIs</span>
 <span class="n">roi</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">select_roi</span><span class="p">()</span>
@@ -126,16 +124,13 @@
 <span class="n">mov</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">roi</span><span class="o">=</span><span class="n">roi</span><span class="p">)</span>
 
 <span class="c1"># extract traces</span>
-<span class="n">tr</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">extract_by_roi</span><span class="p">(</span><span class="n">roi</span><span class="p">)</span>
+<span class="n">tr</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">roi</span><span class="p">)</span>
 
 <span class="c1"># convert traces to ∆F/F</span>
-<span class="n">dff</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">compute_dff</span><span class="p">(</span><span class="n">window_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.100</span><span class="p">)</span>
+<span class="n">dff</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">compute_dff</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="n">window_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
 
 <span class="c1"># display traces</span>
 <span class="n">dff</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-
-<span class="c1"># save everything</span>
-<span class="n">pf</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;my_saved_data&#39;</span><span class="p">,</span> <span class="n">movie</span><span class="o">=</span><span class="n">mov</span><span class="p">,</span> <span class="n">traces</span><span class="o">=</span><span class="n">dff</span><span class="p">)</span>
 </pre></div>
 </td></tr></table></div>
 <p>Shown below are examples of the projected movie (left), and extracted traces (right).</p>
@@ -169,26 +164,23 @@
   <p class="topless"><a href="index.html"
                         title="previous chapter">Welcome to the documentation for <strong>pyfluo</strong>.</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="data_structures.html"
-                        title="next chapter">Core Data Structures</a></p>
+  <p class="topless"><a href="contribute.html"
+                        title="next chapter">Requests and Contributions</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/introduction.txt"
+      <li><a href="_sources/introduction.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -202,17 +194,17 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="data_structures.html" title="Core Data Structures"
+          <a href="contribute.html" title="Requests and Contributions"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to the documentation for pyfluo."
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pyfluo  documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">pyfluo  documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2015, Ben Deverett.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+        &#169; Copyright 2015, Ben Deverett.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
     </div>
   </body>
 </html>
