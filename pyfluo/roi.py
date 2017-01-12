@@ -120,21 +120,29 @@ class ROI(np.ndarray):
         result = ROI(result)
         return result
 
-    def show(self, ax=None, **patch_kw):
+    def show(self, ax=None, labels=False, label_kw=dict(color='gray'), **patch_kw):
         patch_kw['alpha'] = patch_kw.get('alpha', 0.5)
         patch_kw['edgecolors'] = patch_kw.get('edgecolors', 'none')
         patch_kw['cmap'] = patch_kw.get('cmap', pl.cm.viridis)
 
         roi = self.as3d()
 
+        made_ax = False
         if ax is None:
+            made_ax = True
             ax = pl.gca()
-            nans = np.zeros(roi.shape[1:], dtype=float)
-            #nans[:] = np.nan
-            ax.imshow(nans, cmap=pl.cm.Greys)
 
+        # show patches
         coll = PolyCollection(verts=[r.pts for r in roi], array=np.arange(len(roi)), **patch_kw)
         ax.add_collection(coll)
+
+        # show labels
+        for i,r in enumerate(roi):
+            ax.annotate(str(i), np.mean(r.pts, axis=0), **label_kw)
+
+        if made_ax:
+            yshape,xshape = roi.shape[1:]
+            pl.axis([0,xshape,0,yshape])
 
         return ax
 
