@@ -1,10 +1,10 @@
-pyfluo (2015)
+pyfluo (2013-2017)
 ===========================
 Ben Deverett
-bendeverett@gmail.com
+bendeverett [at] gmail [dot] com
 ===========================
 A python library for analyzing Ca fluorescence imaging.
 ===========================
-For all info, visit:
+For info, visit:
 
 http://bensondaled.github.io/pyfluo
