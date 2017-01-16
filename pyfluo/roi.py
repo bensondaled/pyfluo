@@ -209,7 +209,7 @@ class ROIView():
                     ('roughness', [None,1,10,2]),
                     ('center_range', [None,1,5,2]),
                         ]) 
-        self.wand_params = {name:v for name,(*_,v) in self.sliders.items()}
+        self.wand_params = {name:v for name,(_,_,_,v) in self.sliders.items()}
 
         if img is None and iterator is not None:
             img = next(iterator)
