@@ -668,7 +668,7 @@ class Data():
         return self._tr
     
     def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=12.), recompute=False, verbose=True):
-        """Compute or retrieve traces-derived ∆F/F from the dataset
+        """Compute or retrieve traces-derived deltaF/F from the dataset
         Uses the idx'th traces stored in the dataset to extract DFF
 
         Parameters
@@ -1022,6 +1022,8 @@ class Data():
         roiview : pyfluo.ROIView
 
         Importantly, ROI will only be stored to dataset when user does so manually using set_roi (this is because it cannot be known when the user is finished). Note that ROIView allows intermediate saving of the ROI in progress so as to prevent loss of selections.
+
+        The created ROIview object is not only returned but also stored as obj.roiview.
         """
         mm = self.get_maxmov()
         mm -= mm.mean(axis=0).astype(mm.dtype)

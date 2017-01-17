@@ -19,7 +19,7 @@ def causal_median_filter(sig, size):
     return np.concatenate([pad, filt])
 
 def compute_dff(data, window_size=5., filter_size=1., use_filter=True, step_size=None, Ts=None, pad_kwargs=dict(mode='reflect'), root_f=False, return_f0=False, verbose=True):
-    """Compute ∆F/F of data using a sliding window approach
+    """Compute deltaF/F of data using a sliding window approach
 
     The window method is essentially a causal minimum filter, with optional smoothing using a median filter.
     DFF at time t is defined as min(filter(data[-window+1:t+1]))
@@ -40,7 +40,7 @@ def compute_dff(data, window_size=5., filter_size=1., use_filter=True, step_size
         kwargs for np.pad, to pad array for window operation
         pad_kwargs can also be an array to use as left-pad instead of using np.pad. in this case, give the *raw data* to use as a left pad for the supplied data
     root_f : bool
-        if True, use the Gauthier definition for ∆F/F, namely ∆F/(sqrt(F))
+        if True, use the Gauthier definition for deltaF/F, namely deltaF/(sqrt(F))
     return_f0 : bool
         if True, return f0, the normalizing term, as well
     verbose : bool
