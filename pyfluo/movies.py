@@ -17,6 +17,8 @@ class Movie(np.ndarray):
         input data, see below
     Ts : [optional] float
         sampling period
+    filename : str
+        path to filename for data
 
     Input data can be supplied in multiple ways:
     (1) as a numpy array of shape (n,y,x)
@@ -129,7 +131,7 @@ class Movie(np.ndarray):
         
         Returns
         -------
-        Trace object, with multiple columns corresponding to multiple ROIs
+        pyfluo.Series object, with multiple columns corresponding to multiple ROIs
         """
         if roi.ndim == 3:
             flatshape = (len(roi),-1)
@@ -181,7 +183,6 @@ class Movie(np.ndarray):
         return result
 
     def save(self, filename, fmt=None, codec='IYUV', fps=None):
-
         """Save movie for playback in video player
 
         Note that this function is intended for saving the movie in an avi/tiff-like format. Saving for further analysis should be performed using pyfluo's io functions.
@@ -244,6 +245,7 @@ def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True,
         number of frames to avg in display
     generator_fxn : str
         name of function to call to retrieve generator for object. if None, object is considered iterable
+        if using this parameter, the data parameter should be an object that implements generator_fxn
 
     Playback controls (window must have focus):
         'f' : faster

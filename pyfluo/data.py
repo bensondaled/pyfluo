@@ -17,7 +17,7 @@ from .config import *
 
 class Data():
     """
-    This class is currently experimental. Its goal is to facilitate working with a particular format of data storage that seems to be part of a common pipeline for imaging analysis.
+    The goal of this class is to facilitate working with a particular format of data storage that seems to be part of a common pipeline for imaging analysis.
 
     The intended workflow is as follows:
     (1) collect tifs from a microscope
@@ -25,7 +25,13 @@ class Data():
     (3) open the resulting file through a Data object, which allows motion correction, segmentation, extractions, etc.
     """
     def __init__(self, data_file):
-        """
+        """Initialize a Data object
+
+        Parameters
+        ----------
+        data_file : str
+            path to hdf-5 file storing dataset
+            the format of this file follows the pyfluo convention, handled automatically, for example, by pf.TiffGroup.to_hdf5
         """
         
         self.data_file = data_file
@@ -75,6 +81,18 @@ class Data():
             self.info.Ts = np.mean(self.info.Ts)
 
     def si_find(self, query):
+        """Retrieve scanimage data from dataset
+
+        Parameters
+        ----------
+        query : str
+            any substring of the search key from the scanimage parameter dictionary
+
+        Returns
+        -------
+        result : dict
+            sub-dictionary of scanimage data dictionary, where keys contain query
+        """
         i = np.argwhere([query.lower() in k.lower() for k in self.si_data.keys()]).squeeze()
         i = np.atleast_1d(i)
         if len(i) == 0:
@@ -117,10 +135,17 @@ class Data():
         return repr(self.info)
 
     def framei(self, frame_idx, file_idx=None):
-        """
-        Converts between absolute frame index in whole dataset and relative file-frame coordinates.
-        If only frame_idx given, assumes global and converts to relative.
-        If both given, does opposite.
+        """Convert between absolute frame index in whole dataset and relative file-frame coordinates
+
+        frame_idx : int
+            if supplied alone, taken to be a global index and returns the corresponding relative index
+        file_idx : int
+            if supplied in conjunction with frame_idx, taken to be a relative file-frame coordinate and return the corresponding absolute frame index
+
+        Returns
+        -------
+        idx : int / tuple
+            converted frame index, see parameters for details
         """
         frame_idx = int(frame_idx)
 
@@ -133,13 +158,14 @@ class Data():
             return np.append(0, self.info.n.cumsum().values)[file_idx] + frame_idx
 
     def motion_correct(self, chunk_size=None, mc_kwargs=dict(max_iters=10, shift_threshold=1.,), compute_kwargs=dict(max_shift=25, resample=3), overwrite=False, verbose=True):
-        """
-        Corrects motion, first locally in sliding chunks of full dataset, then globally across chunks
+        """Correct motion, first locally in sliding chunks of full dataset, then globally across chunks
 
         Parameters
         ----------
         chunk_size : int
             number of frames to include in one local-correction chunk. If None, uses sizes of files from which data were derived
+
+        Motion correction data are stored in the data file, and become available as obj.motion after this is complete.
         """
         if overwrite:
             self._has_motion_correction = False
@@ -210,6 +236,20 @@ class Data():
             self.motion = h.motion
 
     def project(self, show=False, equalize=False):
+        """Mean-project the dataset over the time (0th) axis
+
+        Parameters
+        ----------
+        show : bool
+            display the projected image
+        equalize : bool
+            normalize and equalize the histogram of the projection
+
+        Returns
+        -------
+        im : np.ndarray
+            projected data, of dimensions (data_y_size, data_x_size)
+        """
         im = self.mean(axis=0)
         if equalize:
             im = equalize_adapthist((im-im.min())/(im.max()-im.min()))
@@ -223,6 +263,21 @@ class Data():
         This works for functions like max, min, mean, but not all functions
 
         NOTE: technically mean is slightly wrong here for datasets where chunk size of generator isnt a factor of n frames. the last chunk will be nan-padded but yet its nanmean will be averaged with the rest of the chunks naive to that fact
+
+        Parameters
+        ----------
+        func : def
+            function to apply, example np.mean
+        func_name : str
+            name corresponding to this function, ex. 'mean'
+        axis : int
+            axis of dataset along which to apply function
+        agg_func : def
+            function applied to the batches over which *func* was applied. If None, defaults to *func* itself
+
+        Returns
+        -------
+        Result of running the supplied function over the entire dataset
         """
         ax_str = str(axis)
         if axis is None:
@@ -258,7 +313,6 @@ class Data():
             x = [i[0] for i in x]
             return np.sqrt(np.sum(x, axis=0) / (n-1))
         return self._apply_func(_std, axis=axis, func_name='std', agg_func=_std_combine)
-
     def __max__(self):
         return self.max()
     def __min__(self):
@@ -361,6 +415,13 @@ class Data():
         return _segmentation
 
     def set_roi(self, roi):
+        """Assign an ROI to this dataset
+
+        Parameters
+        ----------
+        roi : pyfluo.ROI
+            new roi to assign, will be added incrementally onto the roi dataset in the data file
+        """
         with h5py.File(self.data_file) as f:
             if 'roi' not in f:
                 roigrp = f.create_group('roi')
@@ -369,6 +430,13 @@ class Data():
             roigrp.create_dataset('roi{}'.format(self._next_roi_idx), data=np.asarray(roi), compression='lzf')
     
     def get_roi(self, idx=None):
+        """Retrieve an ROI from the dataset
+
+        Parameters
+        ----------
+        idx : int
+            idx of roi to retrieve. If None, defaults to highest index available (most recently added)
+        """
         if idx is None:
             idx = self._latest_roi_idx
         if idx is None:
@@ -381,6 +449,13 @@ class Data():
         return _roi
     
     def get_r(self, idx=None):
+        """Retrieve a correlation matrix (R) from the dataset
+
+        Parameters
+        ----------
+        idx : int
+            idx of R to retrieve. If None, defaults to highest index available (most recently added)
+        """
         if self._latest_r_idx is None:
             return None
 
@@ -398,7 +473,12 @@ class Data():
         return _r
     
     def set_camera_traces(self, traces):
-        """traces : series with index corresponding to timestamps
+        """Store a time series signal from behavioral cameras into the dataset
+
+        Parameters
+        ----------
+        traces : pyfluo.Series
+            with index corresponding to timestamps
         """
         with h5py.File(self.data_file) as f:
             if 'camera_traces' not in f:
@@ -410,6 +490,13 @@ class Data():
             ctgrp.create_dataset('camera_traces{}ts'.format(idx), data=np.asarray(traces.index), compression='lzf')
     
     def get_camera_traces(self, idx=None):
+        """Retrieve stored camera traces from the dataset
+
+        Parameters
+        ----------
+        idx : int
+            idx of traces to retrieve. If None, defaults to highest index available (most recently added)
+        """
         if self._latest_ct_idx is None:
             return None
 
@@ -430,6 +517,23 @@ class Data():
         return Series(_ct, Ts=Ts, t0=_ctts[0])
     
     def get_maxmov(self, chunk_size=150, resample=3, redo=False, enforce_datatype=np.int16):
+        """Generate or retrieve a compressed version of the dataset using a rolling maximum method
+
+        Parameters
+        ----------
+        chunk_size : int
+            number of frames per chunk
+        resample : int
+            factor by which to downsample each chunk (performed by data.gen)
+        redo : bool
+            if True, deletes existing stored maxmov and generates a new one
+        enforce_datatype : numpy dtype
+            numpy datatype into which to cast resulting movie
+
+        Returns
+        -------
+        maxmov : pyfluo.Movie
+        """
         with h5py.File(self.data_file) as f:
             if 'maxmov' in f and not redo:
                     _mm = Movie(np.asarray(f['maxmov']), Ts=f['maxmov'].attrs['Ts'])
@@ -453,7 +557,23 @@ class Data():
         return _mm
     
     def get_example(self, slices=None, resample=3, redo=False, enforce_datatype=np.int16):
-        # slice is specified only first time, then becomes meaningless once example is extracted; unless redo is used
+        """Generate or retrieve a subset of the dataset to be used for visual inspection
+
+        Parameters
+        ----------
+        slices : list-like
+            list of slice objects specifying which parts of the dataset to include in result
+        resample : int
+            factor by which to downsample the resulting movie (using movie.resample)
+        redo : bool
+            if True, deletes existing stored example and generates a new one
+        enforce_datatype : numpy dtype
+            numpy datatype into which to cast resulting movie
+
+        Returns
+        -------
+        example : pyfluo.Movie
+        """
         with h5py.File(self.data_file) as f:
             if 'example' in f and not redo:
                 _example = Movie(np.asarray(f['example']), Ts=f['example'].attrs['Ts'])
@@ -487,6 +607,25 @@ class Data():
         return _example
 
     def get_tr(self, idx=None, batch=None, subtract_min=True, verbose=True):
+        """Compute or retrieve roi-derived traces from the dataset
+        Uses the idx'th roi stored in the dataset to extract traces (one trace per roi, averaged over roi's pixels)
+
+        Parameters
+        ----------
+        idx : int
+            idx corresponding to roi of interest
+        batch : int
+            size of mini-batches in which to perform extraction. If None, defaults to class instance's batch_size
+        subtract_min : bool
+            subtract minimum of raw dataset from traces (does not store the traces with the transformation, but rather applies it upon returning the stored values)
+            note that this parameter is overwritten to False if scanimage parameters of the dataset indicate that offset has been subtracted during acquisition
+        verbose : bool
+            display status
+
+        Returns
+        -------
+        traces : pyfluo.Series
+        """
         # subtract_min: will override this option is SubtractOffset was true in si_data
 
         if np.all(self.si_data['scanimage.SI.hChannels.channelSubtractOffset']):
@@ -529,6 +668,25 @@ class Data():
         return self._tr
     
     def get_dff(self, idx=None, compute_dff_kwargs=dict(window_size=12.), recompute=False, verbose=True):
+        """Compute or retrieve traces-derived ∆F/F from the dataset
+        Uses the idx'th traces stored in the dataset to extract DFF
+
+        Parameters
+        ----------
+        idx : int
+            idx corresponding to roi/traces of interest
+        compute_dff_kwargs : dict
+            kwargs for pf.motion.compute_dff
+        recompute : bool
+            delete existing dff dataset and recompute
+        verbose : bool
+            display status
+
+        Returns
+        -------
+        dff : pyfluo.Series
+        """
+
         if idx is None:
             idx = self._latest_roi_idx
 
@@ -561,6 +719,24 @@ class Data():
         return self._dff
     
     def get_rollcor(self, idx=None, window=.300, recompute=False, verbose=True):
+        """Compute or retrieve rolling correlation matrix for DFF of dataset
+        Underlying function used is pyfluo.util.rolling_correlation
+
+        Parameters
+        ----------
+        idx : int
+            idx corresponding to roi/traces of interest
+        window : float
+            window size in seconds
+        recompute : bool
+            delete existing rollcor dataset and recompute
+        verbose : bool
+            display status
+
+        Returns
+        -------
+        rollcor : pyfluo.Series
+        """
         # window in seconds
         if idx is None:
             idx = self._latest_roi_idx
@@ -591,35 +767,28 @@ class Data():
 
         return Series(_rollcor, Ts=self.Ts)
     
-    def get_transients(self, idx=None, detect_transients_kwargs={}):
-        if idx is None:
-            idx = self._latest_roi_idx
-
-        transname = 'transients{}'.format(idx)
-
-        with h5py.File(self.data_file) as f:
-            grp = f['traces']
-
-            if transname in grp:
-                self._transients = Series(np.asarray(grp[transname]), Ts=self.Ts)
-
-            elif transname not in grp:
-                dff = self.get_dff(idx)
-                if dff is None:
-                    return None
-                self._transients = detect_transients(dff, **detect_transients_kwargs)
-                grp.create_dataset(transname, data=np.asarray(self._transients), compression='lzf')
-
-        return self._transients
-
     def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False, return_idx=False):
         """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
 
-        chunk_size : number of frames to include in one chunk *before* downsampling
-        n_frames : sum of number of total raw frames included in all yields from this iterator
-        enforce_chunk_size : bool, if True, nan-pads the last slice if necessary to make equal chunk size
+        Parameters
+        ----------
+        chunk_size : int 
+            number of frames to include in one chunk *before* downsampling
+        n_frames : int 
+            sum of number of total raw frames included in all yields from this iterator
+        downsample : int
+            factor by which to downsample each chunk (uses pf.Movie.resample)
+        crop : bool
+            (**under construction**) crop generated chunks to motion correction borders
+        enforce_chunk_size : bool
+            if True, nan-pads the last slice if necessary to make equal chunk size
+        return_idx : bool
+            return a 2-tuple, (chunk_of_interest, slice_used_to_extract_this_chunk)
 
-        yielded items will be of length chunk_size//downsample
+        Returns
+        -------
+        This method is a generator, and as such, acts as an iterator, yielding chunks when next() or iteration is used
+        Yielded items will be of length chunk_size//downsample
         """
         if n_frames is None:
             n_frames = len(self)
@@ -654,6 +823,18 @@ class Data():
                 yield dat
 
     def segment(self, gen_kwargs=dict(chunk_size=3000, n_frames=None, downsample=3), verbose=True, **pca_ica_kwargs):
+        """Segment the dataset to produce ROI, using pyfluo.pca_ica
+
+        Parameters
+        ----------
+        gen_kwargs : dict
+            kwargs for data.gen, to be used to iterate through data
+        verbose : bool
+            show status
+        pca_ica_kwargs : any keyword arguments accepted by pyfluo.segmentation.pca_ica
+
+        Stores result in the segmentation group of dataset. Retrieve using get_segmentation()
+        """
         def dummy_gen():
             return self.gen(**gen_kwargs)
 
@@ -672,9 +853,26 @@ class Data():
             ds.attrs.update(pca_ica_kwargs)
 
     def play(self, **kwargs):
+        """Play data as a movie
+
+        Implemented by play_mov, using generator_fxn='gen'
+
+        All kwargs are passed to play_mov
+        """
         play_mov(self, generator_fxn='gen', **kwargs)
 
     def export(self, out_filename, include_data=False, overwrite=False):
+        """Copy the contents of the dataset to another file
+
+        Parameters
+        ----------
+        out_filename : str
+            path to output file
+        include_data : bool
+            include data (meaning the raw image data) in new file
+        overwrite : bool
+            overwrite existing file with same name as out_filename
+        """
         if os.path.isdir(out_filename):
             out_filename = os.path.join(out_filename, os.path.split(self.data_file)[-1])
         elif not out_filename.endswith('.h5'):
@@ -696,8 +894,15 @@ class Data():
                 print('Copying "{}"'.format(key))
                 infile.copy(key, outfile, expand_soft=True, expand_refs=True, expand_external=True)
     def import_file(self, filename, backup=True):
-        """
-        NOTE: overwrites all attributes except data
+        """Import data from another file into this object
+        NOTE: this method overwrites all attributes in the current object except for data
+
+        Parameters
+        ----------
+        filename : str
+            path to file from which to import data
+        backup : bool
+            back up the current file before running the import operation
         """
         if backup:
             self.export('{}_backup.h5'.format(os.path.splitext(self.data_file)[0]))
@@ -708,6 +913,22 @@ class Data():
                 infile.copy(key, datafile)
 
     def refine_roi(self, roi_idx=None, include_rejections=False, verbose=True):
+        """Refine definition of roi using correlation-based method
+
+        The goal of this method is to take as input some manually selected ROIs, and to redefine their borders. This is done by first extracting the trace from each ROI over the whole dataset, then computing the dataset-wide correlation between a given trace and every pixel in the dataset (the result of this operation is stored in the data file as r). Then, the resulting correlation image is searched using basic image processing to find the maximally probable ROI.
+
+        The correlations are computed in a batch-wise manner using specially built iterative methods in this class. Thus, this method will work for datasets of arbitrary size.
+
+        Parameters
+        ----------
+        roi_idx : int
+            index corresponding to roi of interest
+        include_rejections : bool
+            include individual ROIs from the original ROI set even if no suitable correlation-based match is found
+        verbose : bool
+            show status
+
+        """
         # Pearson's r over hdf dataset
         if roi_idx is None:
             roi_idx = self._latest_roi_idx
@@ -739,14 +960,15 @@ class Data():
 
                 assert len(di) == len(sigi)
 
+                # update the rolling tracker of sums and ns for this chunk, for every roi
                 for subsig in range(sig.shape[1]):
                     sums[subsig].append(np.nansum(sigi[:,subsig][:,None,None] * di, axis=0))
                 ns.append(len(di))
 
             sums = np.array([np.sum(s, axis=0) for s in sums])
-            cov = sums / (np.sum(ns)-1)
+            cov = sums / (np.sum(ns)-1) # covariance for each roi, rois along 0th axis
             
-            rs = [c / (self.std(axis=0)*sd) for c,sd in zip(cov,np.std(sig,axis=0))]
+            rs = [c / (self.std(axis=0)*sd) for c,sd in zip(cov,np.std(sig,axis=0))] # pearson's r for each roi, rois along 0th axis
 
             # store rs
             with h5py.File(self.data_file) as f:
@@ -755,6 +977,9 @@ class Data():
                 else:
                     rgrp = f['r']
                 rgrp.create_dataset('r{}'.format(roi_idx), data=np.asarray(rs), compression='lzf')
+
+        # all that follows is the image processing to find the best new roi definition
+        # theoretically, all these steps should be parameterized in the function definition, though I have achieved such success with this as it is, that I am holding off on that for the moment
 
         # binarize correlation images
         rs -= np.median(rs, axis=0)
@@ -783,10 +1008,21 @@ class Data():
                 masks_new.append(new) # new
 
         self.set_roi(np.asarray(masks_new))
-        print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
+        if verbose:
+            print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
         #self.get_tr() # extract new traces
 
     def select_roi(self):
+        """Select ROI for this dataset
+
+        This will use pyfluo.roi.ROIView to facilitate selection of an ROI. It takes advantage of the iterator option in that class, supplying this object's maxmov as the iterator of interest. Thus, it allows selection of ROI across all frames in the compressed dataset.
+
+        Returns
+        -------
+        roiview : pyfluo.ROIView
+
+        Importantly, ROI will only be stored to dataset when user does so manually using set_roi (this is because it cannot be known when the user is finished). Note that ROIView allows intermediate saving of the ROI in progress so as to prevent loss of selections.
+        """
         mm = self.get_maxmov()
         mm -= mm.mean(axis=0).astype(mm.dtype)
 
@@ -796,9 +1032,16 @@ class Data():
         return self.roiview
 
     def roi_subset(self, keep, roi_idx=None):
-        """
-        Generate a new roi made of a subset of a current roi
-        keep : boolean array of length of roi at roi_idx
+        """Generate a new roi made of a subset of a current roi
+
+        Parameters
+        ----------
+        keep : np.ndarray
+            boolean array of length of roi at roi_idx, where True means keep this ROI
+        roi_idx : int
+            index of the ROI object of interest in the dataset
+
+        Stores the resulting ROI as the next ROI in the dataset.
         """
         if (not isinstance(keep, np.ndarray)) or (keep.dtype != bool):
             raise Exception('Must supply boolean numpy array as "keep" parameter.')

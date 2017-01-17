@@ -188,9 +188,25 @@ class ROI(np.ndarray):
 
 OBJ,CB,LAB = 0,1,2
 class ROIView():
+    """This class serves as an interface for selecting, inspecting, and modifying ROI objects.
+
+    The interface is entirely matplotlib-based and is non-blocking.
+
+    The ROIView object stores the selected ROI as roiview.roi, and it can be accessed at any time.
+
+    Ideally, use the end() method when done using, so that object cleans up its temporary files and matplotlib objects.
+    """
     def __init__(self, img=None, roi=None, iterator=None):
-        """
-        iterator : any iterator (can handle next() calls)
+        """Initialize an ROIView object
+
+        Parameters
+        ----------
+        img : np.ndarray
+            2d array to show as image under ROI
+        roi : pyfluo.ROI
+            existing ROI to start with
+        iterator : iter
+            any iterator (can handle next() calls), to be used to supply the underlying image
         """
 
         # button convention: name: [obj, callback, label]

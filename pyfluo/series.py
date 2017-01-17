@@ -8,7 +8,9 @@ import warnings
 from .config import *
 
 class Series(np.ndarray):
-    """Series object
+    """A pyfluo series is a 2-dimensional array of any datatype, in which the 0th axis corresponds to time.
+
+    This class used to inherit from the pandas Series object, but it turns out that many operations are much faster when done directly at the numpy level, plus most pandas features are extraneous for this class.
     """
 
     __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays

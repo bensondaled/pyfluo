@@ -19,8 +19,37 @@ def causal_median_filter(sig, size):
     return np.concatenate([pad, filt])
 
 def compute_dff(data, window_size=5., filter_size=1., use_filter=True, step_size=None, Ts=None, pad_kwargs=dict(mode='reflect'), root_f=False, return_f0=False, verbose=True):
-    """
-    pad_kwargs can be an array to use as left-pad instead of using np.pad. in this case, give the *raw data* to use as left pad
+    """Compute ∆F/F of data using a sliding window approach
+
+    The window method is essentially a causal minimum filter, with optional smoothing using a median filter.
+    DFF at time t is defined as min(filter(data[-window+1:t+1]))
+
+    Parameters
+    ----------
+    window_size : float
+        size of window in seconds
+    filter_size : float
+        size of median filter in seconds
+    use_filter : bool
+        use median filter on each window
+    step_size : float
+        step size for window iteration, defaults to smallest possible (sampling period of data)
+    Ts : float
+        sampling period of data, used only if Ts is not embedded within the data
+    pad_kwargs : dict
+        kwargs for np.pad, to pad array for window operation
+        pad_kwargs can also be an array to use as left-pad instead of using np.pad. in this case, give the *raw data* to use as a left pad for the supplied data
+    root_f : bool
+        if True, use the Gauthier definition for ∆F/F, namely ∆F/(sqrt(F))
+    return_f0 : bool
+        if True, return f0, the normalizing term, as well
+    verbose : bool
+        show status
+        
+    Returns
+    -------
+    dff : pyfluo.Series or np.ndarray
+    or, if return_f0 is True: (dff, f0)
     """
     Ts = Ts or data.Ts
 
@@ -94,7 +123,8 @@ def compute_dff(data, window_size=5., filter_size=1., use_filter=True, step_size
         return ret
 
 def detect_transients(sig, baseline_thresh=0.0, peak_thresh=2.5, drift_window=10., width_lims=(0.100, 3.00), Ts=None):
-    """
+    """**Method deprecated in favour of simpler operations not worthy of dedicated functions
+
     width_lims in units of sig's Ts
 
     baseline_thresh: how far down the signal must fall, specified as number of std's above or below mean

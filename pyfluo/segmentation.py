@@ -52,9 +52,20 @@ def grid(data, rows=0.5, cols=0.5):
     return slices
 
 def pca_ica(func, n_components=25, mu=0.5, verbose=True):
-    """
-    func is a non-instantiated generator function that yields chunks of frames
-    mu : >0.5 more spatial
+    """Segment data using the PCA/ICA method
+
+    Parameters
+    ----------
+    func : def
+        a non-instantiated generator function that yields chunks of data frames for segmentation
+    mu : float 
+        from 0-1, determines weight of spatial vs temporal components, >0.5 means more spatial
+    verbose: bool
+        show status
+
+    Returns
+    -------
+    np.ndarray of shape (n,y,x) with n components, and data dimensions (y,x)
     """
 
     if isinstance(func, Movie):
@@ -119,6 +130,21 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
     return final
 
 def ipca(mov, components=50, batch=1000):
+    """Incremental PCA
+
+    Parameters
+    ----------
+    mov : np.ndarray
+        3d data where time is the 0th axis, shape (n,y,x)
+    components : int
+        number of components to keep for PCA
+    batch : int
+        batch_size for updates
+
+    Returns
+    -------
+    np.ndarray, perserved components after PCA of data
+    """
 
     # vectorize the images
     shape = mov.shape
