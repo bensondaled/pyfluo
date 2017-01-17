@@ -268,7 +268,7 @@ class ROIView():
         self.update_patches()
 
     def evt_slide(self, *args):
-        for key,(obj,*_) in self.sliders.items():
+        for key,(obj,_,_,_) in self.sliders.items():
             self.wand_params[key] = int(np.round(obj.val))
 
     def evt_motion(self, evt):
