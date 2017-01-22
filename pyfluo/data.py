@@ -793,7 +793,9 @@ class Data():
         if n_frames is None:
             n_frames = len(self)
         if crop:
-            pass #TODO: find max actual motion and cut by that
+            mb = self.motion_borders
+            xmin,ymin = np.floor(mb[['xmin','ymin']].values).astype(int)
+            xmax,ymax = np.ceil(mb[['xmax','ymax']].values).astype(int)
         if downsample in [None,False]:
             downsample = 1
 
@@ -812,8 +814,10 @@ class Data():
                 dat = self[_i]
 
             if crop:
-                pass
-                #dat = dat[:,cr:-cr,cr:-cr]
+                if dat.ndim == 3:
+                    dat = dat[:,ymin:ymax,xmin:xmax]
+                elif dat.ndim == 2:
+                    dat = dat[ymin:ymax,xmin:xmax]
 
             dat = dat.resample(downsample)
 

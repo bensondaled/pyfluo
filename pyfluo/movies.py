@@ -132,6 +132,9 @@ class Movie(np.ndarray):
         Returns
         -------
         pyfluo.Series object, with multiple columns corresponding to multiple ROIs
+
+
+        Note: my gut says np.einsum should be able to further optimize this, yet all benchmarks I've run so far say this is the fastest
         """
         if roi.ndim == 3:
             flatshape = (len(roi),-1)
