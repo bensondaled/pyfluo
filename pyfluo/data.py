@@ -1,4 +1,4 @@
-mport os, h5py, warnings, sys, re
+import os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 from skimage.morphology import erosion, dilation
