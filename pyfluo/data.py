@@ -951,7 +951,7 @@ class Data():
 
             gen = self.gen(chunk_size=self.batch_size, return_idx=True)
 
-            sums,ns = [[] for i in range(sig.shape[1])],[]
+            sums,ns = np.zeros([sig.shape[1], self.shape[1], self.shape[2]]),[]
             for gi,idx in gen:
                 if verbose:
                     print('Chunk {}'.format(idx)); sys.stdout.flush()
@@ -960,12 +960,9 @@ class Data():
 
                 assert len(di) == len(sigi)
 
-                # update the rolling tracker of sums and ns for this chunk, for every roi
-                for subsig in range(sig.shape[1]):
-                    sums[subsig].append(np.nansum(sigi[:,subsig][:,None,None] * di, axis=0))
+                sums += np.einsum('ij,ikl->jkl',sigi,di) # rois along first axis, pixels along second and third
                 ns.append(len(di))
 
-            sums = np.array([np.sum(s, axis=0) for s in sums])
             cov = sums / (np.sum(ns)-1) # covariance for each roi, rois along 0th axis
             
             rs = [c / (self.std(axis=0)*sd) for c,sd in zip(cov,np.std(sig,axis=0))] # pearson's r for each roi, rois along 0th axis
