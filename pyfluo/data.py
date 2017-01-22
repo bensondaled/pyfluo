@@ -1,4 +1,4 @@
-import os, h5py, warnings, sys, re
+mport os, h5py, warnings, sys, re
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 from skimage.morphology import erosion, dilation
@@ -584,8 +584,8 @@ class Data():
                     warnings.warn('Data not stored in this file, so cannot make example.')
                     return
                 if slices is None:
-                    sub_movie_size = 3000
-                    n_sub_movies = 3
+                    sub_movie_size = 100
+                    n_sub_movies = 10
                     Ts = self.Ts
                     quart = len(self)//(n_sub_movies+1)
                     slices = [slice(quart*i-sub_movie_size//2,quart*i+sub_movie_size//2) for i in range(1,n_sub_movies+1)]
