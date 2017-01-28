@@ -174,7 +174,7 @@ class Series(np.ndarray):
             if isinstance(ycolors, PF_str_types):
                 ycolors = [ycolors] * to_plot.shape[1]
 
-        if to_plot.shape[1] == 1: # use default color cycle if only plotting one line
+        if to_plot.shape[1] == 1 and color is None: # use default color cycle if only plotting one line and no color specified
             ycolors = [None] 
 
         if binary_label is not None:

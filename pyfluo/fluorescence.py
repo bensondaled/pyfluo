@@ -7,7 +7,24 @@ import warnings, sys
 from .series import Series
 from .util import ProgressBar
 from .util import sliding_window
+from .util import mode
 from .config import *
+
+def transient_tail(data):
+    """A method I'm working on for robustly detecting the tails of DFF distributions that correspond to good transient activity
+    
+    theoretically, values above some threshold for this metric would be considered good signals
+
+    will document better when definition solidifies
+    """
+    m = mode(data)
+    #above = data[data>m]
+    below = data[data<m]
+    #ratio = float(np.sum(above) / np.sum(below))
+    halfwidth = np.percentile(below,1) # some proxy of std without tail
+    tail = data[data>m+halfwidth]
+    tail_strength = (np.mean(tail)-m) / halfwidth
+    return np.abs(tail_strength)
 
 def causal_median_filter(sig, size):
     # works, but be careful, b/c using a causal filter can make pseudo-shifts in the apparent time course of the signal

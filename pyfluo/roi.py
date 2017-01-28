@@ -196,7 +196,7 @@ class ROIView():
 
     Ideally, use the end() method when done using, so that object cleans up its temporary files and matplotlib objects.
     """
-    def __init__(self, img=None, roi=None, iterator=None):
+    def __init__(self, img=None, roi=None, iterator=None, roi_show_kw={}):
         """Initialize an ROIView object
 
         Parameters
@@ -231,6 +231,7 @@ class ROIView():
             img = next(iterator)
         
         self._cachename = '_roicache_' + str(time.time()) + '.npy'
+        self.roi_show_kw = roi_show_kw
         
         # fig & axes
         self.fig = pl.figure()
