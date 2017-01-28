@@ -276,6 +276,7 @@ class ROIView():
         self._roi_patches = []
         self._roi_centers = []
         self.add_roi(mask=roi)
+        self.iteri = 0
 
     def reset_mode(self):
         if self._mode == 'select':
@@ -364,6 +365,7 @@ class ROIView():
         try:
             n = next(self.iterator)
             self.set_img(n)
+            self.iteri += 1
         except StopIteration:
             self.set_img(np.zeros_like(self._im.get_array()))
             self.buts['next'][OBJ].set_active(False)
@@ -454,6 +456,7 @@ class ROIView():
             self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
         else:
             self._im.set_data(img)
+        self.ax_fov.set_ylabel(self.iteri)
         self.fig.canvas.draw()
 
     def add_roi(self, pts=None, mask=None):
