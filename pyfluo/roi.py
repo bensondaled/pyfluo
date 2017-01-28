@@ -276,7 +276,7 @@ class ROIView():
         self._roi_patches = []
         self._roi_centers = []
         self.add_roi(mask=roi)
-        self.iteri = 0
+        self.iteri = 1
 
     def reset_mode(self):
         if self._mode == 'select':
