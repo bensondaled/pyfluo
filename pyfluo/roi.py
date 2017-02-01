@@ -137,8 +137,9 @@ class ROI(np.ndarray):
         ax.add_collection(coll)
 
         # show labels
-        for i,r in enumerate(roi):
-            ax.annotate(str(i), np.mean(r.pts, axis=0), **label_kw)
+        if labels:
+            for i,r in enumerate(roi):
+                ax.annotate(str(i), np.mean(r.pts, axis=0), **label_kw)
 
         if made_ax:
             yshape,xshape = roi.shape[1:]
