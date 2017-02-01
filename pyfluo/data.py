@@ -235,7 +235,7 @@ class Data():
         with pd.HDFStore(self.data_file) as h:
             self.motion = h.motion
 
-    def project(self, show=False, equalize=False):
+    def project(self, show=False, equalize=False, **kwargs):
         """Mean-project the dataset over the time (0th) axis
 
         Parameters
@@ -244,6 +244,8 @@ class Data():
             display the projected image
         equalize : bool
             normalize and equalize the histogram of the projection
+        kwargs : dict
+            passed to matplotlib.imshow
 
         Returns
         -------
@@ -254,7 +256,7 @@ class Data():
         if equalize:
             im = equalize_adapthist((im-im.min())/(im.max()-im.min()))
         if show:
-            pl.imshow(im)
+            pl.imshow(im, **kwargs)
         return im
 
     def _apply_func(self, func, func_name, axis, agg_func=None):
