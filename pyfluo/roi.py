@@ -215,7 +215,7 @@ class ROIView():
                     ('select', [None,self.evt_select,'Select (T)']),
                     ('remove', [None,self.evt_remove,'Remove (X)']),
                     ('hideshow', [None,self.evt_hideshow,'Hide (V)']),
-                    ('next', [None,self.evt_next,'Next (N)']),
+                    ('next', [None,self.evt_next,'Next (n/N)']),
                     ('save', [None,self.cache,'Save (cmd-S)']),
                     ('method', [None,self.evt_method,'Wand (M)']),
                         ]) 
@@ -277,7 +277,10 @@ class ROIView():
         self._roi_patches = []
         self._roi_centers = []
         self.add_roi(mask=roi)
-        self.iteri = 1
+        self.iteri = 0
+        self.iter_cache_size = 5
+        self.iter_cache = [img]
+        self.iter_cache_i = 0
 
     def reset_mode(self):
         if self._mode == 'select':
@@ -363,15 +366,40 @@ class ROIView():
         if self.iterator is None:
             return
         self._clear_selection()
-        try:
-            n = next(self.iterator)
-            self.set_img(n)
-            self.iteri += 1
-        except StopIteration:
-            self.set_img(np.zeros_like(self._im.get_array()))
-            self.buts['next'][OBJ].set_active(False)
+        
+        self.iter_cache_i -= 1
+        if self.iter_cache_i >= 0:
+            nxt = self.iter_cache[self.iter_cache_i]
+            self.set_img(nxt)
+
+        else:
+            self.iter_cache_i = 0
+            try:
+                n = next(self.iterator)
+                self.iteri += 1
+                self.set_img(n)
+
+                self.iter_cache.insert(0, n)
+                self.iter_cache = self.iter_cache[:self.iter_cache_size]
+
+            except StopIteration:
+                self.set_img(np.zeros_like(self._im.get_array()))
+                self.buts['next'][OBJ].set_active(False)
 
         self.cache()
+    
+    def evt_prev(self, *args):
+        if self.iterator is None:
+            return
+        self._clear_selection()
+
+        if len(self.iter_cache)==0:
+            return
+
+        self.iter_cache_i = min(self.iter_cache_i+1, len(self.iter_cache)-1)
+
+        prev = self.iter_cache[self.iter_cache_i]
+        self.set_img(prev)
 
     def cache(self, *args):
         np.save(self._cachename, self.roi)
@@ -392,6 +420,8 @@ class ROIView():
             self.evt_hideshow()
         elif evt.key == 'n':
             self.evt_next()
+        elif evt.key == 'N':
+            self.evt_prev()
         elif evt.key == 'super+s':
             self.cache()
         elif evt.key == 'm':
@@ -457,7 +487,10 @@ class ROIView():
             self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
         else:
             self._im.set_data(img)
-        self.ax_fov.set_ylabel(self.iteri)
+        self.ax_fov.set_ylabel(self.iteri-self.iter_cache_i)
+        print(self.iter_cache_i)
+        print(self.iteri)
+        print()
         self.fig.canvas.draw()
 
     def add_roi(self, pts=None, mask=None):

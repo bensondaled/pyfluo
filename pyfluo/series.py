@@ -145,7 +145,7 @@ class Series(np.ndarray):
             n = self.shape[axis]
         return self.std(**kwargs) / np.sqrt(n)
 
-    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, use_index=True, **kwargs):
+    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, binary_label_color='red', use_index=True, **kwargs):
         """
             gap : float
             order : list-like
@@ -200,7 +200,7 @@ class Series(np.ndarray):
                 dfy = tp
                 points = np.array([dfx, dfy]).T.reshape(-1, 1, 2)
                 segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                lcmap = ListedColormap([color,'r'])
+                lcmap = ListedColormap([color,binary_label_color])
                 norm = BoundaryNorm([-1, -0.5, 0.5, 1], lcmap.N)
                 lc = LineCollection(segments, cmap=lcmap, norm=norm)
                 blab = binary_label[:,idx]

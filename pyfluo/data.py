@@ -252,6 +252,8 @@ class Data():
         im : np.ndarray
             projected data, of dimensions (data_y_size, data_x_size)
         """
+        kwargs['cmap'] = kwargs.get('cmap', pl.cm.Greys_r)
+
         im = self.mean(axis=0)
         if equalize:
             im = equalize_adapthist((im-im.min())/(im.max()-im.min()))
