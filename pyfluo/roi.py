@@ -488,9 +488,6 @@ class ROIView():
         else:
             self._im.set_data(img)
         self.ax_fov.set_ylabel(self.iteri-self.iter_cache_i)
-        print(self.iter_cache_i)
-        print(self.iteri)
-        print()
         self.fig.canvas.draw()
 
     def add_roi(self, pts=None, mask=None):
