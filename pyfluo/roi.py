@@ -197,7 +197,7 @@ class ROIView():
 
     Ideally, use the end() method when done using, so that object cleans up its temporary files and matplotlib objects.
     """
-    def __init__(self, img=None, roi=None, iterator=None, roi_show_kw={}):
+    def __init__(self, img=None, roi=None, iterator=None, roi_show_kw={}, imshow_kw={}):
         """Initialize an ROIView object
 
         Parameters
@@ -209,6 +209,8 @@ class ROIView():
         iterator : iter
             any iterator (can handle next() calls), to be used to supply the underlying image
         """
+        imshow_kw['cmap'] = imshow_kw.get('cmap', pl.cm.inferno)
+        self.imshow_kw = imshow_kw
 
         # button convention: name: [obj, callback, label]
         self.buts = collections.OrderedDict([   
@@ -221,8 +223,8 @@ class ROIView():
                         ]) 
         # sliders convention: name : [obj, min, max, init]
         self.sliders = collections.OrderedDict([   
-                    ('min_radius', [None,1,20,8]),
-                    ('max_radius', [None,10,100,20]),
+                    ('min_radius', [None,1,20,3]),
+                    ('max_radius', [None,10,100,12]),
                     ('roughness', [None,1,10,2]),
                     ('center_range', [None,1,5,2]),
                         ]) 
@@ -233,13 +235,16 @@ class ROIView():
         
         self._cachename = '_roicache_' + str(time.time()) + '.npy'
         self.roi_show_kw = roi_show_kw
+        self.roi_show_kw['alpha'] = self.roi_show_kw.get('alpha', .5)
+        self.roi_cmap = self.roi_show_kw.pop('cmap', pl.cm.summer)
+        self.roi_color = self.roi_show_kw.pop('color', 'white')
         
         # fig & axes
         self.fig = pl.figure()
         hr = [3]*len(self.buts) + [1]*len(self.sliders)
         self.gs = GridSpec(len(self.buts)+len(self.sliders), 2, left=0, bottom=0, top=1, right=1, width_ratios=[1,10], height_ratios=hr, wspace=0.01, hspace=0.01)
         self.ax_fov = self.fig.add_subplot(self.gs[:,1])
-        self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
+        self._im = self.ax_fov.imshow(img, **self.imshow_kw)
         self.ax_fov.set_autoscale_on(False)
 
         # buttons
@@ -484,7 +489,7 @@ class ROIView():
 
     def set_img(self, img):
         if self._im is None:
-            self._im = self.ax_fov.imshow(img, cmap=pl.cm.Greys_r)
+            self._im = self.ax_fov.imshow(img, **self.imshow_kw)
         else:
             self._im.set_data(img)
         self.ax_fov.set_ylabel(self.iteri-self.iter_cache_i)
@@ -509,7 +514,7 @@ class ROIView():
         # show
         roi = roi.as3d()
         for r in roi:
-            poly = Polygon(r.pts, alpha=0.5, picker=5)
+            poly = Polygon(r.pts, picker=5, **self.roi_show_kw)
             self.ax_fov.add_patch(poly)
             self._roi_patches.append(poly)
             self._roi_centers.append(np.mean(r.pts, axis=0))
@@ -517,10 +522,16 @@ class ROIView():
 
     def update_patches(self, draw=True):
         if self.roi is not None and len(self.roi) > 0:
-            cols = pl.cm.viridis(np.linspace(0,1,len(self.roi)))
+            
+            # determine color/s
+            if self.roi_cmap is not None:
+                cols = self.roi_cmap(np.linspace(0,1,len(self.roi)))
+            if self.roi_color is not None: # note that color takes predence over cmap
+                cols = [self.roi_color] * len(self._roi_patches)
+
             for col,p in zip(cols,self._roi_patches):
                 p.set_color(col)
-                p.set_alpha(0.5)
+                p.set_alpha(self.roi_show_kw['alpha'])
         if draw:
             self.fig.canvas.draw()
 

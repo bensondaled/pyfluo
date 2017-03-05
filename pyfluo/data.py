@@ -1017,10 +1017,12 @@ class Data():
             print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
         #self.get_tr() # extract new traces
 
-    def select_roi(self):
+    def select_roi(self, **rv_kw):
         """Select ROI for this dataset
 
         This will use pyfluo.roi.ROIView to facilitate selection of an ROI. It takes advantage of the iterator option in that class, supplying this object's maxmov as the iterator of interest. Thus, it allows selection of ROI across all frames in the compressed dataset.
+
+        All keywords are passed to ROIView
 
         Returns
         -------
@@ -1033,7 +1035,7 @@ class Data():
         mm = self.get_maxmov()
         mm -= mm.mean(axis=0).astype(mm.dtype)
 
-        self.roiview = ROIView(mm[0], iterator=iter(mm))
+        self.roiview = ROIView(mm[0], iterator=iter(mm), **rv_kw)
         print('Remember to set roi using Data.set_roi(roi_view.roi).\nIf you forgot to store roi_view, it is saved in object as Data.roiview.')
 
         return self.roiview
