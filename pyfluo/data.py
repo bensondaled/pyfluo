@@ -999,14 +999,14 @@ class Data():
         # find best match, using overlap-based metric
         masks_new = []
         rejects = []
-        for i,m,r in zip(range(len(roi)),masks,roi):
+        for idx,m,r in zip(range(len(roi)),masks,roi):
             l,nl = label(m)
             overlap = [np.sum((l==i) & r) for i in np.arange(1,nl+1)]
             iwin = np.argmax(overlap) + 1
             new = l==iwin
             # verify that area of roi hasn't inflated/shrunk too much, else keep the manual one
             if new.sum()>r.sum()*3.5 or new.sum()<r.sum()*.5:
-                rejects.append(i)
+                rejects.append(idx)
                 if include_rejections:
                     masks_new.append(r) # original
             else:
