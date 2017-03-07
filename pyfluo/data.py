@@ -952,6 +952,11 @@ class Data():
             print ('File exists and overwrite=False. Returning.')
             return
 
+        # no idea why this is here
+        with pd.HDFStore(self.data_file) as infile:
+            handle = infile.copy(out_filename, overwrite=False)
+            handle.close()
+
         with h5py.File(out_filename) as outfile, h5py.File(self.data_file) as infile:
             for key in infile:
                 if key in outfile:
