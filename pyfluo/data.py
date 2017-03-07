@@ -930,17 +930,18 @@ class Data():
         """
         play_mov(self, generator_fxn='gen', **kwargs)
 
-    def export(self, out_filename, include_data=False, overwrite=False):
+    def export(self, out_filename, overwrite=False, exclude=['data']):
         """Copy the contents of the dataset to another file
 
         Parameters
         ----------
         out_filename : str
             path to output file
-        include_data : bool
-            include data (meaning the raw image data) in new file
         overwrite : bool
             overwrite existing file with same name as out_filename
+        exclude : list
+            names of datasets to explicitly exclude in export
+            by default, excludes 'data'
         """
         if os.path.isdir(out_filename):
             out_filename = os.path.join(out_filename, os.path.split(self.data_file)[-1])
@@ -951,14 +952,11 @@ class Data():
             print ('File exists and overwrite=False. Returning.')
             return
 
-        with pd.HDFStore(self.data_file) as infile:
-            handle = infile.copy(out_filename, overwrite=False)
-        handle.close()
         with h5py.File(out_filename) as outfile, h5py.File(self.data_file) as infile:
             for key in infile:
                 if key in outfile:
                     continue
-                if include_data==False and key=='data':
+                if key in exclude:
                     continue
                 print('Copying "{}"'.format(key))
                 infile.copy(key, outfile, expand_soft=True, expand_refs=True, expand_external=True)
