@@ -262,7 +262,7 @@ class Data():
         return im
 
     def _apply_func(self, func, func_name, axis, agg_func=None):
-        """Applies arbitrary function to entire dataset in chunks
+        """Applies arbitrary function/s to entire dataset in chunks
         Importantly, applies to chunks, then applies to result of that
         This works for functions like max, min, mean, but not all functions
 
@@ -271,36 +271,90 @@ class Data():
         Parameters
         ----------
         func : def
-            function to apply, example np.mean
+            function to apply, example np.mean; or list thereof
         func_name : str
-            name corresponding to this function, ex. 'mean'
+            name corresponding to this function, ex. 'mean'; or list thereof
         axis : int
-            axis of dataset along which to apply function
+            axis of dataset along which to apply function; or list thereof
         agg_func : def
-            function applied to the batches over which *func* was applied. If None, defaults to *func* itself
+            function applied to the batches over which *func* was applied. If None, defaults to *func* itself; or list thereof
 
         Returns
         -------
-        Result of running the supplied function over the entire dataset
+        Result of running the supplied function/s over the entire dataset
         """
-        ax_str = str(axis)
-        if axis is None:
-            ax_str = ''
+
+        # convert singles into lists
+        if not isinstance(func, PF_list_types):
+            func = [func]
+        if not isinstance(func_name, PF_list_types):
+            func_name = [func_name]
+        if not isinstance(axis, PF_list_types):
+            axis = [axis]
         if agg_func is None:
-            agg_func = func
-        attr_str = '_{}_{}'.format(func_name, ax_str)
+            agg_func = [None for _ in func]
+        if not isinstance(agg_func, PF_list_types):
+            agg_func = [agg_func]
+        
+        # require dataset
         with h5py.File(self.data_file) as f:
             if '_data_funcs' not in f:
                 f.create_group('_data_funcs')
-            if attr_str not in f['_data_funcs']:
-                res = [func(chunk, axis=axis) for chunk in self.gen(chunk_size=self.batch_size)]
-                res = agg_func(res, axis=0)
-                f['_data_funcs'].create_dataset(attr_str, data=res)
-            else:
-                res = np.asarray(f['_data_funcs'][attr_str])
-        if isinstance(res, np.ndarray) and res.ndim==0:
-            res = float(res)
-        return res
+
+        # check which supplied functions need to be computed
+        todo = []
+        for funcn,fxn,afxn in zip(func_name,func,agg_func):
+            if afxn is None:
+                afxn = fxn
+            for ax in axis:
+                ax_str = str(ax) if ax is not None else ''
+                attr_str = '_{}_{}'.format(funcn, ax_str)
+                with h5py.File(self.data_file) as f:
+                    if attr_str not in f['_data_funcs']:
+                        todo.append( (funcn, fxn, afxn, ax) ) # name, func, aggfunc, axis
+
+        # compute new ones
+        if len(todo) > 0:
+            results = [[] for _ in todo]
+            for chunk in self.gen(chunk_size=self.batch_size):
+                for idx,(fn,fxn,afxn,ax) in enumerate(todo):
+                    res = fxn(chunk, axis=ax)
+                    results[idx].append(res)
+            results = [afxn(res, axis=ax) for res,(fn,fxn,afxn,ax) in zip(results,todo)]
+
+            # store results
+            with h5py.File(self.data_file) as f:
+                for res,(fn,fxn,afxn,ax) in zip(results,todo):
+                    ax_str = str(ax) if ax is not None else ''
+                    attr_str = '_{}_{}'.format(fn, ax_str)
+                    f['_data_funcs'].create_dataset(attr_str, data=res)
+        
+        # retrieve all desired results
+        to_return = []
+        for fn,fxn,afxn,ax in zip(func_name, func, agg_func, axis):
+            ax_str = str(ax) if ax is not None else ''
+            attr_str = '_{}_{}'.format(fn, ax_str)
+            with h5py.File(self.data_file) as f:
+                ds = np.asarray(f['_data_funcs'][attr_str])
+            if isinstance(ds, np.ndarray) and ds.ndim==0:
+                ds = float(ds)
+            to_return.append(ds)
+
+        # un-nest single requests
+        if len(to_return)==1:
+            to_return = to_return[0]
+
+        return to_return
+
+    def _all_basic_funcs(self):
+        """Compute in batch the max, min, mean, std of the dataset (std is done separately b/c it depends on mean)
+        """
+        fxns = [np.nanmax, np.nanmin, np.nanmean]
+        names = ['max','min','mean']
+        axs = [None, 0] 
+        _ = self._apply_func(fxns, func_name=names, axis=axs)
+
+        _ = self.std(axis=0)
 
     def max(self, axis=None):
         return self._apply_func(np.nanmax, axis=axis, func_name='max')
