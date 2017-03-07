@@ -261,7 +261,7 @@ class Data():
             pl.imshow(im, **kwargs)
         return im
 
-    def _apply_func(self, func, func_name, axis, agg_func=None):
+    def _apply_func(self, func, func_name, axis, agg_func=None, verbose=False):
         """Applies arbitrary function/s to entire dataset in chunks
         Importantly, applies to chunks, then applies to result of that
         This works for functions like max, min, mean, but not all functions
@@ -313,10 +313,17 @@ class Data():
                     if attr_str not in f['_data_funcs']:
                         todo.append( (funcn, fxn, afxn, ax) ) # name, func, aggfunc, axis
 
+        if verbose:
+            print('Will compute {}'.format(todo)); sys.stdout.flush()
+
         # compute new ones
         if len(todo) > 0:
             results = [[] for _ in todo]
+            counter = 0
             for chunk in self.gen(chunk_size=self.batch_size):
+                counter += 1
+                if verbose:
+                    print('Chunk number {}'.format(counter)); sys.stdout.flush()
                 for idx,(fn,fxn,afxn,ax) in enumerate(todo):
                     res = fxn(chunk, axis=ax)
                     results[idx].append(res)
@@ -346,13 +353,13 @@ class Data():
 
         return to_return
 
-    def _all_basic_funcs(self):
+    def _all_basic_funcs(self, verbose=True):
         """Compute in batch the max, min, mean, std of the dataset (std is done separately b/c it depends on mean)
         """
         fxns = [np.nanmax, np.nanmin, np.nanmean]
         names = ['max','min','mean']
         axs = [None, 0] 
-        _ = self._apply_func(fxns, func_name=names, axis=axs)
+        _ = self._apply_func(fxns, func_name=names, axis=axs, verbose=verbose)
 
         _ = self.std(axis=0)
 
