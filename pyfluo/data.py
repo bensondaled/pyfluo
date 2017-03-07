@@ -952,7 +952,7 @@ class Data():
             print ('File exists and overwrite=False. Returning.')
             return
 
-        # no idea why this is here
+        # no idea why this is necessary, but it is for py2/3 compatibility of hdf5 files
         with pd.HDFStore(self.data_file) as infile:
             handle = infile.copy(out_filename, overwrite=False)
             handle.close()
