@@ -345,4 +345,4 @@ def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True,
         elif k == ord('-'):
             scale = scale / 1.5
 
-    cv2.destroyWindow(title)
+    cv2.destroyAllWindows()

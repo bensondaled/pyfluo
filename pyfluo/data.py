@@ -581,13 +581,13 @@ class Data():
 
         return Series(_ct, Ts=Ts, t0=_ctts[0])
     
-    def get_maxmov(self, chunk_size=30, resample=3, redo=False, enforce_datatype=np.int16):
+    def get_maxmov(self, chunk_size=1, resample=3, redo=False, enforce_datatype=np.int16):
         """Generate or retrieve a compressed version of the dataset using a rolling maximum method
 
         Parameters
         ----------
         chunk_size : int
-            number of frames per chunk
+            number of *seconds* per chunk
         resample : int
             factor by which to downsample each chunk (performed by data.gen)
         redo : bool
@@ -599,6 +599,8 @@ class Data():
         -------
         maxmov : pyfluo.Movie
         """
+        chunk_size = int(np.round(chunk_size / self.Ts))
+
         with h5py.File(self.data_file) as f:
             if 'maxmov' in f and not redo:
                     _mm = Movie(np.asarray(f['maxmov']), Ts=f['maxmov'].attrs['Ts'])
@@ -1096,10 +1098,23 @@ class Data():
 
         The created ROIview object is not only returned but also stored as obj.roiview.
         """
-        mm = self.get_maxmov()
-        mm -= mm.mean(axis=0).astype(mm.dtype)
-
-        self.roiview = ROIView(mm[0], iterator=iter(mm), **rv_kw)
+        def mm_mean_subtracted(downsample=3):
+            with h5py.File(self.data_file) as f:
+                if 'maxmov' in f:
+                    mean = np.mean(f['maxmov'], axis=0)
+                    mean[mean==0] = np.mean(mean)
+                    n = len(f['maxmov'])
+                else:
+                    raise Exception('No maxmov available.')
+            
+            for i in range(n//downsample):
+                with h5py.File(self.data_file) as f:
+                    fr = np.max( [np.asarray(f['maxmov'][i*downsample+ii]) for ii in range(downsample)], axis=0 )
+                fr = (fr-mean)/mean
+                yield fr
+        
+        inst = mm_mean_subtracted()
+        self.roiview = ROIView(next(inst), iterator=inst, **rv_kw)
         print('Remember to set roi using Data.set_roi(roi_view.roi).\nIf you forgot to store roi_view, it is saved in object as Data.roiview.')
 
         return self.roiview
