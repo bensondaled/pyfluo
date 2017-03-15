@@ -1083,7 +1083,7 @@ class Data():
             print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
         #self.get_tr() # extract new traces
 
-    def select_roi(self, **rv_kw):
+    def select_roi(self, mm_generator_kw={}, **rv_kw):
         """Select ROI for this dataset
 
         This will use pyfluo.roi.ROIView to facilitate selection of an ROI. It takes advantage of the iterator option in that class, supplying this object's maxmov as the iterator of interest. Thus, it allows selection of ROI across all frames in the compressed dataset.
@@ -1098,14 +1098,21 @@ class Data():
 
         The created ROIview object is not only returned but also stored as obj.roiview.
         """
-        def mm_mean_subtracted(downsample=3):
+        def mm_mean_subtracted(downsample=3, mean_src='maxmov'):
+            """
+            mean_src : 'maxmov' or 'all'
+            """
             with h5py.File(self.data_file) as f:
                 if 'maxmov' in f:
                     mean = np.mean(f['maxmov'], axis=0)
-                    mean[mean==0] = np.mean(mean)
                     n = len(f['maxmov'])
                 else:
                     raise Exception('No maxmov available.')
+
+            if mean_src == 'maxmov':
+                pass
+            elif mean_src == 'all':
+                mean = self.mean(axis=0)
             
             for i in range(n//downsample):
                 with h5py.File(self.data_file) as f:
@@ -1113,7 +1120,7 @@ class Data():
                 fr = (fr-mean)/mean
                 yield fr
         
-        inst = mm_mean_subtracted()
+        inst = mm_mean_subtracted(**mm_generator_kw)
         self.roiview = ROIView(next(inst), iterator=inst, **rv_kw)
         print('Remember to set roi using Data.set_roi(roi_view.roi).\nIf you forgot to store roi_view, it is saved in object as Data.roiview.')
 
