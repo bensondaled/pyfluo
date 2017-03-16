@@ -870,13 +870,21 @@ class Data():
         remainder = n_frames%chunk_size
 
         for idx in range(nchunks+int(remainder>0)):
+
             if idx == nchunks:
+                # last chunk
                 _i = slice(idx*chunk_size, None)
                 dat = self[_i]
+
+                # special case to handle a single frame, b/c getitem by default squeezes one frame into 2 (as opposed to 3) dimensions
+                if dat.ndim == 2:
+                    dat = dat[None,...]
+
                 if enforce_chunk_size:
                     pad_size = chunk_size - len(dat)
                     dat = Movie(np.pad(dat, ((0,pad_size),(0,0),(0,0)), mode='constant', constant_values=(np.nan,)), Ts=self.Ts)
             else:
+                # all regular chunks
                 _i = slice(idx*chunk_size,idx*chunk_size+chunk_size)
                 dat = self[_i]
 
@@ -1117,7 +1125,7 @@ class Data():
             for i in range(n//downsample):
                 with h5py.File(self.data_file) as f:
                     fr = np.max( [np.asarray(f['maxmov'][i*downsample+ii]) for ii in range(downsample)], axis=0 )
-                fr = (fr-mean)/mean
+                fr = fr-mean
                 yield fr
         
         inst = mm_mean_subtracted(**mm_generator_kw)
