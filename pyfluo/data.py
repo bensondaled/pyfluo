@@ -1106,7 +1106,7 @@ class Data():
 
         The created ROIview object is not only returned but also stored as obj.roiview.
         """
-        def mm_mean_subtracted(downsample=3, mean_src='maxmov'):
+        def mm_mean_subtracted(downsample=4, mean_src='maxmov'):
             """
             mean_src : 'maxmov' or 'all'
             """

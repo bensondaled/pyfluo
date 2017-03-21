@@ -209,6 +209,9 @@ class ROIView():
         iterator : iter
             any iterator (can handle next() calls), to be used to supply the underlying image
         """
+        self.original_mpl_back_key = pl.rcParams['keymap.back']
+        pl.rcParams['keymap.back'] = ''
+
         imshow_kw['cmap'] = imshow_kw.get('cmap', pl.cm.inferno)
         self.imshow_kw = imshow_kw
 
@@ -539,4 +542,5 @@ class ROIView():
         if os.path.exists(self._cachename):
             os.remove(self._cachename)
         pl.close(self.fig)
+        pl.rcParams['keymap.back'] = self.original_mpl_back_key
 
