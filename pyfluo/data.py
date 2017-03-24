@@ -1106,7 +1106,7 @@ class Data():
 
         The created ROIview object is not only returned but also stored as obj.roiview.
         """
-        def mm_mean_subtracted(downsample=4, mean_src='maxmov'):
+        def mm_mean_subtracted(downsample=10, mean_src='maxmov'):
             """
             mean_src : 'maxmov' or 'all'
             """
@@ -1124,7 +1124,7 @@ class Data():
             
             for i in range(n//downsample):
                 with h5py.File(self.data_file) as f:
-                    fr = np.max( [np.asarray(f['maxmov'][i*downsample+ii]) for ii in range(downsample)], axis=0 )
+                    fr = np.max( f['maxmov'][i*downsample : i*downsample+downsample], axis=0 )
                 fr = fr-mean
                 yield fr
         
