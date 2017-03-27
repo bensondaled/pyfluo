@@ -145,13 +145,14 @@ class Series(np.ndarray):
             n = self.shape[axis]
         return self.std(**kwargs) / np.sqrt(n)
 
-    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, binary_label=None, binary_label_color='red', use_index=True, **kwargs):
+    def plot(self, gap=0.1, order=None, names=None, cmap=pl.cm.viridis, legend=False, ax=None, color=None, stacked=True, yerr=None, binary_label=None, binary_label_color='red', use_index=True, **kwargs):
         """
             gap : float
             order : list-like
             names : list-like
             cmap : mpl cmap
             stacked : bool
+            yerr : values of same shape as data
             binary_label : trues/falses of same shape as data
             use_index : use Ts to determine index
         """
@@ -179,6 +180,9 @@ class Series(np.ndarray):
 
         if binary_label is not None:
             binary_label = binary_label[:,order].astype(bool)
+
+        if yerr is not None:
+            yerr = yerr[:,order]
 
         to_plot = to_plot[:,order]
         if to_plot.shape[1] == 1:
@@ -208,6 +212,8 @@ class Series(np.ndarray):
                 ax.add_collection(lc)
             else:
                 ax.plot(tp_idx, tp, color=color, **kwargs)
+            if yerr is not None:
+                ax.fill_between(tp_idx, tp+yerr[:,idx], tp-yerr[:,idx], color=color, alpha=0.2)
 
         if stacked:
             ax.set_yticks(yticks)
