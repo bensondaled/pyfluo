@@ -116,6 +116,15 @@ class Series(np.ndarray):
     def index(self):
         return np.arange(len(self)) * self.Ts + self.t0
 
+    def t2i(self, t):
+        idx = self.index
+        
+        if isinstance(t, PF_numeric_types):
+            return np.argmin(np.abs(idx-t))
+        elif isinstance(t, PF_list_types):
+            typ = type(t)
+            return typ([self.t2i(ii) for ii in t])
+
     def as_2d(self):
         if self.ndim==2:
             return self

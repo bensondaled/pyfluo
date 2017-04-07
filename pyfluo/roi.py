@@ -121,8 +121,13 @@ class ROI(np.ndarray):
         return result
 
     def show(self, ax=None, labels=False, label_kw=dict(color='gray'), **patch_kw):
+        """
+        Shows ROI as patches
+
+        To show just borders, use facecolor and edgecolor keywords
+        """
         patch_kw['alpha'] = patch_kw.get('alpha', 0.5)
-        patch_kw['edgecolors'] = patch_kw.get('edgecolors', 'none')
+        #patch_kw['edgecolors'] = patch_kw.get('edgecolors', 'none')
         patch_kw['cmap'] = patch_kw.get('cmap', pl.cm.viridis)
 
         roi = self.as3d()

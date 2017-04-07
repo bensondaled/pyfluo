@@ -1106,7 +1106,7 @@ class Data():
 
         The created ROIview object is not only returned but also stored as obj.roiview.
         """
-        def mm_mean_subtracted(downsample=10, mean_src='maxmov'):
+        def mm_mean_subtracted(downsample=5, mean_src='maxmov', equalize=True):
             """
             mean_src : 'maxmov' or 'all'
             """
@@ -1126,6 +1126,8 @@ class Data():
                 with h5py.File(self.data_file) as f:
                     fr = np.max( f['maxmov'][i*downsample : i*downsample+downsample], axis=0 )
                 fr = fr-mean
+                if equalize:
+                    fr = equalize_adapthist((fr-fr.min())/(fr.max()-fr.min()))
                 yield fr
         
         inst = mm_mean_subtracted(**mm_generator_kw)
