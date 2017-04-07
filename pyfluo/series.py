@@ -278,6 +278,23 @@ class Series(np.ndarray):
         copy = (copy-copy.min(axis=axis))/(copy.max(axis=axis)-copy.min(axis=axis))
         return copy
 
+    def resample(self, n=4):
+        """Downsample series by taking mean of every n samples
+        """
+        if n==1:
+            return self
+
+        if len(self)%n == 0:
+            working = self
+        else:
+            working = self[:-(len(self)%n)]
+
+        result = np.nanmean(working.reshape((-1,n,working.shape[1])), axis=1)
+
+        for ca in self._custom_attrs:
+            setattr(result, ca, n*getattr(self, ca, self._custom_attrs[ca]))
+
+        return result
 
 if __name__ == '__main__':
     pass
