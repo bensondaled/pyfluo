@@ -137,7 +137,7 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True)
     output_shape = [len(comps.T), frame_shape[0], frame_shape[1]]
     final = ica_result[:np.product(frame_shape)].T.reshape(output_shape)
     if downsample is not None:
-        final = zoom(final, [1/i for i in downsample], order=1)
+        final = zoom(final, [1] + [1/i for i in downsample[1:]], order=1)
     return final
 
 def ipca(mov, components=50, batch=1000):
