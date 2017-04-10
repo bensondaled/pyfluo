@@ -927,10 +927,11 @@ class Data():
                 grp = h.create_group('segmentation')
             else:
                 grp = h['segmentation']
-            ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps, compression='lzf')
+            segname = 'segmentation{}'.format(self._next_segmentation_idx)
+            ds = grp.create_dataset(segname, data=comps, compression='lzf')
             pca_ica_kwargs.update(gen_kwargs)
-            ds.attrs.update(pca_ica_kwargs)
-            ds.attrs.update(gen_kwargs=gen_kwargs)
+            grp[segname].attrs.update(pca_ica_kwargs)
+            grp[segname].attrs.update(gen_kwargs=gen_kwargs)
 
     def play(self, **kwargs):
         """Play data as a movie
