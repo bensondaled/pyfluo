@@ -930,6 +930,7 @@ class Data():
             ds = grp.create_dataset('segmentation{}'.format(self._next_segmentation_idx), data=comps, compression='lzf')
             pca_ica_kwargs.update(gen_kwargs)
             ds.attrs.update(pca_ica_kwargs)
+            ds.attrs.update(gen_kwargs=gen_kwargs)
 
     def play(self, **kwargs):
         """Play data as a movie
