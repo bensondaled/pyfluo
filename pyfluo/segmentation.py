@@ -108,6 +108,8 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True)
         if verbose:
             print('Chunk #{}'.format(idx)); sys.stdout.flush()
             idx += 1
+        if downsample is not None:
+            chunk = zoom(chunk, downsample, order=1)
         frame_shape = chunk.shape[1:]
         chunk = chunk.reshape([len(chunk), -1])
         reduced_mov.append(np.dot(comps, chunk.T))
