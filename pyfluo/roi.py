@@ -131,7 +131,7 @@ class ROI(np.ndarray):
         patch_kw['cmap'] = patch_kw.get('cmap', pl.cm.viridis)
 
         roi = self.as3d()
-
+        
         made_ax = False
         if ax is None:
             made_ax = True
@@ -147,8 +147,9 @@ class ROI(np.ndarray):
                 ax.annotate(str(i), np.mean(r.pts, axis=0), **label_kw)
 
         if made_ax:
-            yshape,xshape = roi.shape[1:]
-            pl.axis([0,xshape,0,yshape])
+            #yshape,xshape = roi.shape[1:]
+            #pl.axis([0,xshape,0,yshape])
+            pass
 
         return ax
 

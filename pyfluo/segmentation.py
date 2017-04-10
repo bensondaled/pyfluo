@@ -10,6 +10,7 @@ from scipy.ndimage.filters import gaussian_filter
 from skimage.morphology import erosion, dilation
 from skimage.filters import gaussian
 from scipy.ndimage import label
+from scipy.ndimage import zoom
 import itertools as it
 
 from .util import ProgressBar, Progress
@@ -51,15 +52,19 @@ def grid(data, rows=0.5, cols=0.5):
 
     return slices
 
-def pca_ica(func, n_components=25, mu=0.5, verbose=True):
+def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True):
     """Segment data using the PCA/ICA method
 
     Parameters
     ----------
     func : def
         a non-instantiated generator function that yields chunks of data frames for segmentation
+    n_components : int
+        number of components to keep from PCA
     mu : float 
         from 0-1, determines weight of spatial vs temporal components, >0.5 means more spatial
+    downsample : tuple
+        resize factor for each dimension (time, y, x). For example, .5 means shrink 2x
     verbose: bool
         show status
 
@@ -86,6 +91,8 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
         if verbose:
             print('Chunk #{}, t={:0.3f}'.format(idx,time.time()-t0)); sys.stdout.flush()
             idx += 1
+        if downsample is not None:
+            chunk = zoom(chunk, downsample, interpolation=1)
         chunk = chunk.reshape([len(chunk), -1])
         ipca.partial_fit(chunk)
     if verbose:
@@ -127,6 +134,8 @@ def pca_ica(func, n_components=25, mu=0.5, verbose=True):
     
     output_shape = [len(comps.T), frame_shape[0], frame_shape[1]]
     final = ica_result[:np.product(frame_shape)].T.reshape(output_shape)
+    if downsample is not None:
+        final = zoom(final, [1/i for i in downsample])
     return final
 
 def ipca(mov, components=50, batch=1000):
