@@ -996,7 +996,7 @@ class Data():
                     del datafile[key]
                 infile.copy(key, datafile)
 
-    def refine_roi(self, roi_idx=None, include_rejections=False, verbose=True):
+    def refine_roi(self, roi_idx=None, compare_to_input=True, include_rejections=False, verbose=True):
         """Refine definition of roi using correlation-based method
 
         The goal of this method is to take as input some manually selected ROIs, and to redefine their borders. This is done by first extracting the trace from each ROI over the whole dataset, then computing the dataset-wide correlation between a given trace and every pixel in the dataset (the result of this operation is stored in the data file as r). Then, the resulting correlation image is searched using basic image processing to find the maximally probable ROI.
@@ -1007,7 +1007,10 @@ class Data():
         ----------
         roi_idx : int
             index corresponding to roi of interest
+        compare_to_input : bool
+            compare each new ROI to input and consider rejecting it if not similar enough
         include_rejections : bool
+            only applies when compare_to_input is True
             include individual ROIs from the original ROI set even if no suitable correlation-based match is found
         verbose : bool
             show status
@@ -1081,12 +1084,15 @@ class Data():
             iwin = np.argmax(overlap) + 1
             new = l==iwin
             # verify that area of roi hasn't inflated/shrunk too much, else keep the manual one
-            if new.sum()>r.sum()*3.5 or new.sum()<r.sum()*.5:
-                rejects.append(idx)
-                if include_rejections:
-                    masks_new.append(r) # original
+            if compare_to_input:
+                if new.sum()>r.sum()*3.5 or new.sum()<r.sum()*.5:
+                    rejects.append(idx)
+                    if include_rejections:
+                        masks_new.append(r) # original
+                else:
+                    masks_new.append(new) # new
             else:
-                masks_new.append(new) # new
+                masks_new.append(new)
 
         self.set_roi(np.asarray(masks_new))
         if verbose:
