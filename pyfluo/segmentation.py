@@ -92,7 +92,7 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True)
             print('Chunk #{}, t={:0.3f}'.format(idx,time.time()-t0)); sys.stdout.flush()
             idx += 1
         if downsample is not None:
-            chunk = zoom(chunk, downsample, interpolation=1)
+            chunk = zoom(chunk, downsample, order=1)
         chunk = chunk.reshape([len(chunk), -1])
         ipca.partial_fit(chunk)
     if verbose:
@@ -135,7 +135,7 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True)
     output_shape = [len(comps.T), frame_shape[0], frame_shape[1]]
     final = ica_result[:np.product(frame_shape)].T.reshape(output_shape)
     if downsample is not None:
-        final = zoom(final, [1/i for i in downsample])
+        final = zoom(final, [1/i for i in downsample], order=1)
     return final
 
 def ipca(mov, components=50, batch=1000):
