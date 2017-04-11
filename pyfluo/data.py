@@ -99,6 +99,8 @@ class Data():
             return None
         keys = [self.si_data.keys()[idx] for idx in i]
         result = {k:self.si_data[k] for k in keys}
+        if 'zoom' in query.lower():
+            result.update(self.si_find('scanAngleMultiplier'))
         return result
 
     def _batch_framei(self, row):
