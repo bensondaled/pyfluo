@@ -160,14 +160,24 @@ class TiffGroup(object):
             diverged = not all([n[:i]==units[0][:i] for n in units[1:]])
         return '_'.join(units[0][:i-1])
 
-    def to_hdf5(self, chunks=(2,512,512), verbose=True):
+    def to_hdf5(self, chunks='auto', verbose=True):
         t0 = time.time()
-        
+
         for idx in range(self.nfiles):
             if verbose:
                 print('File ({}/{}): {}'.format(idx+1, self.nfiles, self.names[idx])); sys.stdout.flush()
 
             t = Tiff(self.file_paths[idx])
+            
+            if chunks == 'auto': # will only run once
+                if t.data.shape[1:] == (512,512):
+                    chunks=(2,512,512)
+                elif t.data.shape[1:] == (256,256):
+                    chunks=(8,256,256)
+                elif t.data.shape[1:] == (256,512):
+                    chunks=(4,256,512)
+                else:
+                    chunks = (1,) + t.data.shape[1:]
 
             # store metadata
             with pd.HDFStore(self.hdf_path) as h:
