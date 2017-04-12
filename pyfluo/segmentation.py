@@ -52,7 +52,7 @@ def grid(data, rows=0.5, cols=0.5):
 
     return slices
 
-def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True):
+def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), do_ica=False, verbose=True):
     """Segment data using the PCA/ICA method
 
     Parameters
@@ -116,6 +116,9 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), verbose=True)
     reduced_mov = np.concatenate(reduced_mov, axis=-1).T # t x n matrix
 
     #eigen_mov = pf.Movie(res.dot(comps).reshape((-1,)+frame_shape)) # not needed
+
+    if not do_ica:
+        return comps.reshape([len(comps), frame_shape[0], frame_shape[1]])
 
     comps = comps.T
     ica_space = mu * (comps - comps.mean(axis=0))/comps.max()
