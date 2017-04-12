@@ -836,7 +836,7 @@ class Data():
 
         return Series(_rollcor, Ts=self.Ts)
     
-    def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False, return_idx=False):
+    def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False, return_idx=False, subtract_mean=False):
         """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
 
         Parameters
@@ -853,6 +853,8 @@ class Data():
             if True, nan-pads the last slice if necessary to make equal chunk size
         return_idx : bool
             return a 2-tuple, (chunk_of_interest, slice_used_to_extract_this_chunk)
+        subtract_mean : bool
+            subtract pixel-wise mean
 
         Returns
         -------
@@ -898,6 +900,9 @@ class Data():
 
             dat = dat.resample(downsample)
 
+            if subtract_mean:
+                dat = dat - self.mean(axis=0)
+
             if return_idx:
                 yield (dat, _i)
             else:
@@ -916,6 +921,8 @@ class Data():
 
         Stores result in the segmentation group of dataset. Retrieve using get_segmentation()
         """
+        gen_kwargs['subtract_mean'] = True
+
         def dummy_gen():
             return self.gen(**gen_kwargs)
 
