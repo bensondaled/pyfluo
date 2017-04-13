@@ -185,7 +185,7 @@ class Movie(np.ndarray):
         result.Ts = self.Ts*n
         return result
 
-    def save(self, filename, fmt=None, codec='IYUV', fps=None):
+    def save(self, filename, fmt=None, codec='MJPG', fps=None, minmax=(0,300)):
         """Save movie for playback in video player
 
         Note that this function is intended for saving the movie in an avi/tiff-like format. Saving for further analysis should be performed using pyfluo's io functions.
@@ -193,7 +193,7 @@ class Movie(np.ndarray):
         Parameters
         ----------
         filename : str
-            destination file name, without extension
+            destination file name, with or without extension
         fmt : str
             format to save movie, specified as file extension, ex. 'avi', 'mp4', 'tif'
         codec : int
@@ -201,9 +201,16 @@ class Movie(np.ndarray):
         fps : int
             frames per second. Defaults to obj.fs
             applies to only to formats tht store time info, like avi
+        minmax : tuple
+            min and max pixels values corresponding to black and white. clipping occurs on either end
+            if None: min and max value of movie are used
         """
         if fps == None:
             fps = 1/self.Ts
+        
+        if '.' in filename:
+            filename, fmt = os.path.splitext(filename)
+
         filename += '.'+fmt
 
         if fmt in ['tif','tiff']:
@@ -213,9 +220,15 @@ class Movie(np.ndarray):
                 codec = cv2.VideoWriter_fourcc(*codec)
             elif CV_VERSION == 2:
                 codec = cv2.cv.FOURCC(*codec)
-            minn,maxx = np.min(self),np.max(self)
-            data = 255 * (self-minn)/(maxx-minn)
-            data = data.astype(np.uint8)
+
+            if minmax is None:
+                minn,maxx = np.min(self),np.max(self)
+            else:
+                minn,maxx = minmax
+            data = np.clip(self, minn, maxx)
+            data = data - minn
+            data = data / maxx-minn
+            data = (255*data).astype(np.uint8)
             y,x = data[0].shape
             vw = cv2.VideoWriter(filename, codec, fps, (x,y), isColor=True)
             for d in data:
