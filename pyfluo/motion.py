@@ -45,7 +45,7 @@ def motion_correct(mov, max_iters=5, shift_threshold=1., reslice=slice(None,None
             print('Iteration {}'.format(it)); sys.stdout.flush()
         template,vals = compute_motion(mov, **compute_kwargs)
         mov = apply_motion_correction(mov, vals, **apply_kwargs)
-        maxshifts = np.abs(vals[:,[0,1]].max(axis=0))
+        maxshifts = vals[:,[0,1]].abs().max(axis=0)
         all_vals.append(vals)
         if verbose:
             print('Shifts: {}'.format(str(maxshifts))); sys.stdout.flush()
