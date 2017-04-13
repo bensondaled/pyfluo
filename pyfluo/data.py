@@ -908,13 +908,14 @@ class Data():
             else:
                 yield dat
 
-    def segment(self, gen_kwargs=dict(chunk_size=3000, n_frames=None, downsample=3), verbose=True, **pca_ica_kwargs):
+    def segment(self, gen_kwargs=dict(chunk_size=3000, n_frames=None, downsample=3, subtract_mean=True), verbose=True, **pca_ica_kwargs):
         """Segment the dataset to produce ROI, using pyfluo.pca_ica
 
         Parameters
         ----------
         gen_kwargs : dict
             kwargs for data.gen, to be used to iterate through data
+            subtract_mean = True will be enforced
         verbose : bool
             show status
         pca_ica_kwargs : any keyword arguments accepted by pyfluo.segmentation.pca_ica

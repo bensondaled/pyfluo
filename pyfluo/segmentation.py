@@ -52,7 +52,7 @@ def grid(data, rows=0.5, cols=0.5):
 
     return slices
 
-def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), do_ica=False, verbose=True):
+def pca_ica(func, n_components=25, mu=0.5, downsample=(1,.5,.5), do_ica=False, verbose=True, **pca_kw):
     """Segment data using the PCA/ICA method
 
     Parameters
@@ -80,7 +80,7 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(.25,.5,.5), do_ica=False,
                 yield mov
         func = gen
     
-    ipca = IncrementalPCA(n_components=n_components)
+    ipca = IncrementalPCA(n_components=n_components, **pca_kw)
 
     # iterative pca
     idx = 1
