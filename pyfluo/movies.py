@@ -210,6 +210,7 @@ class Movie(np.ndarray):
         
         if '.' in filename:
             filename, fmt = os.path.splitext(filename)
+            fmt = fmt.strip('.')
 
         filename += '.'+fmt
 
