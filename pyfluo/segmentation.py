@@ -93,11 +93,18 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(1,.5,.5), do_ica=False, v
             idx += 1
         if downsample is not None:
             chunk = zoom(chunk, downsample, order=1)
+        frame_shape = chunk.shape[1:]
         chunk = chunk.reshape([len(chunk), -1])
         ipca.partial_fit(chunk)
     if verbose:
         print('PCA took {:0.2f} seconds.'.format(time.time()-t0)); sys.stdout.flush()
     comps = ipca.components_
+    
+    if not do_ica:
+        comps = comps.reshape([len(comps), frame_shape[0], frame_shape[1]])
+        if downsample is not None:
+            comps = zoom(comps, [1] + [1/i for i in downsample[1:]], order=1)
+        return comps
 
     # reconstruct low-dimensional movie
     reduced_mov = []
@@ -116,12 +123,6 @@ def pca_ica(func, n_components=25, mu=0.5, downsample=(1,.5,.5), do_ica=False, v
     reduced_mov = np.concatenate(reduced_mov, axis=-1).T # t x n matrix
 
     #eigen_mov = pf.Movie(res.dot(comps).reshape((-1,)+frame_shape)) # not needed
-
-    if not do_ica:
-        comps = comps.reshape([len(comps), frame_shape[0], frame_shape[1]])
-        if downsample is not None:
-            comps = zoom(comps, [1] + [1/i for i in downsample[1:]], order=1)
-        return comps
 
     comps = comps.T
     ica_space = mu * (comps - comps.mean(axis=0))/comps.max()

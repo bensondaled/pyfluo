@@ -1,4 +1,4 @@
-import os, h5py, warnings, sys, re
+import os, h5py, warnings, sys, re,json
 import numpy as np, pandas as pd
 import matplotlib.pyplot as pl
 from skimage.morphology import erosion, dilation
@@ -939,9 +939,9 @@ class Data():
                 grp = h['segmentation']
             segname = 'segmentation{}'.format(self._next_segmentation_idx)
             ds = grp.create_dataset(segname, data=comps, compression='lzf')
-            pca_ica_kwargs.update(gen_kwargs)
-            grp[segname].attrs.update(pca_ica_kwargs)
-            grp[segname].attrs.update(gen_kwargs=gen_kwargs)
+            pca_ica_kwargs.update(gen_kwargs=gen_kwargs)
+            kw = json.dumps(pca_ica_kwargs)
+            grp[segname].attrs.update(kwargs=kw)
 
     def play(self, **kwargs):
         """Play data as a movie
