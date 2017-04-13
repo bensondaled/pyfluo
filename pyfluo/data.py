@@ -583,7 +583,7 @@ class Data():
 
         return Series(_ct, Ts=Ts, t0=_ctts[0])
     
-    def get_maxmov(self, chunk_size=1, resample=3, redo=False, enforce_datatype=np.int16):
+    def get_maxmov(self, chunk_size=2, resample=3, redo=False, enforce_datatype=np.int16):
         """Generate or retrieve a compressed version of the dataset using a rolling maximum method
 
         Parameters
