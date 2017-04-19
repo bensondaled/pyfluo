@@ -470,7 +470,7 @@ class ROIView():
         pt = [round(evt.xdata), round(evt.ydata)]
 
         if self._method == 'manual':
-            self._selection_patches.append(self.ax_fov.plot(pt[0], pt[1], marker='+', markersize=2, color='grey')[0])
+            self._selection_patches.append(self.ax_fov.plot(pt[0], pt[1], marker='+', markersize=8, color='white')[0])
             self._selection.append(pt)
 
         elif self._method == 'wand':
