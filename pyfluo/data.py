@@ -582,6 +582,59 @@ class Data():
             warnings.warn('In camera timestamps, Ts estimation is flawed. Use caution in interpreting timestamps of this signal.')
 
         return Series(_ct, Ts=Ts, t0=_ctts[0])
+
+    def get_camera_example(self, camera_idx, data_file=None, slices=None, redo=False, return_timestamps=True):
+        """
+        Get saved camera example for cam0 or cam1
+        If not present, make it using data in data_file, expected to have mov0, mov1, ts0, and ts1
+        """
+        if not isinstance(camera_idx, int):
+            raise Exception('camera_idx must be an integer')
+
+        field_name = 'camera{}_example'.format(camera_idx)
+        with h5py.File(self.data_file) as f:
+            grp = f.require_group('camera_examples')
+
+            if field_name in grp and not redo:
+                _example = Movie(np.asarray(grp[field_name]), Ts=grp[field_name].attrs['Ts'])
+                timestamps = grp[field_name].attrs['time']
+            else:
+                if data_file is None or not os.path.exists(data_file):
+                    raise Exception('Requested data file {} was not found.'.format(data_file))
+
+                dname = 'mov{}'.format(camera_idx)
+                tname = 'ts{}'.format(camera_idx)
+
+                # load in the behavior movie here, calling it mov
+                # and ts should be defined as the timestamp values of the movie
+                with h5py.File(data_file) as movfile:
+
+                    mov = movfile[dname]
+                    ts = np.asarray(movfile[tname])
+
+                    if field_name in grp and redo:
+                        del grp[field_name]
+                    if slices is None:
+                        sub_movie_size = 1000
+                        n_sub_movies = 2
+                        quart = len(mov)//(n_sub_movies+1)
+                        slices = [slice(quart*i-sub_movie_size//2,quart*i+sub_movie_size//2) for i in range(1,n_sub_movies+1)]
+                    else:
+                        warnings.warn('Custom slices not yet error-checked; use with caution.')
+
+                    Ts = np.mean(np.diff(ts, axis=0)).mean()
+                    data = np.concatenate([mov[s] for s in slices])
+                    timestamps = np.concatenate([ts[s] for s in slices])
+                _example = Movie(data, Ts=Ts)
+                ds = grp.create_dataset(field_name, data=_example, compression='lzf')
+                f['camera_examples'][field_name].attrs['Ts'] = Ts
+                f['camera_examples'][field_name].attrs['time'] = timestamps
+                f['camera_examples'][field_name].attrs['slices'] = str(slices)
+
+        if return_timestamps:
+            return _example, timestamps
+        else:
+            return _example
     
     def get_maxmov(self, chunk_size=2, resample=3, redo=False, enforce_datatype=np.int16):
         """Generate or retrieve a compressed version of the dataset using a rolling maximum method
@@ -608,7 +661,7 @@ class Data():
                     _mm = Movie(np.asarray(f['maxmov']), Ts=f['maxmov'].attrs['Ts'])
             else:
                 if not self._has_data:
-                    warnings.warn('Data not stored in this file, so cannot make example.')
+                    warnings.warn('Data not stored in this file, so cannot make maxmov.')
                     return
                 if 'maxmov' in f and redo:
                     del f['maxmov']
