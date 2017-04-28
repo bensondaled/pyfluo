@@ -22,6 +22,7 @@ elif _pyver == 2:
     input = raw_input
 PF_numeric_types = tuple([int, float] + np.sctypes['float'] + np.sctypes['int'] + np.sctypes['uint'])
 PF_list_types = (list, np.ndarray, tuple)
+PF_pyver = _pyver
 
 """
 # User settings

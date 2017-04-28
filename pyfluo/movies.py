@@ -9,9 +9,9 @@ from .images import Tiff, AVI, HDF5
 from .series import Series
 from .config import *
 
-if _pyver == 3:
+if PF_pyver == 3:
     import tkinter as tk
-elif _pyver == 2:
+elif PF_pyver == 2:
     import Tkinter as tk
 
 class Movie(np.ndarray):
