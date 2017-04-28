@@ -1,8 +1,4 @@
 import numpy as np, pylab as pl, pandas as pd
-if config._pyver == 3:
-    import tkinter as tk
-elif config._pyver == 2:
-    import Tkinter as tk
 from PIL import Image, ImageTk
 from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
@@ -12,6 +8,11 @@ from .roi import ROI, ROIView
 from .images import Tiff, AVI, HDF5
 from .series import Series
 from .config import *
+
+if _pyver == 3:
+    import tkinter as tk
+elif _pyver == 2:
+    import Tkinter as tk
 
 class Movie(np.ndarray):
     """An object for *in-memory* storage of n sequential 2d images along with a sampling rate
