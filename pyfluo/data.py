@@ -545,12 +545,13 @@ class Data():
 
         """
         field_name = 'camera{}_trace'.format(camera_idx)
+        field_name_t = 'camera{}_time'.format(camera_idx)
         with h5py.File(self.data_file) as f:
             cgrp = f['cameras']
             
             if field_name in cgrp:
                 trace = np.asarray(cgrp[field_name])
-                timestamps = cgrp[field_name].attrs['time']
+                timestamps = np.asarray(cgrp[field_name_t])
                 Ts = np.mean(np.diff(timestamps)).mean()
                 trace = Series(trace, Ts=Ts)
 
@@ -591,7 +592,7 @@ class Data():
                 trace = Series(trace, Ts=Ts)
                 ds = cgrp.create_dataset(field_name, data=np.asarray(trace), compression='lzf')
                 f['cameras'][field_name].attrs['Ts'] = Ts
-                f['cameras'][field_name].attrs['time'] = timestamps
+                cgrp.create_dataset(field_name_t, data=np.asarray(timestamps), compression='lzf')
 
         return trace, timestamps
 
