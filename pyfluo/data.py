@@ -575,10 +575,10 @@ class Data():
                     chunk_size = 3000
                     trs = []
                     for i in np.arange(np.ceil(len(mov)/chunk_size)):
-                        i0 = i*chunk_size
-                        i1 = i*chunk_size + chunk_size
+                        i0 = int(i*chunk_size)
+                        i1 = int(i*chunk_size + chunk_size)
                         if i1 > len(mov):
-                            i1 = len(mov)
+                            i1 = int(len(mov))
                         if verbose:
                             print('Chunk {}: {} - {} / {}'.format(i, i0, i1, len(mov))); sys.stdout.flush()
                         submov = Movie(np.asarray(mov[i0:i1]))
