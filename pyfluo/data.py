@@ -539,59 +539,75 @@ class Data():
 
         return _r
     
-    def set_camera_traces(self, traces):
-        """Store a time series signal from behavioral cameras into the dataset
-
-        Parameters
-        ----------
-        traces : pyfluo.Series
-            with index corresponding to timestamps
-        """
-        with h5py.File(self.data_file) as f:
-            if 'camera_traces' not in f:
-                ctgrp = f.create_group('camera_traces')
-            else:
-                ctgrp = f['camera_traces']
-            idx = self._next_ct_idx
-            ctgrp.create_dataset('camera_traces{}'.format(idx), data=traces, compression='lzf')
-            ctgrp.create_dataset('camera_traces{}ts'.format(idx), data=np.asarray(traces.index), compression='lzf')
-    
-    def get_camera_traces(self, idx=None):
+    def get_camera_trace(self, camera_idx, data_file=None, verbose=True):
         """Retrieve stored camera traces from the dataset
+        Or compute them using stored ROI and video file at given destination
 
-        Parameters
-        ----------
-        idx : int
-            idx of traces to retrieve. If None, defaults to highest index available (most recently added)
         """
-        if self._latest_ct_idx is None:
-            return None
-
-        if idx is None:
-            idx = self._latest_ct_idx
-        if idx is None:
-            return None
-
+        field_name = 'camera{}_trace'.format(camera_idx)
         with h5py.File(self.data_file) as f:
-            ctgrp = f['camera_traces']
-            _ct = np.asarray(ctgrp['camera_traces{}'.format(int(idx))])
-            _ctts = np.asarray(ctgrp['camera_traces{}ts'.format(int(idx))])
+            cgrp = f['cameras']
+            
+            if field_name in cgrp:
+                trace = np.asarray(cgrp[field_name])
+                timestamps = cgrp[field_name].attrs['time']
+                Ts = np.mean(np.diff(timestamps)).mean()
+                trace = Series(trace, Ts=Ts)
 
-        Ts = np.mean(np.diff(_ctts))
-        if np.abs(Ts*(len(_ct)-1) - (_ctts[-1]-_ctts[0]) ) > 0.005:
-            warnings.warn('In camera timestamps, Ts estimation is flawed. Use caution in interpreting timestamps of this signal.')
+            else:
+                roi = self.get_camera_roi(camera_idx)
+                if roi is None:
+                    raise Exception('Could not generate trace because no ROI is stored.')
 
-        return Series(_ct, Ts=Ts, t0=_ctts[0])
+                if data_file is None or not os.path.exists(data_file):
+                    raise Exception('Requested data file {} was not found.'.format(data_file))
+
+                dname = 'mov{}'.format(camera_idx)
+                tname = 'ts{}'.format(camera_idx)
+
+                # load in the behavior movie here, calling it mov
+                # and ts should be defined as the timestamp values of the movie
+                with h5py.File(data_file) as movfile:
+
+                    mov = movfile[dname]
+                    ts = np.asarray(movfile[tname])
+
+                    chunk_size = 3000
+                    trs = []
+                    for i in np.ceil(len(mov)/chunk_size):
+                        i0 = i*chunk_size
+                        i1 = i*chunk_size + chunk_size
+                        if i1 > len(mov):
+                            i1 = len(mov)
+                        if verbose:
+                            print('Chunk {}: {} - {} / {}'.format(i, i0, i1, len(mov))); sys.stdout.flush()
+                        submov = Movie(np.asarray(mov[i0:i1]))
+                        subtr = submov.extract(roi)
+                        trs.append(subtr)
+
+                    trace = np.concatenate(trs)
+                    Ts = np.mean(np.diff(ts, axis=0)).mean()
+                    timestamps = ts
+                trace = Series(trace, Ts=Ts)
+                ds = cgrp.create_dataset(field_name, data=np.asarray(trace), compression='lzf')
+                f['cameras'][field_name].attrs['Ts'] = Ts
+                f['cameras'][field_name].attrs['time'] = timestamps
+
+        return trace, timestamps
 
     def set_camera_roi(self, roi, camera_idx, overwrite=False):
         field_name = 'camera{}_roi'.format(camera_idx)
         with h5py.File(self.data_file) as f:
             if 'cameras' not in f:
-                raise Exception('Camera not present, so cannot set roi.')
+                warnings.warn('Camera not present, so cannot set roi.')
+                return None
             grp = f['cameras']
 
             if field_name in grp and overwrite:
                 del grp[field_name]
+                ctname = 'camera{}_trace'.format(camera_idx)
+                if ctname in grp:
+                    del grp[ctname]
             elif field_name in grp and not overwrite:
                 warnings.warn('Not setting ROI because roi exists and overwrite=False.')
                 return
