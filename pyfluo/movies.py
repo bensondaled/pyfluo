@@ -1,7 +1,9 @@
 import numpy as np, pylab as pl, pandas as pd
+import tkinter as tk
+from PIL import Image, ImageTk
 from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
-import sys, tifffile, operator, os, threading
+import sys, tifffile, operator, os, threading, time
 
 from .roi import ROI, ROIView
 from .images import Tiff, AVI, HDF5
@@ -100,13 +102,13 @@ class Movie(np.ndarray):
                     roi.show()
         
         return pro
-    def play(self, **kwargs):
+    def play(self):
         """Play the movie
 
-        For params and details, see pf.movies.play_mov
+        For other opencv-based implementation, see pf.movies.play_mov
         
         """
-        play_mov(self, **kwargs)
+        m = MoviePlayer(self, Ts=self.Ts)
     
     def select_roi(self, *args, **kwargs):
         """Select ROI using ROIView
@@ -360,3 +362,84 @@ def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True,
             scale = scale / 1.5
 
     cv2.destroyWindow(title); cv2.waitKey(1)
+
+class MoviePlayer(tk.Frame):
+
+    def __init__(self, data, Ts=1):
+
+        # Data handling
+        self.data = data
+        minn,maxx = self.data.min(),self.data.max()
+        self.data = (255*((self.data-minn)/(maxx-minn))).astype(np.uint8)
+        self.n, self.h, self.w = self.data.shape
+        self.imshape = self.data.shape[1:][::-1]
+        self.i = 0
+        self.Ts = Ts
+
+        if tk._default_root is not None:
+            self.root = tk._default_root
+            self.master = tk.Toplevel(self.root)
+            self.made_root = False
+        else:
+            self.root = tk.Tk()
+            self.master = self.root
+            self.made_root = True
+        tk.Frame.__init__(self, master=self.master, width=self.w+3, height=self.h+3)
+        self.bind("<Destroy>", self.end)
+
+        # Tk setup
+        self.canvas = tk.Canvas(self, width=self.w, height=self.h)
+        # Populate frame
+        self.pack()
+        self.canvas.place(relx=0,rely=0)
+
+        # Bindings
+        self.root.bind('f', self.faster)
+        self.root.bind('s', self.slower)
+        self.root.bind('r', self.reverse)
+
+        # Run events
+        self._inc = 1
+        self.recall = None
+        self.ended = False
+        self.t0 = time.clock()
+        self.update_interval = 1 # seconds
+        self.after(0, self.step)
+        self.mainloop()
+
+    def faster(self, *args):
+        self.Ts /= 1.5
+
+    def slower(self, *args):
+        self.Ts *= 1.5
+
+    def reverse(self, *args):
+        self._inc = -self._inc
+
+    def inc(self):
+        n = self._inc
+        self.i += n
+        over = self.n - self.i
+        if over <= 0:
+            self.i = abs(over)
+        if self.i < 0:
+            self.i = self.n + self.i
+
+    def step(self):
+        if self.ended:
+            return
+        self.im = Image.fromarray(self.data[self.i])
+        self.inc()
+        self.photo = ImageTk.PhotoImage(image=self.im) # 1-3 msec
+        self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW) # 1-5 msec
+        if time.clock() - self.t0 > self.update_interval:
+            self.update() # 20-40 msec
+        self.recall = self.after(int(self.Ts*1000),self.step)
+
+    def end(self, *args):
+        self.ended = True
+        if self.made_root:
+            self.root.quit()
+        else:
+            self.master.destroy()
+            self.root.quit() # no clue why this doesnt kill mpl windows but its okay
