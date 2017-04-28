@@ -574,7 +574,7 @@ class Data():
 
                     chunk_size = 3000
                     trs = []
-                    for i in np.ceil(len(mov)/chunk_size):
+                    for i in np.arange(np.ceil(len(mov)/chunk_size)):
                         i0 = i*chunk_size
                         i1 = i*chunk_size + chunk_size
                         if i1 > len(mov):
