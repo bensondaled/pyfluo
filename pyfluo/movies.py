@@ -1,5 +1,8 @@
 import numpy as np, pylab as pl, pandas as pd
-import tkinter as tk
+if config._pyver == 3:
+    import tkinter as tk
+elif config._pyver == 2:
+    import Tkinter as tk
 from PIL import Image, ImageTk
 from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
@@ -384,7 +387,9 @@ class MoviePlayer(tk.Frame):
             self.root = tk.Tk()
             self.master = self.root
             self.made_root = True
-        tk.Frame.__init__(self, master=self.master, width=self.w+3, height=self.h+3)
+
+        window_size = [self.w, self.h]
+        tk.Frame.__init__(self, master=self.master, width=window_size[0], height=window_size[1])
         self.bind("<Destroy>", self.end)
 
         # Tk setup

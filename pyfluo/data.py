@@ -583,6 +583,35 @@ class Data():
 
         return Series(_ct, Ts=Ts, t0=_ctts[0])
 
+    def set_camera_roi(self, roi, camera_idx, overwrite=False):
+        field_name = 'camera{}_roi'.format(camera_idx)
+        with h5py.File(self.data_file) as f:
+            if 'cameras' not in f:
+                raise Exception('Camera not present, so cannot set roi.')
+            grp = f['cameras']
+
+            if field_name in grp and overwrite:
+                del grp[field_name]
+            elif field_name in grp and not overwrite:
+                warnings.warn('Not setting ROI because roi exists and overwrite=False.')
+                return
+
+            grp.create_dataset(field_name, data=roi)
+    
+    def get_camera_roi(self, camera_idx):
+        field_name = 'camera{}_roi'.format(camera_idx)
+        with h5py.File(self.data_file) as f:
+            if 'cameras' not in f:
+                raise Exception('Camera not present, no ROI present.')
+            grp = f['cameras']
+
+            if field_name not in grp:
+                warnings.warn('ROI not found for requested camera.')
+                return None
+
+            roi = np.asarray(grp[field_name])
+        return ROI(roi)
+
     def get_camera_example(self, camera_idx, data_file=None, slices=None, redo=False, return_timestamps=True):
         """
         Get saved camera example for cam0 or cam1
@@ -593,7 +622,7 @@ class Data():
 
         field_name = 'camera{}_example'.format(camera_idx)
         with h5py.File(self.data_file) as f:
-            grp = f.require_group('camera_examples')
+            grp = f.require_group('cameras')
 
             if field_name in grp and not redo:
                 _example = Movie(np.asarray(grp[field_name]), Ts=grp[field_name].attrs['Ts'])
@@ -627,9 +656,9 @@ class Data():
                     timestamps = np.concatenate([ts[s] for s in slices])
                 _example = Movie(data, Ts=Ts)
                 ds = grp.create_dataset(field_name, data=_example, compression='lzf')
-                f['camera_examples'][field_name].attrs['Ts'] = Ts
-                f['camera_examples'][field_name].attrs['time'] = timestamps
-                f['camera_examples'][field_name].attrs['slices'] = str(slices)
+                f['cameras'][field_name].attrs['Ts'] = Ts
+                f['cameras'][field_name].attrs['time'] = timestamps
+                f['cameras'][field_name].attrs['slices'] = str(slices)
 
         if return_timestamps:
             return _example, timestamps
@@ -815,6 +844,9 @@ class Data():
         dffname = 'dff{}'.format(idx)
 
         with h5py.File(self.data_file) as f:
+            if 'traces' not in f:
+                raise Exception('DFF has not yet been computed.')
+
             grp = f['traces']
 
             if dffname in grp and not recompute:
