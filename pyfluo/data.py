@@ -547,6 +547,8 @@ class Data():
         field_name = 'camera{}_trace'.format(camera_idx)
         field_name_t = 'camera{}_time'.format(camera_idx)
         with h5py.File(self.data_file) as f:
+            if 'cameras' not in f:
+                return None
             cgrp = f['cameras']
             
             if field_name in cgrp:
