@@ -552,7 +552,7 @@ class Data():
             if field_name in cgrp:
                 trace = np.asarray(cgrp[field_name])
                 timestamps = np.asarray(cgrp[field_name_t])
-                Ts = np.mean(np.diff(timestamps)).mean()
+                Ts = np.mean(np.diff(timestamps, axis=0)).mean()
                 trace = Series(trace, Ts=Ts)
 
             else:
@@ -594,7 +594,9 @@ class Data():
                 f['cameras'][field_name].attrs['Ts'] = Ts
                 cgrp.create_dataset(field_name_t, data=np.asarray(timestamps), compression='lzf')
 
-        return trace, timestamps
+        ret = pd.DataFrame(trace, index=timestamps[:,1]) # note this hardcoded decision
+        ret.Ts = Ts
+        return ret
 
     def set_camera_roi(self, roi, camera_idx, overwrite=False):
         field_name = 'camera{}_roi'.format(camera_idx)
