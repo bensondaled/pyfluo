@@ -560,7 +560,8 @@ class Data():
             else:
                 roi = self.get_camera_roi(camera_idx)
                 if roi is None:
-                    raise Exception('Could not generate trace because no ROI is stored.')
+                    warnings.warn('Could not generate trace because no ROI is stored.')
+                    return None
 
                 if data_file is None or not os.path.exists(data_file):
                     raise Exception('Requested data file {} was not found.'.format(data_file))
