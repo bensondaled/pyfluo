@@ -126,24 +126,19 @@ class ROI(np.ndarray):
 
         To show just borders, use facecolor and edgecolor keywords
         """
-        patch_kw['alpha'] = patch_kw.get('alpha', 0.5)
-        #patch_kw['edgecolors'] = patch_kw.get('edgecolors', 'none')
-        patch_kw['cmap'] = patch_kw.get('cmap', pl.cm.viridis)
-
         roi = self.as3d()
-    
-        made_ax = False
-        if ax is None:
-            fig = pl.gcf()
-            cur_axes = fig.get_axes()
 
-            if len(cur_axes) == 0:
-                made_ax = True
-            
+        patch_kw['alpha'] = patch_kw.get('alpha', 0.5)
+        patch_kw['facecolors'] = patch_kw.get('facecolors', pl.cm.viridis(np.linspace(0,1,len(roi))))
+        patch_kw['edgecolors'] = patch_kw.get('edgecolors', pl.cm.viridis(np.linspace(0,1,len(roi))))
+        patch_kw['lw'] = patch_kw.get('lw', 2)
+        patch_kw['linewidth'] = patch_kw.get('linewidth', 2)
+
+        if ax is None:
             ax = pl.gca()
 
         # show patches
-        coll = PolyCollection(verts=[r.pts for r in roi], array=np.arange(len(roi)), **patch_kw)
+        coll = PolyCollection(verts=[r.pts for r in roi], **patch_kw)
         ax.add_collection(coll)
 
         # show labels
@@ -151,10 +146,8 @@ class ROI(np.ndarray):
             for i,r in enumerate(roi):
                 ax.annotate(str(i), np.mean(r.pts, axis=0), **label_kw)
 
-        if made_ax:
-            yshape,xshape = roi.shape[1:]
-            ax.axis([0,xshape,0,yshape])
-            pass
+        yshape,xshape = roi.shape[1:]
+        ax.axis([0,xshape,yshape,0])
 
         return ax
 
