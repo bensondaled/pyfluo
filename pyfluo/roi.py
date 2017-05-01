@@ -131,10 +131,15 @@ class ROI(np.ndarray):
         patch_kw['cmap'] = patch_kw.get('cmap', pl.cm.viridis)
 
         roi = self.as3d()
-        
+    
         made_ax = False
         if ax is None:
-            made_ax = True
+            fig = pl.gcf()
+            cur_axes = fig.get_axes()
+
+            if len(cur_axes) == 0:
+                made_ax = True
+            
             ax = pl.gca()
 
         # show patches

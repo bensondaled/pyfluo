@@ -597,7 +597,7 @@ class Data():
                 f['cameras'][field_name].attrs['Ts'] = Ts
                 cgrp.create_dataset(field_name_t, data=np.asarray(timestamps), compression='lzf')
 
-        ret = pd.DataFrame(trace, index=timestamps[:,1]) # note this hardcoded decision
+        ret = pd.DataFrame(trace, index=timestamps[:,0]) # note this hardcoded decision
         ret.Ts = Ts
         return ret
 
