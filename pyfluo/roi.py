@@ -152,8 +152,8 @@ class ROI(np.ndarray):
                 ax.annotate(str(i), np.mean(r.pts, axis=0), **label_kw)
 
         if made_ax:
-            #yshape,xshape = roi.shape[1:]
-            #pl.axis([0,xshape,0,yshape])
+            yshape,xshape = roi.shape[1:]
+            ax.axis([0,xshape,0,yshape])
             pass
 
         return ax
