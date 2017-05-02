@@ -87,11 +87,11 @@ class Data():
         range_x = self.si_data['scanimage.SI.hRoiManager.scanAngleMultiplierFast']
         range_y = self.si_data['scanimage.SI.hRoiManager.scanAngleMultiplierSlow']
         zoom = self.si_data['scanimage.SI.hRoiManager.scanZoomFactor']
-        fov_microns = self.FOV / zoom
-        x_microns = fov_microns * range_x
-        y_microns = fov_microns * range_y
-        ppm_x = x / x_microns
-        ppm_y = y / y_microns
+        fov_microns = float(self.FOV) / zoom
+        x_microns = float(fov_microns) * range_x
+        y_microns = float(fov_microns) * range_y
+        ppm_x = float(x) / x_microns
+        ppm_y = float(y) / y_microns
         assert ppm_x == ppm_y, 'Pixels per micron seem strange:\ny x = {} {}\nzoom = {}\nrange y x = {} {}'.format(y,x,zoom,range_y,range_x)
         return ppm_x
 
