@@ -88,8 +88,8 @@ class Data():
         range_y = self.si_data['scanimage.SI.hRoiManager.scanAngleMultiplierSlow']
         zoom = self.si_data['scanimage.SI.hRoiManager.scanZoomFactor']
         fov_microns = self.FOV / zoom
-        x_microns = fov_microns / range_x
-        y_microns = fov_microns / range_y
+        x_microns = fov_microns * range_x
+        y_microns = fov_microns * range_y
         ppm_x = x / x_microns
         ppm_y = y / y_microns
         assert ppm_x == ppm_y, 'Pixels per micron seem strange:\ny x = {} {}\nzoom = {}\nrange y x = {} {}'.format(y,x,zoom,range_y,range_x)
@@ -1334,5 +1334,5 @@ class Data():
         overlap_kw = kwargs.pop('overlap_kw', {})
         overlap_kw.update(distance_thresh = dist_thresh_pix)
 
-        roi_new = process_roi(roi, dff, overlap_kw=overlap, **kwargs)
+        roi_new = process_roi(roi, dff, overlap_kw=overlap_kw, **kwargs)
         self.set_roi(roi_new)
