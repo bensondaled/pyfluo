@@ -352,7 +352,7 @@ def remove_overlaps(roi, dff, overlap_thresh=.7, debug=False, **similarity_kw):
 
         rs = roi_[cci]
         sums = rs.sum(axis=1)
-        dot = (rs @ rs.T) / sums
+        dot = (rs.dot(rs.T)) / sums
         np.fill_diagonal(dot, 0) # diagonal refers to self for each roi
         # each column now represents one roi, and each row is the fraction of itself that lives within the roi of that row
         # so goal is to remove columns that contain anything above threshold
