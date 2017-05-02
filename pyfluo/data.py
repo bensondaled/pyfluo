@@ -10,7 +10,7 @@ from .movies import Movie, play_mov
 from .series import Series
 from .roi import ROI, ROIView
 from .fluorescence import compute_dff, detect_transients
-from .segmentation import pca_ica
+from .segmentation import pca_ica, process_roi
 from .motion import motion_correct, apply_motion_correction
 from .util import rolling_correlation
 from .config import *
@@ -92,7 +92,7 @@ class Data():
         y_microns = fov_microns / range_y
         ppm_x = x / x_microns
         ppm_y = y / y_microns
-        assert ppm_x == ppm_y
+        assert ppm_x == ppm_y, 'Pixels per micron seem strange:\ny x = {} {}\nzoom = {}\nrange y x = {} {}'.format(y,x,zoom,range_y,range_x)
         return ppm_x
 
     def si_find(self, query):
@@ -1334,5 +1334,5 @@ class Data():
         overlap_kw = kwargs.pop('overlap_kw', {})
         overlap_kw.update(distance_thresh = dist_thresh_pix)
 
-        roi_new = pf.process_roi(roi, dff, overlap_kw=overlap, **kwargs)
+        roi_new = process_roi(roi, dff, overlap_kw=overlap, **kwargs)
         self.set_roi(roi_new)
