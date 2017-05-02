@@ -1,6 +1,7 @@
 import numpy as np
 import pylab as pl
 import networkx as nx
+from scipy.spatial.distance import pdist
 import sys, types, time, warnings
 from sklearn.decomposition import IncrementalPCA, FastICA, NMF
 sklNMF = NMF
@@ -312,149 +313,120 @@ def circularity(m):
     perim = perimeter(m)
     return 4*np.pi*area/perim**2
 
-def merge_roi(roi, overlap_thresh=0.4, merge_mode='largest'):
-    # Attempts to merge regions of interest that have overlap
-    roi_orig = roi.copy()
-    roi = roi.reshape([len(roi), -1]).astype(int)
+def mindist(a,b):
+    # compute the minimum distance from a to b
+    # meaning: for each point in a, compute distance to all points in b
+    # then take minimum of all computed distances
+    # a and b are 2d np arrays representing rois
+    aw_a = np.argwhere(a)
+    aw_b = np.argwhere(b)
 
-    norm = np.repeat(roi.sum(axis=1), len(roi)).reshape([len(roi),len(roi)])
-    overlap_oflarger = roi.dot(roi.T) / np.max([norm, norm.T], axis=0) # min or max means as pctg of smaller or larger roi
-    overlap_ofsmaller = roi.dot(roi.T) / np.min([norm, norm.T], axis=0) # min or max means as pctg of smaller or larger roi
-    overlap_oflarger[np.triu_indices_from(overlap_oflarger)] = 0
-    overlap_ofsmaller[np.triu_indices_from(overlap_ofsmaller)] = 0
+    dds = np.array([np.sqrt(np.sum((pt - aw_b)**2, axis=1)) for pt in aw_a])
+    return np.min(dds)
 
-    merge = np.asarray(np.nonzero( (overlap_oflarger>overlap_thresh) | (overlap_ofsmaller>overlap_thresh) )).T # debating between & and | for the operator
+def similarity_neighbourhoods(dff, thresh=.8):
+    # given a t x n dff signal, find neighbourhoods of cells with similar (correlated) races
+    corr = np.corrcoef(dff.T)
+    similar = np.argwhere(corr > thresh)
+    similar = similar[similar[:,0] != similar[:,1]]
+    # convert into a graph
     g = nx.Graph()
-    g.add_nodes_from(np.arange(len(overlap_ofsmaller)))
-    g.add_edges_from(merge)
-    merge_grps = list(nx.connected_components(g))
+    g.add_edges_from(similar)
+    # get neighbourhoods
+    cc = np.array([np.array(list(i)) for i in nx.connected_components(g)])
+    return cc
 
-    if merge_mode == 'sum':
-        # sum members of a group:
-        roi = np.array([(roi_orig[list(mg)].sum(axis=0))>0 for mg in merge_grps])
-    elif merge_mode == 'largest':
-        # or take largest of a group:
-        def largest_of(a):
-            return a[np.argmax([i.sum() for i in a])]
-        roi = np.array([largest_of(roi_orig[list(mg)]) for mg in merge_grps])
+def remove_overlaps(roi, dff, thresh=.7, debug=False):
+    # given an roi and its corresponding traces, use similarilty_neighbourhoods and overlap metrics to remove cells that are similar because they are on top of one another
+    # thresh: if fraction `thresh` of roi A lives inside any other roi, remove roi A
+    # returns new roi with the merging/removal performed
 
-    roi = ROI(roi)
-    return roi
+    roi_ = roi.reshape([len(roi), -1]).astype(int) # flat version for overlap metrics
+    cc = similarity_neighbourhoods(dff)
+    remove = np.array([], dtype=int)
 
-def local_correlations(self,eight_neighbours=False):
-     # Output:
-     #   rho M x N matrix, cross-correlation with adjacent pixel
-     # if eight_neighbours=True it will take the diagonal neighbours too
+    for cci in cc:
+        if debug:
+            fig,axs = pl.subplots(1,2)
+            roi[cci].show(ax=axs[0])
 
-     rho = np.zeros(np.shape(self.mov)[1:3])
-     w_mov = (self.mov - np.mean(self.mov, axis = 0))/np.std(self.mov, axis = 0)
- 
-     rho_h = np.mean(np.multiply(w_mov[:,:-1,:], w_mov[:,1:,:]), axis = 0)
-     rho_w = np.mean(np.multiply(w_mov[:,:,:-1], w_mov[:,:,1:,]), axis = 0)
-     
-     if True:
-         rho_d1 = np.mean(np.multiply(w_mov[:,1:,:-1], w_mov[:,:-1,1:,]), axis = 0)
-         rho_d2 = np.mean(np.multiply(w_mov[:,:-1,:-1], w_mov[:,1:,1:,]), axis = 0)
+        rs = roi_[cci]
+        sums = rs.sum(axis=1)
+        dot = (rs @ rs.T) / sums
+        np.fill_diagonal(dot, 0) # diagonal refers to self for each roi
+        # each column now represents one roi, and each row is the fraction of itself that lives within the roi of that row
+        # so goal is to remove columns that contain anything above threshold
+        remove_, = np.where(dot.max(axis=0) > thresh)
+        if len(remove_) < len(cci):
+            # some but not all were found to live inside others
+            pass
+        elif len(remove_) == len(cci):
+            # all were found to live inside each other; so take the largest
+            keep = np.argmax(sums)
+            remove_ = np.arange(len(cci)) != keep
+        
+        to_keep = np.ones(len(cci)).astype(bool)
+        to_keep[remove_] = False
+        remove_ = cci[remove_]
+        remove = np.append(remove, remove_)
+        cci = cci[to_keep]
+        
+        if debug:
+            roi[cci].show(ax=axs[1])
 
+    keeper = np.ones(len(roi)).astype(bool)
+    keeper[remove] = False
+    roi_new = roi[keeper]
+    return roi_new,keeper
 
-     rho[:-1,:] = rho[:-1,:] + rho_h
-     rho[1:,:] = rho[1:,:] + rho_h
-     rho[:,:-1] = rho[:,:-1] + rho_w
-     rho[:,1:] = rho[:,1:] + rho_w
-     
-     if eight_neighbours:
-         rho[:-1,:-1] = rho[:-1,:-1] + rho_d2
-         rho[1:,1:] = rho[1:,1:] + rho_d1
-         rho[1:,:-1] = rho[1:,:-1] + rho_d1
-         rho[:-1,1:] = rho[:-1,1:] + rho_d2
-     
-     
-     if eight_neighbours:
-         neighbors = 8 * np.ones(np.shape(self.mov)[1:3])  
-         neighbors[0,:] = neighbors[0,:] - 3
-         neighbors[-1,:] = neighbors[-1,:] - 3
-         neighbors[:,0] = neighbors[:,0] - 3
-         neighbors[:,-1] = neighbors[:,-1] - 3
-         neighbors[0,0] = neighbors[0,0] + 1
-         neighbors[-1,-1] = neighbors[-1,-1] + 1
-         neighbors[-1,0] = neighbors[-1,0] + 1
-         neighbors[0,-1] = neighbors[0,-1] + 1
-     else:
-         neighbors = 4 * np.ones(np.shape(self.mov)[1:3]) 
-         neighbors[0,:] = neighbors[0,:] - 1
-         neighbors[-1,:] = neighbors[-1,:] - 1
-         neighbors[:,0] = neighbors[:,0] - 1
-         neighbors[:,-1] = neighbors[:,-1] - 1
-     
+def merge_closebys(roi, dff, thresh=20):
+    # given rois and corresponding dffs, if any pair of rois has similar traces and is close to one another, merge them
+    # approach: compute pairwise "mindist", draw edges between those below thresh, and merge any neighbourhoods
+    # thresh: currently in pixels, will soon be changed to microns
 
-     rho = np.divide(rho, neighbors)
+    cc = similarity_neighbourhoods(dff)
+    remove = np.array([], dtype=int)
+    to_add = []
 
-     return rho
-     
-def semiauto(mov, roi, min_size=100, n_std=2., filter_kernel=.75, no_borders=True, return_all=False, verbose=True):
-    ## 
-    mov = mov-mov.mean(axis=0)
+    for cci in cc:
 
-    shape = np.array(mov.shape[1:])
+        rs = roi[cci]
+        mds = np.ones([len(rs),len(rs)])*thresh + 1 # all start above thresh
+        for idx,r in enumerate(rs):
+            mds[idx,:] = [mindist(r,rs[i2]) for i2 in range(len(rs))]
 
-    tr_all = mov.extract(roi)
-    if roi.ndim == 2:
-        roi = [roi]
+        close = np.argwhere(mds < thresh)
+        close = close[close[:,0] != close[:,1]]
+        # convert into a graph
+        g = nx.Graph()
+        g.add_edges_from(close)
+        # get neighbourhoods
+        close_nbhds = np.array([np.array(list(i)) for i in nx.connected_components(g)])
+        close_nbhds = np.array([cn for cn in close_nbhds if len(cn)>1])
+       
+        # remove any rois that appear in a neighbourhood that's about to be merged
+        if len(close_nbhds) == 0:
+            continue
+        remove = np.append(remove, cci[np.unique(np.concatenate(close_nbhds))])
+        # merge all >1 neighbourhoods
+        for cn in close_nbhds:
+            new = np.any(roi[cci[cn]], axis=0).astype(bool)
+            to_add.append(new)
 
-    cims = []
-    full = []
-    result = []
+    keeper = np.ones(len(roi)).astype(bool)
+    keeper[remove] = False
+    roi_new = roi[keeper]
+    roi_new = roi_new.add(pf.ROI(to_add))
+    return roi_new
 
-    for idx,r in enumerate(roi):
-        tr = tr_all.iloc[:,idx].values
-        p = r.pts.mean(axis=0)
+def process_roi(roi,dff):
+    """
+    Given roi and dff of corresponding traces, use `remove_overlaps` and `merge_closebys` to "correct" the roi to less redundant set
 
-        ## Within-roi correlation map
-        aw = np.argwhere(r)
-        within = mov[:,aw[:,0],aw[:,1]]
-        within_ccs = [np.corrcoef(w,tr)[0,1] for w in within.T]
-        within_mean = np.mean(within_ccs)
-        within_std = np.std(within_ccs)
+    Returns new roi
+    (because merges occur too, dff cannot be returned and must be re-computed)
+    """
+    r,keep = remove_overlaps(roi, dff)
+    r = merge_closebys(r, dff[:,keep])
+    return r
 
-        ## Fullframe correlation map
-        res = np.zeros(shape)
-        (maxy,maxx),(miny,minx) = shape-1,[0,0]
-        if verbose:
-            pbar = ProgressBar(maxval=shape[0]).start()
-        for y in np.arange(0,shape[0]):
-            if verbose:
-                pbar.update(y)
-            for x in np.arange(0,shape[1]):
-                res[y,x] = np.corrcoef(tr, mov[:,y,x])[0,1]
-        if verbose:
-            pbar.finish()
-
-        cims.append(res)
-        # some filtering
-        thresh = within_mean - n_std*within_std
-        im = res>thresh
-        im = gaussian(im, filter_kernel)
-        im = erosion(im)
-        im = dilation(im)
-        im = im>0
-
-        # labeling
-        objs,nob = label(im)
-        segs = []
-        for i in range(1,nob+1):
-            if np.sum(objs==i)<min_size:
-                continue
-            wh = np.where(objs==i)
-            if no_borders and any([np.any((w==0)|(w==d)) for w,d in zip(wh,shape)]):
-                continue
-            segs.append(objs==i)
-        centers = np.array([np.argwhere(s).mean(axis=0) for s in segs])
-        dist = np.array([np.sqrt(np.sum(p-c)**2) for c in centers])
-        cell = segs[np.argmin(dist)]
-        result.append(cell)
-        full.append(segs)
-    if return_all:
-        return ROI(result), [ROI(f) for f in full], np.array(cims)
-    else:
-        return ROI(result)
-    ##
