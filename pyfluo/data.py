@@ -16,6 +16,7 @@ from .util import rolling_correlation
 from .config import *
 
 class Data():
+    FOV = 1200
     """
     The goal of this class is to facilitate working with a particular format of data storage that seems to be part of a common pipeline for imaging analysis.
 
@@ -79,6 +80,20 @@ class Data():
             warnings.warn('Sampling periods do not match. This class currently doesn\'t support this. Will replace Ts\'s with mean of Ts\'s.')
             print(self.info)
             self.info.Ts = np.mean(self.info.Ts)
+
+    @property
+    def pixels_per_micron(self):
+        y,x = self.shape[1:]
+        range_x = self.si_data['scanimage.SI.hRoiManager.scanAngleMultiplierFast']
+        range_y = self.si_data['scanimage.SI.hRoiManager.scanAngleMultiplierSlow']
+        zoom = self.si_data['scanimage.SI.hRoiManager.scanZoomFactor']
+        fov_microns = self.FOV / zoom
+        x_microns = fov_microns / range_x
+        y_microns = fov_microns / range_y
+        ppm_x = x / x_microns
+        ppm_y = y / y_microns
+        assert ppm_x == ppm_y
+        return ppm_x
 
     def si_find(self, query):
         """Retrieve scanimage data from dataset
@@ -1299,3 +1314,25 @@ class Data():
             grp.create_dataset(trname, data=np.asarray(tr), compression='lzf')
             grp.create_dataset(dffname, data=np.asarray(dff), compression='lzf')
             grp[dffname].attrs.update(origin='roi_idx_{}'.format(roi_idx), subset=keep.tolist())
+
+    def process_roi(self, dist_thresh=5, **kwargs):
+        """Use pf.process_roi to process the most recently stored roi
+
+        Parameters
+        ----------
+        dist_thresh : threshold for pf.segmentation.merge_closebys, given here in microns (but if supplied directly in overlap_kw, will be interpreted as pixels)
+        """
+        roi = self.get_roi()
+        dff = self.get_dff()
+
+        if roi is None or dff is None:
+            warnings.warn('No operation performed because roi/dff is not stored in data.')
+            return None
+
+        dist_thresh_pix = self.pixels_per_micron * dist_thresh
+
+        overlap_kw = kwargs.pop('overlap_kw', {})
+        overlap_kw.update(distance_thresh = dist_thresh_pix)
+
+        roi_new = pf.process_roi(roi, dff, overlap_kw=overlap, **kwargs)
+        self.set_roi(roi_new)

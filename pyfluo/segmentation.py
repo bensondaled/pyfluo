@@ -324,10 +324,10 @@ def mindist(a,b):
     dds = np.array([np.sqrt(np.sum((pt - aw_b)**2, axis=1)) for pt in aw_a])
     return np.min(dds)
 
-def similarity_neighbourhoods(dff, thresh=.8):
+def similarity_neighbourhoods(dff, similarity_thresh=.8):
     # given a t x n dff signal, find neighbourhoods of cells with similar (correlated) races
     corr = np.corrcoef(dff.T)
-    similar = np.argwhere(corr > thresh)
+    similar = np.argwhere(corr > similarity_thresh)
     similar = similar[similar[:,0] != similar[:,1]]
     # convert into a graph
     g = nx.Graph()
@@ -336,13 +336,13 @@ def similarity_neighbourhoods(dff, thresh=.8):
     cc = np.array([np.array(list(i)) for i in nx.connected_components(g)])
     return cc
 
-def remove_overlaps(roi, dff, thresh=.7, debug=False):
+def remove_overlaps(roi, dff, overlap_thresh=.7, debug=False, **similarity_kw):
     # given an roi and its corresponding traces, use similarilty_neighbourhoods and overlap metrics to remove cells that are similar because they are on top of one another
-    # thresh: if fraction `thresh` of roi A lives inside any other roi, remove roi A
+    # thresh: if fraction `overlap_thresh` of roi A lives inside any other roi, remove roi A
     # returns new roi with the merging/removal performed
 
     roi_ = roi.reshape([len(roi), -1]).astype(int) # flat version for overlap metrics
-    cc = similarity_neighbourhoods(dff)
+    cc = similarity_neighbourhoods(dff, **similarity_kw)
     remove = np.array([], dtype=int)
 
     for cci in cc:
@@ -356,7 +356,7 @@ def remove_overlaps(roi, dff, thresh=.7, debug=False):
         np.fill_diagonal(dot, 0) # diagonal refers to self for each roi
         # each column now represents one roi, and each row is the fraction of itself that lives within the roi of that row
         # so goal is to remove columns that contain anything above threshold
-        remove_, = np.where(dot.max(axis=0) > thresh)
+        remove_, = np.where(dot.max(axis=0) > overlap_thresh)
         if len(remove_) < len(cci):
             # some but not all were found to live inside others
             pass
@@ -379,23 +379,23 @@ def remove_overlaps(roi, dff, thresh=.7, debug=False):
     roi_new = roi[keeper]
     return roi_new,keeper
 
-def merge_closebys(roi, dff, thresh=20):
+def merge_closebys(roi, dff, distance_thresh=20, **similarity_kw):
     # given rois and corresponding dffs, if any pair of rois has similar traces and is close to one another, merge them
     # approach: compute pairwise "mindist", draw edges between those below thresh, and merge any neighbourhoods
-    # thresh: currently in pixels, will soon be changed to microns
+    # thresh in pixels
 
-    cc = similarity_neighbourhoods(dff)
+    cc = similarity_neighbourhoods(dff, **similarity_kw)
     remove = np.array([], dtype=int)
     to_add = []
 
     for cci in cc:
 
         rs = roi[cci]
-        mds = np.ones([len(rs),len(rs)])*thresh + 1 # all start above thresh
+        mds = np.ones([len(rs),len(rs)])*distance_thresh + 1 # all start above thresh
         for idx,r in enumerate(rs):
             mds[idx,:] = [mindist(r,rs[i2]) for i2 in range(len(rs))]
 
-        close = np.argwhere(mds < thresh)
+        close = np.argwhere(mds < distance_thresh)
         close = close[close[:,0] != close[:,1]]
         # convert into a graph
         g = nx.Graph()
@@ -419,14 +419,17 @@ def merge_closebys(roi, dff, thresh=20):
     roi_new = roi_new.add(ROI(to_add))
     return roi_new
 
-def process_roi(roi,dff):
+def process_roi(roi, dff, overlap_kw={}, closeby_kw={}):
     """
     Given roi and dff of corresponding traces, use `remove_overlaps` and `merge_closebys` to "correct" the roi to less redundant set
 
     Returns new roi
     (because merges occur too, dff cannot be returned and must be re-computed)
     """
-    r,keep = remove_overlaps(roi, dff)
-    r = merge_closebys(r, dff[:,keep])
+    overlap_kw['similarity_thresh'] = overlap_kw.pop('similarity_thresh', .5)
+    closeby_kw['similarity_thresh'] = closeby_kw.pop('similarity_thresh', .8)
+
+    r,keep = remove_overlaps(roi, dff, **overlap_kw)
+    r = merge_closebys(r, dff[:,keep], **closeby_kw)
     return r
 
