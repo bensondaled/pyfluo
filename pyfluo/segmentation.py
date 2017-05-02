@@ -416,7 +416,8 @@ def merge_closebys(roi, dff, distance_thresh=20, **similarity_kw):
     keeper = np.ones(len(roi)).astype(bool)
     keeper[remove] = False
     roi_new = roi[keeper]
-    roi_new = roi_new.add(ROI(to_add))
+    if len(to_add) > 0:
+        roi_new = roi_new.add(ROI(to_add))
     return roi_new
 
 def process_roi(roi, dff, overlap_kw={}, closeby_kw={}):
