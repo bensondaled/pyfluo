@@ -416,7 +416,7 @@ def merge_closebys(roi, dff, thresh=20):
     keeper = np.ones(len(roi)).astype(bool)
     keeper[remove] = False
     roi_new = roi[keeper]
-    roi_new = roi_new.add(pf.ROI(to_add))
+    roi_new = roi_new.add(ROI(to_add))
     return roi_new
 
 def process_roi(roi,dff):
