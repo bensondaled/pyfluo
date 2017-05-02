@@ -1331,8 +1331,8 @@ class Data():
 
         dist_thresh_pix = self.pixels_per_micron * dist_thresh
 
-        overlap_kw = kwargs.pop('overlap_kw', {})
-        overlap_kw.update(distance_thresh = dist_thresh_pix)
+        closeby_kw = kwargs.pop('closeby_kw', {})
+        closeby_kw.update(distance_thresh = dist_thresh_pix)
 
-        roi_new = process_roi(roi, dff, overlap_kw=overlap_kw, **kwargs)
+        roi_new = process_roi(roi, dff, closeby_kw=closeby_kw, **kwargs)
         self.set_roi(roi_new)
