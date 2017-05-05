@@ -215,7 +215,7 @@ class Data():
             size = sli.stop-sli.start
 
             if verbose:
-                print('Chunk {}/{}: frames {}:{}'.format(idx+1,n_chunks,sli.start,sli.stop)); sys.stdout.flush()
+                print('Chunk {}/{}: frames {}:{}'.format(idx+1,n_chunks,sli.start,sli.stop))
             chunk = Movie(self[sli])
             _, templ,vals = motion_correct(chunk, compute_kwargs=compute_kwargs, **mc_kwargs)
 
@@ -331,7 +331,7 @@ class Data():
                         todo.append( (funcn, fxn, afxn, ax) ) # name, func, aggfunc, axis
 
         if verbose:
-            print('Will compute {}'.format(todo)); sys.stdout.flush()
+            print('Will compute {}'.format(todo))
 
         # compute new ones
         if len(todo) > 0:
@@ -340,7 +340,7 @@ class Data():
             for chunk in self.gen(chunk_size=self.batch_size):
                 counter += 1
                 if verbose:
-                    print('Chunk number {}'.format(counter)); sys.stdout.flush()
+                    print('Chunk number {}'.format(counter))
                 for idx,(fn,fxn,afxn,ax) in enumerate(todo):
                     res = fxn(chunk, axis=ax)
                     results[idx].append(res)
@@ -599,7 +599,7 @@ class Data():
                         if i1 > len(mov):
                             i1 = int(len(mov))
                         if verbose:
-                            print('Chunk {}: {} - {} / {}'.format(i, i0, i1, len(mov))); sys.stdout.flush()
+                            print('Chunk {}: {} - {} / {}'.format(i, i0, i1, len(mov)))
                         submov = Movie(np.asarray(mov[i0:i1]))
                         subtr = submov.extract(roi)
                         trs.append(subtr)
@@ -744,6 +744,53 @@ class Data():
             _mm = _mm.astype(enforce_datatype)
         return _mm
     
+    def get_meanmov(self, slices, name, attrs={}, verbose=True):
+        """Generate or retrieve a meanmov, i.e. a movie comprised of multiple time slices averaged together
+
+        Parameters
+        ----------
+        slices : list-like
+            list of slice objects corresponding to the slices of the movie to be included, must all be same size
+        name : str
+            a unique identifier for this meanmov
+        attrs : dict
+            attributes to store in the dataset for this meanmov
+
+        Notes
+        -----
+        There is not yet explicit support for fancy slicing, like steps other than 1, or sub-frame slices.
+
+        Returns
+        -------
+        meanmov : pyfluo.Movie
+        """
+
+        assert all([sl.stop-sl.start==slices[0].stop-slices[0].start for sl in slices]), 'Slices must all be the same size for a meanmov.'
+        n = slices[0].stop - slices[0].start
+
+        with h5py.File(self.data_file) as f:
+            grp = f.require_group('meanmovs')
+
+            if name in grp:
+                _mm = Movie(np.asarray(grp[name]), Ts=self.Ts)
+            else:
+                if not self._has_data:
+                    warnings.warn('Data not stored in this file, so cannot make meanmov.')
+                    return None
+              
+                data = np.zeros([n, self.shape[1], self.shape[2]])
+                for i,sl in enumerate(slices):
+                    if verbose:
+                        print('Slice {}/{}'.format(i,len(slices)))
+                    dat = self[sl]
+                    data = data + (1./len(slices)) * dat
+                _mm = Movie(data, Ts=self.Ts*chunk_size)
+
+                ds = grp.create_dataset(name, data=_mm, compression='lzf')
+                f['meanmovs'][name].attrs.update(attrs)
+
+        return _mm
+    
     def get_example(self, slices=None, resample=3, redo=False, enforce_datatype=np.int16):
         """Generate or retrieve a subset of the dataset to be used for visual inspection
 
@@ -837,7 +884,7 @@ class Data():
                 self._tr = Series(np.asarray(grp[trname]), Ts=self.Ts)
             elif trname not in grp:
                 if verbose:
-                    print ('Extracting traces...'); sys.stdout.flush()
+                    print ('Extracting traces...')
                 if batch is None:
                     batch = self.batch_size
 
@@ -845,7 +892,7 @@ class Data():
                 for b in range(0,len(self),batch):
                     sl = slice(b,min([len(self), b+batch]))
                     if verbose:
-                        print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self))); sys.stdout.flush()
+                        print ('Slice: {}-{}, total={}'.format(sl.start,sl.stop,len(self)))
                     tr = self[sl].extract(roi)
                     all_tr.append(np.asarray(tr))
                 self._tr = Series(np.concatenate(all_tr), Ts=self.Ts)
@@ -892,7 +939,7 @@ class Data():
             elif (dffname not in grp) or recompute:
                 tr = self.get_tr(idx)
                 if verbose:
-                    print('Computing DFF...'); sys.stdout.flush()
+                    print('Computing DFF...')
                 if tr is None:
                     return None
                 self._dff = compute_dff(tr, verbose=verbose, **compute_dff_kwargs)
@@ -943,7 +990,7 @@ class Data():
             elif (rollcorname not in grp) or recompute:
                 dff = self.get_dff(idx)
                 if verbose:
-                    print('Computing rollcor...'); sys.stdout.flush()
+                    print('Computing rollcor...')
                 if dff is None:
                     return None
 
@@ -1173,7 +1220,7 @@ class Data():
             sums,ns = np.zeros([sig.shape[1], self.shape[1], self.shape[2]]),[]
             for gi,idx in gen:
                 if verbose:
-                    print('Chunk {}'.format(idx)); sys.stdout.flush()
+                    print('Chunk {}'.format(idx))
                 sigi = sig[idx] - smean
                 di = gi - dmean
 
@@ -1228,7 +1275,7 @@ class Data():
 
         self.set_roi(np.asarray(masks_new))
         if verbose:
-            print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects)); sys.stdout.flush()
+            print('Refinement of roi{} complete. {}/{} refinements rejected:\n{}'.format(roi_idx,len(rejects),len(roi),rejects))
         #self.get_tr() # extract new traces
 
     def select_roi(self, mm_generator_kw={}, **rv_kw):

@@ -24,6 +24,12 @@ PF_numeric_types = tuple([int, float] + np.sctypes['float'] + np.sctypes['int'] 
 PF_list_types = (list, np.ndarray, tuple)
 PF_pyver = _pyver
 
+# functions
+_print = print
+def print(*args, **kwargs):
+    _print(*args, **kwargs)
+    sys.stdout.flush()
+
 """
 # User settings
 def _parse_settings(stgs):
