@@ -1272,10 +1272,12 @@ class Data():
                 if equalize:
                     fr = equalize_adapthist((fr-fr.min())/(fr.max()-fr.min()))
 
-                fr[:y0] = 0
-                fr[y1:] = 0
-                fr[:x0] = 0
-                fr[x1:] = 0
+                minn = np.nanmin(fr)
+
+                fr[:y0] = minn
+                fr[y1:] = minn
+                fr[:x0] = minn
+                fr[x1:] = minn
                 yield fr
         
         inst = mm_mean_subtracted(**mm_generator_kw)
