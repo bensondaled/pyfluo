@@ -1246,6 +1246,9 @@ class Data():
 
         The created ROIview object is not only returned but also stored as obj.roiview.
         """
+        y0,x0 = int(np.floor(self.motion_borders.ymin)), int(np.floor(self.motion_borders.xmin))
+        y1,x1 = int(np.ceil(self.motion_borders.ymax)), int(np.ceil(self.motion_borders.xmax))
+
         def mm_mean_subtracted(downsample=5, mean_src='maxmov', equalize=True):
             """
             mean_src : 'maxmov' or 'all'
@@ -1268,6 +1271,11 @@ class Data():
                 fr = fr-mean
                 if equalize:
                     fr = equalize_adapthist((fr-fr.min())/(fr.max()-fr.min()))
+
+                fr[:y0] = 0
+                fr[y1:] = 0
+                fr[:x0] = 0
+                fr[x1:] = 0
                 yield fr
         
         inst = mm_mean_subtracted(**mm_generator_kw)
