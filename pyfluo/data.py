@@ -1331,6 +1331,7 @@ class Data():
         Parameters
         ----------
         dist_thresh : threshold for pf.segmentation.merge_closebys, given here in microns (but if supplied directly in overlap_kw, will be interpreted as pixels)
+            if None: will explicitly skip the closeby step, meaning no "close" rois can be merged (only overlaps)
         """
         roi = self.get_roi()
         dff = self.get_dff()
@@ -1338,11 +1339,13 @@ class Data():
         if roi is None or dff is None:
             warnings.warn('No operation performed because roi/dff is not stored in data.')
             return None
-
-        dist_thresh_pix = self.pixels_per_micron * dist_thresh
-
+        
         closeby_kw = kwargs.pop('closeby_kw', {})
-        closeby_kw.update(distance_thresh = dist_thresh_pix)
+        if dist_thresh is None:
+            closeby_kw.update(distance_thresh = None)
+        else:
+            dist_thresh_pix = self.pixels_per_micron * dist_thresh
+            closeby_kw.update(distance_thresh = dist_thresh_pix)
 
         roi_new = process_roi(roi, dff, closeby_kw=closeby_kw, **kwargs)
         self.set_roi(roi_new)

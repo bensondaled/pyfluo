@@ -383,6 +383,10 @@ def merge_closebys(roi, dff, distance_thresh=20, **similarity_kw):
     # given rois and corresponding dffs, if any pair of rois has similar traces and is close to one another, merge them
     # approach: compute pairwise "mindist", draw edges between those below thresh, and merge any neighbourhoods
     # thresh in pixels
+    # if distance_thresh is None, skip this whole step and return same roi
+
+    if distance_thresh is None:
+        return roi
 
     cc = similarity_neighbourhoods(dff, **similarity_kw)
     remove = np.array([], dtype=int)
