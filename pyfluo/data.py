@@ -744,7 +744,7 @@ class Data():
             _mm = _mm.astype(enforce_datatype)
         return _mm
     
-    def get_meanmov(self, slices, name, attrs={}, verbose=True):
+    def get_meanmov(self, slices=None, name=None, attrs={}, verbose=True):
         """Generate or retrieve a meanmov, i.e. a movie comprised of multiple time slices averaged together
 
         Parameters
@@ -765,6 +765,9 @@ class Data():
         meanmov : pyfluo.Movie
         """
 
+        if slices is None and name is None:
+            return None
+
         assert all([sl.stop-sl.start==slices[0].stop-slices[0].start for sl in slices]), 'Slices must all be the same size for a meanmov.'
         n = slices[0].stop - slices[0].start
 
@@ -773,9 +776,15 @@ class Data():
 
             if name in grp:
                 _mm = Movie(np.asarray(grp[name]), Ts=self.Ts)
+                if slices is not None:
+                    warnings.warn('Name was found so slices are being ignored.')
             else:
                 if not self._has_data:
                     warnings.warn('Data not stored in this file, so cannot make meanmov.')
+                    return None
+
+                if slices is None:
+                    warnings.warn('Must give slices if name () is not present in meanmovs.'.format(name))
                     return None
               
                 data = np.zeros([n, self.shape[1], self.shape[2]])
