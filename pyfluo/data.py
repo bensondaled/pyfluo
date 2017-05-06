@@ -813,7 +813,7 @@ class Data():
             else:
                 name = keys[name]
 
-        mov = self.get_meanmov(name)
+        mov = self.get_meanmov(name=name)
         mov.play()
         return mov
     
