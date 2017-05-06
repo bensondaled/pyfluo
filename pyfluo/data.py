@@ -793,7 +793,7 @@ class Data():
                         print('Slice {}/{}'.format(i,len(slices)))
                     dat = self[sl]
                     data = data + (1./len(slices)) * dat
-                _mm = Movie(data, Ts=self.Ts*chunk_size)
+                _mm = Movie(data, Ts=self.Ts)
 
                 ds = grp.create_dataset(name, data=_mm, compression='lzf')
                 f['meanmovs'][name].attrs.update(attrs)
