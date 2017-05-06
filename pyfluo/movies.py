@@ -106,13 +106,13 @@ class Movie(np.ndarray):
                     roi.show()
         
         return pro
-    def play(self):
+    def play(self, **kwargs):
         """Play the movie
 
         For other opencv-based implementation, see pf.movies.play_mov
         
         """
-        m = MoviePlayer(self, Ts=self.Ts)
+        m = MoviePlayer(self, Ts=self.Ts, **kwargs)
     
     def select_roi(self, *args, **kwargs):
         """Select ROI using ROIView
@@ -369,12 +369,18 @@ def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True,
 
 class MoviePlayer(tk.Frame):
 
-    def __init__(self, data, Ts=1):
-
+    def __init__(self, data, Ts=1, zoom=None):
         # Data handling
         self.data = data
-        minn,maxx = self.data.min(),self.data.max()
-        self.data = (255*((self.data-minn)/(maxx-minn))).astype(np.uint8)
+
+        if self.data.dtype!=np.uint8 or self.data.min()!=0 or self.data.max()!=255:
+            minn,maxx = self.data.min(),self.data.max()
+            self.data = (255*((self.data-minn)/(maxx-minn))).astype(np.uint8)
+
+        if zoom is not None:
+            size = tuple((zoom*np.array(self.data.shape)[-1:0:-1]).astype(int))
+            self.data = np.array([cv2.resize(i,size) for i in self.data])
+
         self.n, self.h, self.w = self.data.shape
         self.imshape = self.data.shape[1:][::-1]
         self.i = 0
@@ -396,8 +402,8 @@ class MoviePlayer(tk.Frame):
         # Tk setup
         self.canvas = tk.Canvas(self, width=self.w, height=self.h)
         # Populate frame
+        self.canvas.place(relx=0,rely=0,x=0,y=0)
         self.pack()
-        self.canvas.place(relx=0,rely=0)
 
         # Bindings
         self.root.bind('f', self.faster)

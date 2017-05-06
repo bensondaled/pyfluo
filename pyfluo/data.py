@@ -801,8 +801,9 @@ class Data():
 
         return _mm
 
-    def watch(self, name=None):
+    def watch(self, name=None, roi=None, pad=10):
         """Convenience method to visualize and retrieve meanmov
+        Also accepts an roi index (meaning a single ROI from an ROI set) to zoom on
         """
         if name is None or isinstance(name, int):
             with h5py.File(self.data_file) as h:
@@ -815,6 +816,17 @@ class Data():
                 name = keys[name]
 
         mov = self.get_meanmov(name=name)
+        if roi is not None:
+            roi = self.get_roi()[roi]
+            aw = np.argwhere(roi)
+            ymin,xmin = np.min(aw,axis=0) - pad
+            ymax,xmax = np.max(aw,axis=0) + pad
+            ymin,xmin,ymax,xmax = [int(np.round(i)) for i in [ymin,xmin,ymax,xmax]]
+            ymin,xmin = [max(0,i) for i in [ymin,xmin]]
+            ymax = min(self.shape[1], ymax)
+            xmax = min(self.shape[0], xmax)
+            mov = mov[:,ymin:ymax,xmin:xmax]
+
         mov.play()
         return mov
     
