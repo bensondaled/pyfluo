@@ -799,6 +799,23 @@ class Data():
                 f['meanmovs'][name].attrs.update(attrs)
 
         return _mm
+
+    def watch(self, name=None):
+        """Convenience method to visualize and retrieve meanmov
+        """
+        if name is None or isinstance(name, int):
+            with h5py.File(self.data_file) as h:
+                keys = list(h['meanmovs'].keys())
+            if name is None:
+                for i,k in enumerate(keys):
+                    print('{}\t{}'.format(i,k))
+                return None
+            else:
+                name = keys[name]
+
+        mov = self.get_meanmov(name)
+        mov.play()
+        return mov
     
     def get_example(self, slices=None, resample=3, redo=False, enforce_datatype=np.int16):
         """Generate or retrieve a subset of the dataset to be used for visual inspection
