@@ -768,8 +768,9 @@ class Data():
         if slices is None and name is None:
             return None
 
-        assert all([sl.stop-sl.start==slices[0].stop-slices[0].start for sl in slices]), 'Slices must all be the same size for a meanmov.'
-        n = slices[0].stop - slices[0].start
+        if slices is not None:
+            assert all([sl.stop-sl.start==slices[0].stop-slices[0].start for sl in slices]), 'Slices must all be the same size for a meanmov.'
+            n = slices[0].stop - slices[0].start
 
         with h5py.File(self.data_file) as f:
             grp = f.require_group('meanmovs')
