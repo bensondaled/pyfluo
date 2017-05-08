@@ -573,6 +573,10 @@ class Data():
                 trace = Series(trace, Ts=Ts)
 
             else:
+                if data_file is None:
+                    warnings.warn('No traces stored and no data file supplied.')
+                    return None
+
                 roi = self.get_camera_roi(camera_idx)
                 if roi is None:
                     warnings.warn('Could not generate trace because no ROI is stored.')
