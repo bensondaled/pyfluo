@@ -29,9 +29,5 @@ def rolling_correlation(arr, win, verbose=True):
         pbar.finish()
 
     _rollcor = np.array(_rollcor)
-    nansig = np.zeros(win-1)
-    nansig[:] = np.nan
-    N = len(nansig)
-    _rollcor = np.concatenate([nansig[:N//2], _rollcor, nansig[N//2:]])
     return _rollcor
 
