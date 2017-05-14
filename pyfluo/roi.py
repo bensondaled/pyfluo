@@ -187,6 +187,8 @@ class ROI(np.ndarray):
         if self.ndim == 2: #no mods when slicing a single roi
             pass
         elif self.ndim == 3: #multiple rois: need associated pts
+            if isinstance(idx, tuple):
+                idx = idx[0]
             for ca in ROI._custom_attrs_slice:
                 setattr(out, ca, getattr(out, ca, None)[idx])
         return out
