@@ -377,6 +377,10 @@ def remove_overlaps(roi, dff, overlap_thresh=.7, debug=False, **similarity_kw):
     keeper = np.ones(len(roi)).astype(bool)
     keeper[remove] = False
     roi_new = roi[keeper]
+    
+    roi_new = roi_new.as3d()
+    roi_new = roi_new[np.any(roi_new,axis=(1,2))]
+
     return roi_new,keeper
 
 def merge_closebys(roi, dff, distance_thresh=20, **similarity_kw):
@@ -422,6 +426,9 @@ def merge_closebys(roi, dff, distance_thresh=20, **similarity_kw):
     roi_new = roi[keeper]
     if len(to_add) > 0:
         roi_new = roi_new.add(ROI(to_add))
+
+    roi_new = roi_new.as3d()
+    roi_new = roi_new[np.any(roi_new,axis=(1,2))]
     return roi_new
 
 def process_roi(roi, dff, overlap_kw={}, closeby_kw={}):
