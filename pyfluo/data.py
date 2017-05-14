@@ -1278,10 +1278,7 @@ class Data():
 
             # store rs
             with h5py.File(self.data_file) as f:
-                if 'r' not in f:
-                    rgrp = f.create_group('r')
-                else:
-                    rgrp = f['r']
+                rgrp = f.require_group('r')
                 rgrp.create_dataset('r{}'.format(roi_idx), data=np.asarray(rs), compression='lzf')
 
         # all that follows is the image processing to find the best new roi definition
