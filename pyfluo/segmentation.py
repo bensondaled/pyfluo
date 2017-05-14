@@ -336,7 +336,7 @@ def similarity_neighbourhoods(dff, similarity_thresh=.8):
     cc = np.array([np.array(list(i)) for i in nx.connected_components(g)])
     return cc
 
-def remove_overlaps(roi, dff, overlap_thresh=.7, debug=False, **similarity_kw):
+def remove_overlaps(roi, dff, overlap_thresh=.5, debug=False, **similarity_kw):
     # given an roi and its corresponding traces, use similarilty_neighbourhoods and overlap metrics to remove cells that are similar because they are on top of one another
     # thresh: if fraction `overlap_thresh` of roi A lives inside any other roi, remove roi A
     # returns new roi with the merging/removal performed
@@ -379,6 +379,7 @@ def remove_overlaps(roi, dff, overlap_thresh=.7, debug=False, **similarity_kw):
     roi_new = roi[keeper]
     
     roi_new = roi_new.as3d()
+    keeper = keeper[np.any(roi_new, axis=(1,2))]
     roi_new = roi_new[np.any(roi_new,axis=(1,2))]
 
     return roi_new,keeper
