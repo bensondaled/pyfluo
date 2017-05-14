@@ -258,12 +258,14 @@ class ROIView():
         for bi,(name,(obj,cb,lab)) in enumerate(self.buts.items()):
             ax = self.fig.add_subplot(self.gs[bi,0])
             but = Button(ax, lab)
+            but.label.set_fontsize('x-small')
             but.on_clicked(cb)
             self.buts[name][OBJ] = but
         # sliders
         for si,(name,(obj,minn,maxx,init)) in enumerate(self.sliders.items()):
             ax = self.fig.add_subplot(self.gs[si+len(self.buts),0])
             sli = Slider(ax, name, minn, maxx, init, facecolor='gray', edgecolor='none', alpha=0.5, valfmt='%0.0f')
+            sli.label.set_fontsize('x-small')
             sli.label.set_position((0.5,0.5))
             sli.label.set_horizontalalignment('center')
             sli.vline.set_color('k')

@@ -108,7 +108,7 @@ class Data():
         result : dict
             sub-dictionary of scanimage data dictionary, where keys contain query
         """
-        i = np.argwhere([query.lower() in k.lower() for k in self.si_data.keys()]).squeeze()
+        i = np.argwhere([query.lower() in k.lower() or query.lower() in str(self.si_data[k]).lower() for k in self.si_data.keys()]).squeeze()
         i = np.atleast_1d(i)
         if len(i) == 0:
             return None
