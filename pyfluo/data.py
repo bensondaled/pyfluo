@@ -1447,4 +1447,6 @@ class Data():
         roi_new[:,:,:x0] = False
         roi_new[:,:,x1:] = False
 
+        roi_new = roi_new[np.any(roi_new, axis=(1,2))]
+
         self.set_roi(roi_new)
