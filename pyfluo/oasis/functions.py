@@ -11,8 +11,6 @@ try:
     cvxpy_installed = True
 except:
     cvxpy_installed = False
-    warn("Could not find cvxpy. Don't worry, you can still use OASIS, " +
-         "just not the slower interior point methods we compared to in the papers.")
 
 
 def init_fig():
