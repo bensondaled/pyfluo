@@ -297,6 +297,7 @@ class ROIView():
         self.iter_cache_size = 5
         self.iter_cache = [img]
         self.iter_cache_i = 0
+        self.did_edit = False
 
     def reset_mode(self):
         if self._mode == 'select':
@@ -402,7 +403,9 @@ class ROIView():
                 self.set_img(np.zeros_like(self._im.get_array()))
                 self.buts['next'][OBJ].set_active(False)
 
-        self.cache()
+        if self.did_edit:
+            self.cache()
+        self.did_edit = False
     
     def evt_prev(self, *args):
         if self.iterator is None:
@@ -497,6 +500,7 @@ class ROIView():
         del self._roi_patches[idx]
         del self._roi_centers[idx]
         self.update_patches()
+        self.did_edit = True
 
     def set_img(self, img):
         if self._im is None:
@@ -530,6 +534,7 @@ class ROIView():
             self._roi_patches.append(poly)
             self._roi_centers.append(np.mean(r.pts, axis=0))
         self.update_patches()
+        self.did_edit = True
 
     def update_patches(self, draw=True):
         if self.roi is not None and len(self.roi) > 0:
