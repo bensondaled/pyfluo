@@ -1,1 +1,1 @@
-from functions import deconvolve
+from .functions import deconvolve
