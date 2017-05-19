@@ -12,7 +12,8 @@ from .roi import ROI, ROIView
 from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica, process_roi
 from .motion import motion_correct, apply_motion_correction
-from .util import rolling_correlation
+from .util import rolling_correlation, ProgressBar
+from .oasis import deconvolve
 from .config import *
 
 class Data():
@@ -1047,6 +1048,71 @@ class Data():
                 grp[rollcorname].attrs.update(window=window)
 
         return Series(_rollcor, Ts=self.Ts)
+    
+    def get_deconv(self, idx=None, recompute=False, verbose=True, **deconv_kw):
+        """Compute or retrieve deconvolved DFF traces
+        Underlying function is OASIS-based deconvolution
+
+        Parameters
+        ----------
+        idx : int
+            idx corresponding to roi/traces of interest
+        recompute : bool
+            delete existing rollcor dataset and recompute
+        verbose : bool
+            display status
+
+        Returns
+        -------
+        deconv : pyfluo.Series
+        """
+        # window in seconds
+        if idx is None:
+            idx = self._latest_roi_idx
+
+        deconvname = 'deconv{}'.format(idx)
+
+        with h5py.File(self.data_file) as f:
+            grp = f['traces']
+
+            if deconvname in grp and not recompute:
+                _deconv = Series(np.asarray(grp[deconvname]), Ts=self.Ts)
+
+            elif (deconvname not in grp) or recompute:
+                dff = self.get_dff(idx)
+                if verbose:
+                    print('Computing deconv...')
+                if dff is None:
+                    return None
+
+                deconv_kw['penalty'] = deconv_kw.pop('penalty', 0)
+
+                b,g,lam = np.zeros(dff.shape[1]), np.zeros(dff.shape[1]), np.zeros(dff.shape[1])
+                c,s = np.zeros(dff.shape),np.zeros(dff.shape)
+                if verbose:
+                    pbar = ProgressBar(maxval=dff.shape[1]).start()
+                for i in range(dff.shape[1]):
+                    ci,si,bi,gi,lami = deconvolve(dff[:,i], **deconv_kw)
+                    b[i] = bi
+                    g[i] = gi
+                    lam[i] = lami
+                    c[:,i] = ci
+                    s[:,i] = si
+                    if verbose:
+                        pbar.update(i)
+
+                if verbose:
+                    pbar.finish()
+                _deconv = np.array([s,c]).T
+
+                if deconvname in grp:
+                    del grp[deconvname]
+
+                grp.create_dataset(deconvname, data=np.asarray(_deconv), compression='lzf')
+                grp[deconvname].attrs.update(deconv_kw)
+                grp[deconvname].attrs.update(b=b, g=g, lam=lam)
+
+        return Series(_deconv, Ts=self.Ts)
     
     def gen(self, chunk_size=1, n_frames=None, downsample=None, crop=False, enforce_chunk_size=False, return_idx=False, subtract_mean=False):
         """Data in the form of a generator that motion corrections, crops, applies rolling_mean, etc
