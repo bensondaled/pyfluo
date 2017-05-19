@@ -1049,7 +1049,7 @@ class Data():
 
         return Series(_rollcor, Ts=self.Ts)
     
-    def get_deconv(self, idx=None, recompute=False, verbose=True, **deconv_kw):
+    def get_deconv(self, idx=None, output='s', recompute=False, verbose=True, **deconv_kw):
         """Compute or retrieve deconvolved DFF traces
         Underlying function is OASIS-based deconvolution
 
@@ -1057,6 +1057,9 @@ class Data():
         ----------
         idx : int
             idx corresponding to roi/traces of interest
+        output : 'c' / 's'
+            c : estimated denoised trace
+            s : estimated spikes
         recompute : bool
             delete existing rollcor dataset and recompute
         verbose : bool
@@ -1076,7 +1079,7 @@ class Data():
             grp = f['traces']
 
             if deconvname in grp and not recompute:
-                _deconv = Series(np.asarray(grp[deconvname]), Ts=self.Ts)
+                _deconv = np.asarray(grp[deconvname])
 
             elif (deconvname not in grp) or recompute:
                 dff = self.get_dff(idx)
@@ -1103,7 +1106,7 @@ class Data():
 
                 if verbose:
                     pbar.finish()
-                _deconv = np.array([s,c]).T
+                _deconv = np.array([s,c])
 
                 if deconvname in grp:
                     del grp[deconvname]
@@ -1111,6 +1114,11 @@ class Data():
                 grp.create_dataset(deconvname, data=np.asarray(_deconv), compression='lzf')
                 grp[deconvname].attrs.update(deconv_kw)
                 grp[deconvname].attrs.update(b=b, g=g, lam=lam)
+        
+        if output == 's':
+            _deconv = _deconv[0]
+        elif output == 'c':
+            _deconv = _deconv[1]
 
         return Series(_deconv, Ts=self.Ts)
     
