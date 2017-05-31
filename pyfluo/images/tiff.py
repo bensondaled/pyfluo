@@ -176,6 +176,8 @@ class TiffGroup(object):
                     chunks=(8,256,256)
                 elif t.data.shape[1:] == (256,512):
                     chunks=(4,256,512)
+                elif t.data.shape[1:] == (512,256):
+                    chunks=(4,512,256)
                 else:
                     chunks = (1,) + t.data.shape[1:]
 
