@@ -377,9 +377,10 @@ def remove_overlaps(roi, dff, overlap_thresh=.5, debug=False, **similarity_kw):
     keeper = np.ones(len(roi)).astype(bool)
     keeper[remove] = False
     roi_new = roi[keeper]
+    keeper_new = keeper[keeper]
     
     roi_new = roi_new.as3d()
-    keeper = keeper[np.any(roi_new, axis=(1,2))]
+    keeper = keeper_new[np.any(roi_new, axis=(1,2))]
     roi_new = roi_new[np.any(roi_new,axis=(1,2))]
 
     return roi_new,keeper
