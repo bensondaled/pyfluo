@@ -149,7 +149,11 @@ class Movie(np.ndarray):
             flatshape = -1
             roi_norm = roi.astype(float) / roi.sum()
         roi_norm = roi_norm.reshape(flatshape)
-        self_flat = self.reshape((len(self),-1)).T
+        if self.ndim == 2:
+            self_flat = np.array([self])
+        else:
+            self_flat = self
+        self_flat = self_flat.reshape((len(self_flat),-1)).T
         dp = (roi_norm.dot(self_flat)).T
         
         return Series(dp, Ts=self.Ts)
