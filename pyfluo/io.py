@@ -21,7 +21,6 @@ def save(file_name, **items):
     for item in items:
         obj = items[item]
         if isinstance(obj, TSBase):
-            del items[item]
             items[item] = obj.decompose()
         elif isinstance(obj, np.ndarray):
             pass
