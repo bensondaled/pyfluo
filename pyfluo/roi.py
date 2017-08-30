@@ -132,7 +132,6 @@ class ROI(np.ndarray):
         patch_kw['facecolors'] = patch_kw.get('facecolors', pl.cm.viridis(np.linspace(0,1,len(roi))))
         patch_kw['edgecolors'] = patch_kw.get('edgecolors', pl.cm.viridis(np.linspace(0,1,len(roi))))
         patch_kw['lw'] = patch_kw.get('lw', 2)
-        patch_kw['linewidth'] = patch_kw.get('linewidth', 2)
 
         if ax is None:
             ax = pl.gca()

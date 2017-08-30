@@ -1,3 +1,8 @@
+"""
+TODO: 
+    when uniform slices are taken, could automatically update Ts
+"""
+
 # External imports
 import pandas as pd, numpy as np, matplotlib.pyplot as pl
 from matplotlib.collections import LineCollection
@@ -13,7 +18,7 @@ class Series(np.ndarray):
     This class used to inherit from the pandas Series object, but it turns out that many operations are much faster when done directly at the numpy level, plus most pandas features are extraneous for this class.
     """
 
-    __array_priority__ = 1. #ensures that ufuncs return ROI class instead of np.ndarrays
+    __array_priority__ = 1. #ensures that ufuncs return Series class instead of np.ndarrays
     _custom_attrs = {'Ts':1., 't0':0.}
 
     def __new__(cls, data, Ts=1., t0=0., **kwargs):
