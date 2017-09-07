@@ -14,6 +14,11 @@ if PF_pyver == 3:
 elif PF_pyver == 2:
     import Tkinter as tk
 
+try:
+    import pyqtgraph as pg
+except ImportError:
+    pg = None
+
 class Movie(np.ndarray):
     """An object for *in-memory* storage of n sequential 2d images along with a sampling rate
 
@@ -106,13 +111,26 @@ class Movie(np.ndarray):
                     roi.show()
         
         return pro
-    def play(self, **kwargs):
+    def play(self, method='pyqtgraph', **kwargs):
         """Play the movie
 
-        For other opencv-based implementation, see pf.movies.play_mov
-        
+        Parameters
+        ----------
+        method : str
+            'pyqtgraph', 'tkinter', 'opencv'
+
         """
-        m = MoviePlayer(self, Ts=self.Ts, **kwargs)
+        if method == 'opencv':
+            return play_mov(self)
+        elif method == 'tkinter' or (method == 'pyqtgraph' and pg is None):
+            print('Try installing PyQtGraph for another good interactive media player.')
+            return MoviePlayer(self, Ts=self.Ts, **kwargs)
+        elif method == 'pyqtgraph':
+            im = pg.image(self)
+            im.fps = int(np.round(1/self.Ts))
+            im.play()
+            pg.QtGui.QApplication.exec_()
+            return im
     
     def select_roi(self, *args, **kwargs):
         """Select ROI using ROIView
@@ -249,7 +267,12 @@ class Movie(np.ndarray):
 
 ###################
 def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True, fontsize=1, rolling_mean=1, generator_fxn=None, **kwargs):
-    """
+    """An opencv-based movie playing function, with keyboard controls
+
+    This works, but has the following disadvantages:
+    -requires opencv
+    -is blocking
+
     Parameters
     ----------
     data : see description
@@ -372,6 +395,10 @@ def play_mov(data, loop=True, fps=None, minmax=(0,300), scale=1, show_time=True,
     cv2.destroyWindow(title); cv2.waitKey(1)
 
 class MoviePlayer(tk.Frame):
+    """A movie player built on Tkinter with the goal of circumventing the need for blocking in the opencv implementation
+
+    This is able to play movies at high framerate, but lacks some of the convenience live controls
+    """
 
     def __init__(self, data, Ts=1, zoom=None):
         # Data handling

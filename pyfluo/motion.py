@@ -1,4 +1,3 @@
-from __future__ import print_function
 import numpy as np
 import h5py, warnings, sys
 from .util import ProgressBar, Progress
