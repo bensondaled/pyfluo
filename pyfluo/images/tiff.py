@@ -183,7 +183,8 @@ class TiffGroup(object):
 
             # store metadata
             with pd.HDFStore(self.hdf_path) as h:
-                h.put('si_data', pd.Series(t.si_data))
+                if idx == 0:
+                    h.put('si_data', pd.Series(t.si_data))
                 info = t.metadata
                 info.index = [idx]*len(info)
                 h.append('info', info)
