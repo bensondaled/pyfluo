@@ -623,6 +623,8 @@ class Data():
 
     def set_camera_roi(self, roi, camera_idx, overwrite=False):
         field_name = 'camera{}_roi'.format(camera_idx)
+        tr_field_name = 'camera{}_trace'.format(camera_idx)
+        tr_field_name_t = 'camera{}_time'.format(camera_idx)
         with h5py.File(self.data_file) as f:
             if 'cameras' not in f:
                 warnings.warn('Camera not present, so cannot set roi.')
@@ -634,6 +636,12 @@ class Data():
                 ctname = 'camera{}_trace'.format(camera_idx)
                 if ctname in grp:
                     del grp[ctname]
+            
+                if tr_field_name in grp:
+                    del grp[tr_field_name]
+                if tr_field_name_t in grp:
+                    del grp[tr_field_name_t]
+
             elif field_name in grp and not overwrite:
                 warnings.warn('Not setting ROI because roi exists and overwrite=False.')
                 return

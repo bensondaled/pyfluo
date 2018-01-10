@@ -28,9 +28,9 @@ class Progress(mp.Process):
     def run(self):
         while self.on.value and self.verbose:
             elap = time.time() - self.t0
-            sys.stdout.write("\r{}:\t{:0.2f} seconds elapsed...".format(self.msg, elap))
+            sys.stdout.write("\r{}:\t{:0.1f} seconds elapsed...".format(self.msg, elap))
             sys.stdout.flush()
-            time.sleep(1.)
+            time.sleep(.1)
         sys.stdout.write('\n')
         sys.stdout.flush()
         self.complete.value = 1

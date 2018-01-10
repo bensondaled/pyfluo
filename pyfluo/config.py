@@ -6,7 +6,7 @@ try:
     import cv2
 except ImportError:
     cv2 = None
-    warnings.warn('cv2 not detected, expect strange behaviours.')
+    #warnings.warn('opencv not found, expect strange behaviours from pyfluo.')
 
 # Versions
 _pyver = sys.version_info.major
