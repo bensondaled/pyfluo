@@ -1554,7 +1554,7 @@ class Data():
         roi = roi[np.any(roi, axis=(1,2))]
 
         # remove rois below size threshold
-        thresh = d.pixels_per_micron * min_area # pixels 
+        thresh = self.pixels_per_micron * min_area # pixels 
         areas = np.sum(roi, axis=(1,2))
         roi = roi[areas>thresh]
         
