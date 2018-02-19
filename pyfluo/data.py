@@ -1518,17 +1518,23 @@ class Data():
 
         roi_new = process_roi(roi, dff, closeby_kw=closeby_kw, **kwargs)
         
+        roi_new = self.trim_roi_borders(roi_new)
+
+        self.set_roi(roi_new)
+
+    def trim_roi_borders(self, roi):
+
         # remove anything outside motion borders
         y0,x0 = int(np.floor(self.motion_borders.ymin)), int(np.floor(self.motion_borders.xmin))
         y1,x1 = int(np.ceil(self.motion_borders.ymax)), int(np.ceil(self.motion_borders.xmax))
-        if roi_new.ndim == 2:
-            roi_new = np.array([roi_new])
-        roi_new = roi_new.astype(bool)
-        roi_new[:,:y0,:] = False
-        roi_new[:,y1:,:] = False
-        roi_new[:,:,:x0] = False
-        roi_new[:,:,x1:] = False
+        if roi.ndim == 2:
+            roi = np.array([roi])
+        roi = roi.astype(bool)
+        roi[:,:y0,:] = False
+        roi[:,y1:,:] = False
+        roi[:,:,:x0] = False
+        roi[:,:,x1:] = False
 
-        roi_new = roi_new[np.any(roi_new, axis=(1,2))]
-
-        self.set_roi(roi_new)
+        roi = roi[np.any(roi, axis=(1,2))]
+        
+        return roi
