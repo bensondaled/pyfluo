@@ -1497,6 +1497,8 @@ class Data():
     def process_roi(self, dist_thresh=5, **kwargs):
         """Use pf.process_roi to process the most recently stored roi
 
+        Processes the ROI and stores as the next ROI in this data object.
+
         Parameters
         ----------
         dist_thresh : threshold for pf.segmentation.merge_closebys, given here in microns (but if supplied directly in overlap_kw, will be interpreted as pixels)
@@ -1522,7 +1524,21 @@ class Data():
 
         self.set_roi(roi_new)
 
-    def trim_roi_borders(self, roi):
+    def pare_roi(self, roi, min_area=10):
+        """Perform a paring of an ROI, specific to this data (i.e. not a general abstract ROI operation)
+
+        Performs 2 distinct operations:
+            (1) remove all pixels of ROI contained within motion borders of this Data
+            (2) remove all ROI entries in the ROI set below a given size
+
+        *Importantly, unlike many other methods, this does not automatically set the result as a new ROI in the data object.
+        It returns the pared roi, which can be stored using obj.set_roi().
+
+        Parameters
+        ----------
+        min_size : int
+            minimum area of roi in microns
+        """
 
         # remove anything outside motion borders
         y0,x0 = int(np.floor(self.motion_borders.ymin)), int(np.floor(self.motion_borders.xmin))
@@ -1536,5 +1552,10 @@ class Data():
         roi[:,:,x1:] = False
 
         roi = roi[np.any(roi, axis=(1,2))]
+
+        # remove rois below size threshold
+        thresh = d.pixels_per_micron * min_area # pixels 
+        areas = np.sum(roi, axis=(1,2))
+        roi = roi[areas>thresh]
         
         return roi
