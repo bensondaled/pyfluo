@@ -25,9 +25,9 @@ class AVI(object):
         self.file_path = file_path
         vc = cv2.VideoCapture(self.file_path)
 
-        self.n_frames = vc.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.width = vc.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = vc.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        self.n_frames = int(vc.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.width = int(vc.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(vc.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.data = np.empty([self.n_frames, self.height, self.width], dtype=np.uint8)
 
         if pbar:

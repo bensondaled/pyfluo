@@ -2,7 +2,7 @@ import numpy as np, pylab as pl, pandas as pd
 from PIL import Image, ImageTk
 from scipy.ndimage.interpolation import zoom as szoom
 from matplotlib import animation
-import sys, tifffile, operator, os, threading, time
+import sys, operator, os, threading, time, tifffile
 
 from .roi import ROI, ROIView
 from .images import Tiff, AVI, HDF5
@@ -51,9 +51,9 @@ class Movie(np.ndarray):
             suf = os.path.splitext(filename)[-1]
 
             if suf == '.avi':
-                data = AVI(d, **kwargs).data
+                data = AVI(data, **kwargs).data
             elif suf in ['.h5','.hdf5']:
-                hs = HDF5(d, **kwargs)
+                hs = HDF5(data, **kwargs)
                 data = h.data
                 Ts = h.Ts #overwrites any supplied Ts with hdf5 file's stored time info
             elif suf in ['.tif','.tiff']:
