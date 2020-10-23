@@ -245,7 +245,7 @@ class Movie(np.ndarray):
         if fmt in ['tif','tiff']:
             tifffile.imsave(filename, data=np.asarray(self))
         elif fmt in ['mp4', 'avi']:
-            if CV_VERSION == 3:
+            if CV_VERSION >= 3:
                 codec = cv2.VideoWriter_fourcc(*codec)
             elif CV_VERSION == 2:
                 codec = cv2.cv.FOURCC(*codec)
