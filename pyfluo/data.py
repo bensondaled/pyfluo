@@ -49,8 +49,8 @@ class Data():
                 self._has_data = False
                 self.batch_size = None
         with pd.HDFStore(self.data_file) as h:
-            self.n_files = len(h.info)
-            self.info = h.info
+            self.n_files = len(h['info'])
+            self.info = h['info']
             self.si_data = h.si_data
 
             if self.shape is None:
