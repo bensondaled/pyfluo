@@ -202,12 +202,12 @@ class Data():
                 return
             elif 'motion' in h and overwrite:
                 h.remove('motion')
-        with h5py.File(self.data_file) as h:
+        with h5py.File(self.data_file, 'r+') as h:
             if 'templates' in h:
                 del h['templates']
         
         # create new datasets
-        with h5py.File(self.data_file) as h:
+        with h5py.File(self.data_file, 'r+') as h:
             h.create_dataset('templates', data=np.zeros((n_chunks+1,) + self.shape[1:]), compression='lzf')
         
         # iterate through frame chunks, local corrections
@@ -226,16 +226,16 @@ class Data():
             mot['chunk'] = idx
             with pd.HDFStore(self.data_file) as h:
                 h.append('motion', mot)
-            with h5py.File(self.data_file) as h:
+            with h5py.File(self.data_file, 'r+') as h:
                 h['templates'][idx] = templ
 
         # global correction on template movie
-        with h5py.File(self.data_file) as h:
+        with h5py.File(self.data_file, 'r+') as h:
             template_mov = Movie(np.asarray(h['templates'][:-1]))
         cka = compute_kwargs.copy()
         cka.update(resample=1)
         _,glob_template,glob_vals = motion_correct(template_mov, compute_kwargs=cka, **mc_kwargs)
-        with h5py.File(self.data_file) as h:
+        with h5py.File(self.data_file, 'r+') as h:
             h['templates'][-1] = glob_template
         with pd.HDFStore(self.data_file) as h:
             mot = h.motion
@@ -315,7 +315,7 @@ class Data():
             agg_func = [agg_func]
         
         # require dataset
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if '_data_funcs' not in f:
                 f.create_group('_data_funcs')
 
@@ -327,7 +327,7 @@ class Data():
             for ax in axis:
                 ax_str = str(ax) if ax is not None else ''
                 attr_str = '_{}_{}'.format(funcn, ax_str)
-                with h5py.File(self.data_file) as f:
+                with h5py.File(self.data_file, 'r+') as f:
                     if attr_str not in f['_data_funcs']:
                         todo.append( (funcn, fxn, afxn, ax) ) # name, func, aggfunc, axis
 
@@ -348,7 +348,7 @@ class Data():
             results = [afxn(res, axis=ax) for res,(fn,fxn,afxn,ax) in zip(results,todo)]
 
             # store results
-            with h5py.File(self.data_file) as f:
+            with h5py.File(self.data_file, 'r+') as f:
                 for res,(fn,fxn,afxn,ax) in zip(results,todo):
                     ax_str = str(ax) if ax is not None else ''
                     attr_str = '_{}_{}'.format(fn, ax_str)
@@ -359,7 +359,7 @@ class Data():
         for fn,fxn,afxn,ax in zip(func_name, func, agg_func, axis):
             ax_str = str(ax) if ax is not None else ''
             attr_str = '_{}_{}'.format(fn, ax_str)
-            with h5py.File(self.data_file) as f:
+            with h5py.File(self.data_file, 'r+') as f:
                 ds = np.asarray(f['_data_funcs'][attr_str])
             if isinstance(ds, np.ndarray) and ds.ndim==0:
                 ds = float(ds)
@@ -403,7 +403,7 @@ class Data():
 
     @property
     def _latest_roi_idx(self):
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'roi' not in f:
                 return None
             keys = list(f['roi'].keys())
@@ -415,7 +415,7 @@ class Data():
     
     @property
     def _latest_r_idx(self):
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'r' not in f:
                 return None
             keys = list(f['r'].keys())
@@ -427,7 +427,7 @@ class Data():
     
     @property
     def _latest_ct_idx(self):
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'camera_traces' not in f:
                 return None
             keys = list(f['camera_traces'].keys())
@@ -466,7 +466,7 @@ class Data():
     
     @property
     def _latest_segmentation_idx(self):
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r') as f:
             if 'segmentation' not in f:
                 return None
             keys = list(f['segmentation'].keys())
@@ -491,7 +491,7 @@ class Data():
         if idx is None:
             return None
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r') as f:
             seggrp = f['segmentation']
             _segmentation = np.asarray(seggrp['segmentation{}'.format(int(idx))])
 
@@ -505,7 +505,7 @@ class Data():
         roi : pyfluo.ROI
             new roi to assign, will be added incrementally onto the roi dataset in the data file
         """
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'roi' not in f:
                 roigrp = f.create_group('roi')
             else:
@@ -525,7 +525,7 @@ class Data():
         if idx is None:
             return None
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r') as f:
             roigrp = f['roi']
             _roi = ROI(roigrp['roi{}'.format(int(idx))])
 
@@ -547,7 +547,7 @@ class Data():
         if idx is None:
             return None
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r') as f:
             rgrp = f['r']
             if 'r{}'.format(int(idx)) not in rgrp:
                 return None
@@ -562,7 +562,7 @@ class Data():
         """
         field_name = 'camera{}_trace'.format(camera_idx)
         field_name_t = 'camera{}_time'.format(camera_idx)
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r') as f:
             if 'cameras' not in f:
                 return None
             cgrp = f['cameras']
@@ -591,7 +591,7 @@ class Data():
 
                 # load in the behavior movie here, calling it mov
                 # and ts should be defined as the timestamp values of the movie
-                with h5py.File(data_file) as movfile:
+                with h5py.File(data_file, 'r') as movfile:
 
                     mov = movfile[dname]
                     ts = np.asarray(movfile[tname])
@@ -625,7 +625,7 @@ class Data():
         field_name = 'camera{}_roi'.format(camera_idx)
         tr_field_name = 'camera{}_trace'.format(camera_idx)
         tr_field_name_t = 'camera{}_time'.format(camera_idx)
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'cameras' not in f:
                 warnings.warn('Camera not present, so cannot set roi.')
                 return None
@@ -650,7 +650,7 @@ class Data():
     
     def get_camera_roi(self, camera_idx):
         field_name = 'camera{}_roi'.format(camera_idx)
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'cameras' not in f:
                 raise Exception('Camera not present, no ROI present.')
             grp = f['cameras']
@@ -671,7 +671,7 @@ class Data():
             raise Exception('camera_idx must be an integer')
 
         field_name = 'camera{}_example'.format(camera_idx)
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             grp = f.require_group('cameras')
 
             if field_name in grp and not redo:
@@ -735,7 +735,7 @@ class Data():
         """
         chunk_size = int(np.round(chunk_size / self.Ts))
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'maxmov' in f and not redo:
                     _mm = Movie(np.asarray(f['maxmov']), Ts=f['maxmov'].attrs['Ts'])
             else:
@@ -785,7 +785,7 @@ class Data():
             assert all([sl.stop-sl.start==slices[0].stop-slices[0].start for sl in slices]), 'Slices must all be the same size for a meanmov.'
             n = slices[0].stop - slices[0].start
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             grp = f.require_group('meanmovs')
 
             if name in grp:
@@ -819,7 +819,7 @@ class Data():
         Also accepts an roi index (meaning a single ROI from an ROI set) to zoom on
         """
         if name is None or isinstance(name, int):
-            with h5py.File(self.data_file) as h:
+            with h5py.File(self.data_file, 'r+') as h:
                 keys = list(h['meanmovs'].keys())
             if name is None:
                 for i,k in enumerate(keys):
@@ -861,7 +861,7 @@ class Data():
         -------
         example : pyfluo.Movie
         """
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'example' in f and not redo:
                 _example = Movie(np.asarray(f['example']), Ts=f['example'].attrs['Ts'])
             else:
@@ -926,7 +926,7 @@ class Data():
             return None
         trname = 'tr{}'.format(idx)
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'traces' not in f:
                 grp = f.create_group('traces')
             elif 'traces' in f:
@@ -979,7 +979,7 @@ class Data():
 
         dffname = 'dff{}'.format(idx)
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             if 'traces' not in f:
                 raise Exception('DFF has not yet been computed.')
 
@@ -1033,7 +1033,7 @@ class Data():
 
         rollcorname = 'rollcor{}'.format(idx)
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             grp = f['traces']
 
             if rollcorname in grp and not recompute:
@@ -1083,7 +1083,7 @@ class Data():
 
         deconvname = 'deconv{}'.format(idx)
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             grp = f['traces']
 
             if deconvname in grp and not recompute:
@@ -1226,7 +1226,7 @@ class Data():
             nc = np.ceil(nume/gen_kwargs['chunk_size'])
             print('Segmenting. Generator: {} frames, chunk size {}, downsample {} --> {} chunks.'.format(gen_kwargs['n_frames'], gen_kwargs['chunk_size'], gen_kwargs['downsample'], nc))
         comps = pca_ica(dummy_gen, **pca_ica_kwargs)
-        with h5py.File(self.data_file) as h:
+        with h5py.File(self.data_file, 'r+') as h:
             if 'segmentation' not in h:
                 grp = h.create_group('segmentation')
             else:
@@ -1273,7 +1273,7 @@ class Data():
             handle = infile.copy(out_filename, overwrite=False)
             handle.close()
 
-        with h5py.File(out_filename) as outfile, h5py.File(self.data_file) as infile:
+        with h5py.File(out_filename) as outfile, h5py.File(self.data_file, 'r+') as infile:
             for key in infile:
                 if key in outfile:
                     continue
@@ -1294,7 +1294,7 @@ class Data():
         """
         if backup:
             self.export('{}_backup.h5'.format(os.path.splitext(self.data_file)[0]))
-        with h5py.File(filename) as infile, h5py.File(self.data_file) as datafile:
+        with h5py.File(filename) as infile, h5py.File(self.data_file, 'r+') as datafile:
             for key in infile:
                 if key in datafile:
                     del datafile[key]
@@ -1359,7 +1359,7 @@ class Data():
             rs = [c / (self.std(axis=0)*sd) for c,sd in zip(cov,np.std(sig,axis=0))] # pearson's r for each roi, rois along 0th axis
 
             # store rs
-            with h5py.File(self.data_file) as f:
+            with h5py.File(self.data_file, 'r+') as f:
                 rgrp = f.require_group('r')
                 rgrp.create_dataset('r{}'.format(roi_idx), data=np.asarray(rs), compression='lzf')
 
@@ -1422,7 +1422,7 @@ class Data():
             """
             mean_src : 'maxmov' or 'all'
             """
-            with h5py.File(self.data_file) as f:
+            with h5py.File(self.data_file, 'r+') as f:
                 if 'maxmov' in f:
                     mean = np.mean(f['maxmov'], axis=0)
                     n = len(f['maxmov'])
@@ -1435,7 +1435,7 @@ class Data():
                 mean = self.mean(axis=0)
             
             for i in range(n//downsample):
-                with h5py.File(self.data_file) as f:
+                with h5py.File(self.data_file, 'r+') as f:
                     fr = np.max( f['maxmov'][i*downsample : i*downsample+downsample], axis=0 )
                 fr = fr-mean
                 if equalize:
@@ -1488,7 +1488,7 @@ class Data():
         trname = 'tr{}'.format(idx)
         dffname = 'dff{}'.format(idx)
 
-        with h5py.File(self.data_file) as f:
+        with h5py.File(self.data_file, 'r+') as f:
             grp = f['traces']
             grp.create_dataset(trname, data=np.asarray(tr), compression='lzf')
             grp.create_dataset(dffname, data=np.asarray(dff), compression='lzf')

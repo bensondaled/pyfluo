@@ -111,7 +111,7 @@ class Movie(np.ndarray):
                     roi.show()
         
         return pro
-    def play(self, method='pyqtgraph', **kwargs):
+    def play(self, method='opencv', **kwargs):
         """Play the movie
 
         Parameters
