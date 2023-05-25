@@ -63,7 +63,7 @@ class ROI(np.ndarray):
     def _compute_pts(self):
         if CV_VERSION == 2:
             findContoursResultIdx = 0
-        elif CV_VERSION == 3:
+        elif CV_VERSION >= 3:
             findContoursResultIdx = 1
         data = self.copy().view(np.ndarray)
         if self.ndim == 2:

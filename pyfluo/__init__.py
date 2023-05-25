@@ -7,4 +7,4 @@ from .images.tiff import Tiff, TiffGroup
 from .segmentation import pca_ica, comps_to_roi, process_roi
 from .motion import motion_correct
 from .data import Data
-from .oasis import deconvolve
+#from .oasis import deconvolve
