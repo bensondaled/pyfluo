@@ -13,7 +13,7 @@ from .fluorescence import compute_dff, detect_transients
 from .segmentation import pca_ica, process_roi
 from .motion import motion_correct, apply_motion_correction
 from .util import rolling_correlation, ProgressBar
-from .oasis import deconvolve
+#from .oasis import deconvolve
 from .config import *
 
 class Data():
